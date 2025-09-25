@@ -1,0 +1,683 @@
+import React, { useState, useMemo, useCallback } from "react";
+import {
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  X,
+  Download,
+  MoreVertical,
+} from "lucide-react";
+import Pagination from "./Pagination";
+
+const DataTable = ({
+  columns = [],
+  data = [],
+  enableSearch = true,
+  enablePagination = false,
+  itemsPerPage = 10,
+  showRowNumbers = false,
+  onRowClick,
+  emptyMessage = "No data found",
+  loading = false,
+  className = "",
+  tableClassName = "",
+  headerClassName = "",
+  rowClassName = "",
+  cellClassName = "",
+   striped = true,
+  hover = true,
+  compact = true,
+  actions = [],
+  onExport,
+  enableColumnFilters = false,
+  searchPlaceholder = "Search...",
+  onSort,
+  onPageChange,
+  enableSelection = true,
+  onSelectionChange = () => {},
+  bulkActions = [], // Array of { label, icon, handler }
+  comboBoxFilter = null, // { label, options, value, onChange }
+  actionButton = null, // { label, icon, onClick, show, className }
+  totalItems,
+  currentPage,
+}) => {
+  const [selectedRows, setSelectedRows] = useState([]);
+  // State management
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortDirection, setSortDirection] = useState("asc");
+  const [searchTerm, setSearchTerm] = useState("");
+  // Controlled pagination for API-based pagination
+  const isControlledPagination = enablePagination && typeof totalItems === 'number' && typeof currentPage === 'number';
+  const [internalPage, setInternalPage] = useState(1);
+  const [pageSize] = useState(itemsPerPage);
+  const page = isControlledPagination ? currentPage : internalPage;
+  const [filters, setFilters] = useState({});
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+
+  // Process data based on sorting, filtering, and search
+  const filteredData = useMemo(() => {
+    let result = [...data];
+
+    // Apply search term
+    if (enableSearch && searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      result = result.filter((row) =>
+        columns.some((col) => {
+          const value = row[col.accessor];
+          return String(value || "")
+            .toLowerCase()
+            .includes(searchLower);
+        })
+      );
+    }
+
+    // Apply column filters
+    if (enableColumnFilters) {
+      Object.entries(filters).forEach(([column, filterValue]) => {
+        if (filterValue) {
+          result = result.filter((row) => {
+            const value = String(row[column] || "").toLowerCase();
+            return value.includes(filterValue.toLowerCase());
+          });
+        }
+      });
+    }
+
+    // Apply sorting
+    if (sortColumn) {
+      result.sort((a, b) => {
+        const aVal = a[sortColumn];
+        const bVal = b[sortColumn];
+
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return sortDirection === "asc" ? 1 : -1;
+        if (bVal == null) return sortDirection === "asc" ? -1 : 1;
+
+        if (typeof aVal === "number" && typeof bVal === "number") {
+          return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+        }
+
+        const aDate = new Date(aVal);
+        const bDate = new Date(bVal);
+        if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
+          return sortDirection === "asc" ? aDate - bDate : bDate - aDate;
+        }
+
+        const aStr = String(aVal).toLowerCase();
+        const bStr = String(bVal).toLowerCase();
+        return sortDirection === "asc"
+          ? aStr.localeCompare(bStr)
+          : bStr.localeCompare(aStr);
+      });
+    }
+
+    return result;
+  }, [
+    data,
+    columns,
+    searchTerm,
+    sortColumn,
+    sortDirection,
+    enableSearch,
+    filters,
+    enableColumnFilters,
+  ]);
+
+  // Apply pagination
+  const paginatedData = useMemo(() => {
+    if (!enablePagination) return filteredData;
+    // If using API pagination, just use the data as is
+    if (isControlledPagination) return data;
+    const startIndex = (page - 1) * pageSize;
+    return filteredData.slice(startIndex, startIndex + pageSize);
+  }, [filteredData, data, page, pageSize, enablePagination, isControlledPagination]);
+
+  const totalPages = useMemo(() => {
+    if (isControlledPagination) return Math.ceil(totalItems / pageSize);
+    return Math.ceil(filteredData.length / pageSize);
+  }, [isControlledPagination, totalItems, pageSize, filteredData.length]);
+
+  // For API pagination, totalItems is a prop; otherwise, use filteredData.length
+  const computedTotalItems = isControlledPagination ? totalItems : filteredData.length;
+
+  // Event handlers
+  const handleSort = useCallback(
+    (columnId) => {
+      const column = columns.find((col) => col.accessor === columnId);
+      if (!column || column.sortable === false) return;
+
+      const newDirection =
+        sortColumn === columnId
+          ? sortDirection === "asc"
+            ? "desc"
+            : "asc"
+          : "asc";
+
+      setSortColumn(columnId);
+      setSortDirection(newDirection);
+
+      if (onSort) onSort({ column: columnId, direction: newDirection });
+    },
+    [columns, sortColumn, sortDirection, onSort]
+  );
+
+  const handlePageChange = useCallback(
+    (newPage) => {
+      if (isControlledPagination) {
+        if (onPageChange) onPageChange(newPage);
+      } else {
+        setInternalPage(newPage);
+        if (onPageChange) onPageChange(newPage);
+      }
+    },
+    [onPageChange, isControlledPagination]
+  );
+
+  // Page size is now fixed to itemsPerPage
+
+  const handleRowClick = useCallback(
+    (row, index) => {
+      if (onRowClick) onRowClick(row, index);
+    },
+    [onRowClick]
+  );
+
+  const handleFilterChange = useCallback((column, value) => {
+    setFilters((prev) => ({ ...prev, [column]: value }));
+    setCurrentPage(1);
+  }, []);
+
+  const clearAllFilters = useCallback(() => {
+    setFilters({});
+    setSearchTerm("");
+    setCurrentPage(1);
+  }, []);
+
+  // Action menu component
+  const ActionMenu = ({ row, index }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+      <div className="relative inline-block">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          }}
+          className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="Actions"
+        >
+          <MoreVertical className="w-3.5 h-3.5" />
+        </button>
+
+        {isOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setIsOpen(false)}
+            />
+            <div
+              className="absolute z-50 right-0 min-w-[160px] rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-100"
+              style={{
+                top: "50%",
+                transform: "translateY(-50%)",
+                right: "calc(100% + 0.5rem)",
+              }}
+            >
+              <div className="py-1">
+                {actions.map((action, i) => (
+                  <button
+                    key={i}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      action.onClick(row, index);
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center px-3 py-1.5 text-xs w-full text-left text-gray-700 hover:bg-gray-50"
+                  >
+                    {action.icon && React.cloneElement(action.icon, {
+                      className: "w-3 h-3 mr-2",
+                    })}
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // Render different cell types
+  const renderCellContent = (column, value, row, index) => {
+    if (column.render) return column.render(value, row, index);
+
+    switch (column.type) {
+      case "avatar":
+        // Just display the value as an image src, let the column definition handle the correct value
+        return (
+          <div className="flex items-center space-x-2">
+            <img
+              src={value || "/placeholder-avatar.png"}
+              alt=""
+              className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white"
+              style={{ aspectRatio: "1/1" }}
+              onError={(e) => {
+                e.target.src = "/placeholder-avatar.png";
+              }}
+            />
+            <div className="min-w-0">
+              {column.subField && (
+                <div className="text-2xs text-gray-500 truncate">
+                  {row[column.subField]}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case "badge":
+        const badgeColor = column.badgeColors?.[value] || "gray";
+        const colorClasses = {
+          gray: "bg-gray-100 text-gray-700",
+          green: "bg-green-50 text-green-700",
+          red: "bg-red-50 text-red-700",
+          yellow: "bg-yellow-50 text-yellow-700",
+          blue: "bg-blue-50 text-blue-700",
+          purple: "bg-purple-50 text-purple-700",
+        };
+        return (
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-medium ${colorClasses[badgeColor]}`}
+          >
+            {value}
+          </span>
+        );
+
+      default:
+        return <span className="text-xs text-gray-800">{value || "—"}</span>;
+    }
+  };
+
+  // Calculate visible page numbers for pagination
+  const getVisiblePages = () => {
+    const visiblePages = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      visiblePages.push(i);
+    }
+    return visiblePages;
+  };
+
+  // Selection handlers
+  const handleSelectAll = useCallback(() => {
+    const allIds = paginatedData.map(row => row.id);
+    if (selectedRows.length === allIds.length) {
+      setSelectedRows([]);
+    } else {
+      setSelectedRows(allIds);
+    }
+    onSelectionChange(selectedRows);
+  }, [paginatedData, selectedRows]);
+
+  const handleSelectRow = useCallback((rowId) => {
+    setSelectedRows(prev => {
+      const newSelection = prev.includes(rowId)
+        ? prev.filter(id => id !== rowId)
+        : [...prev, rowId];
+      onSelectionChange(newSelection);
+      return newSelection;
+    });
+  }, []);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className={`w-full ${className}`}>
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-100 rounded mb-3"></div>
+          <div className="rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+            <div className="h-12 bg-gray-50"></div>
+            <div className="space-y-0">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-12 ${i % 2 === 0 ? "bg-gray-50" : "bg-white"}`}
+                ></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`w-full ${className}`}>
+      {/* Table controls */}
+      <div className="mb-3 space-y-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap w-full">
+            {/* ComboBox Filter (optional) */}
+            {comboBoxFilter && (
+              <div className="flex items-center gap-1">
+                <label className="text-xs text-gray-600 font-medium">
+                  {comboBoxFilter.label}:
+                </label>
+                <select
+                  value={comboBoxFilter.value}
+                  onChange={(e) => comboBoxFilter.onChange(e.target.value)}
+                  className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  {comboBoxFilter.options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {actionButton && (!actionButton.show || actionButton.show()) && (
+              <button
+                onClick={actionButton.onClick}
+                className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md shadow-sm transition-colors ${
+                  actionButton.className ||
+                  'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {actionButton.icon && (
+                  <span className="hidden sm:inline-block">
+                    {actionButton.icon}
+                  </span>
+                )}
+                {actionButton.label}
+              </button>
+            )}
+            {enableSearch && (
+              <div className="relative flex-grow max-w-2xl">
+                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+
+                <input
+                  type="text"
+                  placeholder={searchPlaceholder}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8 pr-8 py-2 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white w-full"
+                />
+
+                {(searchTerm || Object.values(filters).some((v) => v)) && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-600"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {enableColumnFilters && (
+              <button
+                onClick={() => setShowFilterPanel(!showFilterPanel)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-gray-200 rounded text-xs transition-colors hover:bg-gray-50 text-gray-600 font-medium"
+              >
+                <Filter className="h-3.5 w-3.5" />
+                Filters
+                {Object.values(filters).some((v) => v) && (
+                  <span className="bg-blue-500 text-white text-2xs rounded-full px-1 py-0 min-w-[14px] h-3.5 flex items-center justify-center">
+                    {Object.values(filters).filter((v) => v).length}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {onExport && (
+              <button
+                onClick={() => onExport(filteredData)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-gray-200 rounded text-xs transition-colors hover:bg-gray-50 text-gray-600 font-medium"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filter panel */}
+        {enableColumnFilters && showFilterPanel && (
+          <div className="p-3 border border-gray-200 bg-white rounded shadow-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              {columns
+                .filter((col) => col.filterable !== false)
+                .map((col) => (
+                  <div key={col.accessor} className="space-y-1">
+                    <label className="block text-2xs font-medium text-gray-500">
+                      {col.label}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={`Filter ${col.label}...`}
+                      value={filters[col.accessor] || ""}
+                      onChange={(e) =>
+                        handleFilterChange(col.accessor, e.target.value)
+                      }
+                      className="w-full px-2.5 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Table */}
+      {/* Selection Actions */}
+      {enableSelection && selectedRows.length > 0 && (
+        <div className="mb-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-blue-700">
+              {selectedRows.length} item{selectedRows.length !== 1 ? 's' : ''} selected
+            </span>
+            <button
+              onClick={() => setSelectedRows([])}
+              className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+            >
+              Clear selection
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            {bulkActions.map((action, idx) => (
+              <button
+                key={idx}
+                onClick={() => action.handler(selectedRows)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 rounded-md text-xs font-medium text-blue-700 hover:bg-blue-50 transition-colors"
+              >
+                {action.icon}
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm ${tableClassName}`}
+      >
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className={`bg-gray-50 ${headerClassName}`}>
+              <tr>
+                {enableSelection && (
+                  <th className="pl-4 pr-3 py-3.5 text-left text-xs text-gray-500 font-medium w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedRows.length === paginatedData.length && paginatedData.length > 0}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded cursor-pointer focus:ring-blue-500"
+                    />
+                  </th>
+                )}
+                {showRowNumbers && (
+                  <th className="px-3 py-3.5 text-left text-xs text-gray-500 font-medium uppercase tracking-wider w-10">
+                    #
+                  </th>
+                )}
+                {columns.map((col) => (
+                  <th
+                    key={col.accessor}
+                    onClick={() => handleSort(col.accessor)}
+                    className={`px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase tracking-wider ${
+                      col.sortable !== false
+                        ? "cursor-pointer hover:bg-gray-100 transition-colors"
+                        : ""
+                    } ${col.width ? col.width : ""}`}
+                    style={{ textAlign: col.align || "left" }}
+                  >
+                    <div className="flex items-center gap-1 select-none">
+                      <span>{col.label}</span>
+                      {col.sortable !== false && (
+                        <div className="flex flex-col">
+                          {sortColumn === col.accessor ? (
+                            sortDirection === "asc" ? (
+                              <ChevronUp className="w-3 h-3 text-blue-500" />
+                            ) : (
+                              <ChevronDown className="w-3 h-3 text-blue-500" />
+                            )
+                          ) : (
+                            <ChevronDown className="w-3 h-3 text-gray-300" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </th>
+                ))}
+                {actions.length > 0 && (
+                  <th className="px-3 py-2 text-right text-xs text-gray-500 font-medium uppercase tracking-wider w-12">
+                    Actions
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {paginatedData.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={
+                      columns.length +
+                      (showRowNumbers ? 1 : 0) +
+                      (actions.length > 0 ? 1 : 0)
+                    }
+                    className="px-4 py-8 text-center"
+                  >
+                    <div className="flex flex-col items-center gap-4 py-12">
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                        <Search className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-gray-900 mb-1">
+                          {emptyMessage}
+                        </p>
+                        {searchTerm && (
+                          <p className="text-sm text-gray-500">
+                            Try adjusting your search or filters to find what you're looking for
+                          </p>
+                        )}
+                      </div>
+                      {searchTerm && (
+                        <button
+                          onClick={clearAllFilters}
+                          className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          Clear all filters
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedData.map((row, index) => (
+                  <tr
+                    key={row.id || index}
+                    onClick={(e) => {
+                      if (e.target.type !== 'checkbox') {
+                        handleRowClick(row, index);
+                      }
+                    }}
+                    className={`transition-colors ${
+                      striped && index % 2 === 1 ? "bg-gray-50" : "bg-white"
+                    } ${onRowClick ? "cursor-pointer" : ""} ${
+                      compact ? "h-12" : "h-14"
+                    } hover:bg-gray-50 group ${
+                      selectedRows.includes(row.id) ? "bg-blue-50/50" : ""
+                    } ${rowClassName}`}
+                  >
+                    {enableSelection && (
+                      <td className="pl-4 pr-3 py-3.5 text-left text-sm w-10">
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.includes(row.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleSelectRow(row.id);
+                          }}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded cursor-pointer focus:ring-blue-500"
+                        />
+                      </td>
+                    )}
+                    {showRowNumbers && (
+                      <td
+                        className={`px-3 py-3.5 text-xs font-medium text-gray-500 ${cellClassName}`}
+                      >
+                        {enablePagination
+                          ? (currentPage - 1) * pageSize + index + 1
+                          : index + 1}
+                      </td>
+                    )}
+                    {columns.map((col) => (
+                      <td
+                        key={col.accessor}
+                        className={`px-3 py-2 text-xs ${cellClassName}`}
+                        style={{ textAlign: col.align || "left" }}
+                      >
+                        {renderCellContent(col, row[col.accessor], row, index)}
+                      </td>
+                    ))}
+                    {actions.length > 0 && (
+                      <td className={`px-3 py-2 text-right ${cellClassName}`}>
+                        <ActionMenu row={row} index={index} />
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Pagination */}
+      {enablePagination && computedTotalItems > 0 && (
+        <Pagination
+          currentPage={page}
+          totalItems={computedTotalItems}
+          itemsPerPage={pageSize}
+          onPageChange={handlePageChange}
+          className="mt-3"
+        />
+      )}
+    </div>
+  );
+};
+
+export default DataTable;

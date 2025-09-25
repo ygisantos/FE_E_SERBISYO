@@ -1,0 +1,203 @@
+{
+  "barangayInfo": {
+    "name": "Barangay Santol",
+    "location": "Balagtas, Bulacan",
+    "officeHours": "Lunes - Biyernes: 8:00 AM - 5:00 PM",
+    "contactInfo": {
+      "telephone": "(044) 123-4567",
+      "mobile": "+63 912 345 6789",
+      "email": "brgy.santol@balagtas.gov.ph",
+      "emergencyHotline": "0917-XXX-XXXX"
+    }
+  },
+  "documents": {
+    "barangayClearance": {
+      "name": "Barangay Clearance",
+      "description": "Dokumentong nagpapatunay na ikaw ay residente ng barangay at walang derogatory record.",
+      "requirements": [
+        "Valid ID (Original at photocopy)",
+        "Community Tax Certificate (Cedula)",
+        "Proof of Residency (kung hindi ka nakalista sa masterlist)",
+        "Latest na bayarin ng kuryente o tubig"
+      ],
+      "processingTime": "15-30 minuto",
+      "validityPeriod": "6 na buwan",
+      "fee": "₱50.00",
+      "whereToFile": "Barangay Hall - Window 1",
+      "steps": [
+        "Maghanda ng mga kinakailangang dokumento",
+        "Pumunta sa Barangay Hall - Window 1",
+        "Ipakita ang mga requirements sa staff",
+        "Magbayad ng processing fee",
+        "Maghintay ng 15-30 minuto para sa releasing"
+      ]
+    },
+    "certificateOfResidency": {
+      "name": "Certificate of Residency",
+      "description": "Dokumentong nagpapatunay na ikaw ay naninirahan sa barangay.",
+      "requirements": [
+        "Valid ID (Original at photocopy)",
+        "Proof of Residency",
+        "Latest na bayarin ng kuryente o tubig"
+      ],
+      "processingTime": "15 minuto",
+      "validityPeriod": "6 na buwan",
+      "fee": "₱30.00",
+      "whereToFile": "Barangay Hall - Window 1"
+    },
+    "barangayID": {
+      "name": "Barangay ID",
+      "description": "Opisyal na ID na nagpapatunay na ikaw ay residente ng barangay.",
+      "requirements": [
+        "2x2 ID Picture (3 piraso)",
+        "Birth Certificate/Valid ID",
+        "Proof of Residency",
+        "Community Tax Certificate (Cedula)"
+      ],
+      "processingTime": "1-2 araw",
+      "validityPeriod": "1 taon",
+      "fee": "₱100.00",
+      "whereToFile": "Barangay Hall - Window 2"
+    }
+  },
+  "services": {
+    "blotterReport": {
+      "name": "Blotter Report",
+      "description": "Para sa pag-uulat ng mga insidente o reklamo sa barangay.",
+      "requirements": [
+        "Valid ID ng complainant",
+        "Supporting documents (kung mayroon)",
+        "Listahan ng witnesses (kung mayroon)"
+      ],
+      "process": [
+        "Pumunta sa Barangay Hall",
+        "Mag-fill up ng complaint form",
+        "Interview sa Barangay Officer",
+        "Scheduling ng hearing (kung kinakailangan)"
+      ],
+      "schedule": "Lunes - Biyernes, 9:00 AM - 4:00 PM",
+      "location": "Barangay Hall - Peace and Order Section"
+    },
+    "certification": {
+      "businessPermit": {
+        "name": "Business Permit Certification",
+        "requirements": [
+          "DTI Registration",
+          "Valid ID ng owner",
+          "Proof of Business Location",
+          "Barangay Clearance",
+          "Fire Safety Inspection Certificate"
+        ],
+        "fee": "₱500.00",
+        "processingTime": "2-3 araw"
+      }
+    }
+  },
+  "programs": {
+    "health": {
+      "vaccination": {
+        "name": "Libreng Bakuna",
+        "schedule": "Tuwing Sabado, 8:00 AM - 12:00 NN",
+        "location": "Barangay Health Center",
+        "requirements": [
+          "Health Card",
+          "Birth Certificate (para sa mga bata)",
+          "Valid ID ng magulang"
+        ]
+      },
+      "medical": {
+        "name": "Medical Mission",
+        "frequency": "Quarterly",
+        "services": [
+          "General Check-up",
+          "Dental Services",
+          "Eye Check-up",
+          "Blood Pressure Monitoring"
+        ]
+      }
+    },
+    "social": {
+      "seniorCitizen": {
+        "name": "Senior Citizen Support Program",
+        "benefits": [
+          "Monthly allowance",
+          "Medical assistance",
+          "Birthday benefits",
+          "Christmas package"
+        ],
+        "requirements": [
+          "Senior Citizen ID",
+          "Barangay Certificate",
+          "Latest ID Picture"
+        ]
+      },
+      "youth": {
+        "name": "Youth Development Program",
+        "activities": [
+          "Sports Festival",
+          "Leadership Training",
+          "Skills Workshop",
+          "Educational Support"
+        ],
+        "schedule": "Quarterly activities"
+      }
+    }
+  },
+  "guidelines": {
+    "garbageCollection": {
+      "schedule": {
+        "Monday": ["Zone 1", "Zone 2"],
+        "Wednesday": ["Zone 3", "Zone 4"],
+        "Friday": ["Zone 5", "Zone 6"]
+      },
+      "segregationRules": [
+        "Ihiwalay ang biodegradable at non-biodegradable",
+        "Gumamit ng tamang basurahan",
+        "Ilabas ang basura 30 minuto bago ang collection time"
+      ]
+    },
+    "curfewHours": {
+      "start": "10:00 PM",
+      "end": "4:00 AM",
+      "exemptions": [
+        "Emergency cases",
+        "Night shift workers with proper ID",
+        "Medical personnel"
+      ]
+    }
+  },
+  "announcements": {
+    "current": [
+      {
+        "title": "Libreng Medical Mission",
+        "date": "Agosto 15, 2025",
+        "time": "8:00 AM - 3:00 PM",
+        "location": "Barangay Hall",
+        "details": "Magkakaroon ng libreng check-up, dental services, at eye check-up."
+      }
+    ],
+    "upcoming": [
+      {
+        "title": "Clean and Green Program",
+        "date": "Agosto 20, 2025",
+        "time": "6:00 AM",
+        "location": "Barangay Plaza",
+        "details": "Sama-sama tayong maglinis ng ating barangay."
+      }
+    ]
+  },
+  "faqs": [
+    {
+      "question": "Ano ang mga requirements para sa Barangay Clearance?",
+      "answer": "Para sa Barangay Clearance, kailangan mo ng: 1) Valid ID, 2) Cedula, 3) Proof of Residency, at 4) Latest utility bill."
+    },
+    {
+      "question": "Magkano ang bayad sa Business Permit?",
+      "answer": "Ang Business Permit ay may bayad na ₱500.00 at may processing time na 2-3 araw."
+    },
+    {
+      "question": "Saan pwedeng mag-report ng emergency?",
+      "answer": "Para sa emergency, tumawag sa aming 24/7 hotline: 0917-XXX-XXXX o pumunta direkta sa Barangay Hall."
+    }
+  ]
+}
