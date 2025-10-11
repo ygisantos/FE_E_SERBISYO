@@ -5,7 +5,7 @@ import { FileText } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { createAnnouncement, getAnnouncements } from '../../api/announcementApi';
 import CreateAnnouncementModal from '../../components/modals/CreateAnnouncementModal';
-import Modal from '../../components/Modal/Modal';
+
 import ViewAnnouncementModal from '../../components/modals/ViewAnnouncementModal';
 
 const AnnouncementManagement = () => {

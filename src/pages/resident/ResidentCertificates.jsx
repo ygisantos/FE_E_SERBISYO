@@ -3,7 +3,7 @@ import { useUser } from '../../contexts/UserContext';
 import DataTable from '../../components/reusable/DataTable';
 import { FaEye, FaPlus } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { getAllDocuments, createDocumentRequest } from '../../api/documentApi';
+import { getAllDocuments, createDocumentRequest, getAllRequests } from '../../api/documentApi';
 import RequestDocumentModal from '../../components/modals/RequestDocumentModal';
 import { showCustomToast } from '../../components/Toast/CustomToast';
 
@@ -17,7 +17,7 @@ const ResidentCertificates = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [showRequestModal, setShowRequestModal] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [selectedDocument, setSelectedDocument] = useState(null); 
   const [isLoading, setIsLoading] = useState(false);
 
   // Define columns for certificates table
@@ -68,13 +68,23 @@ const ResidentCertificates = () => {
   // Define columns for requests table
   const requestColumns = [
     {
-      label: 'Certificate Type',
-      accessor: 'certificateType',
+      label: 'Transaction ID',
+      accessor: 'transaction_id',
       sortable: true,
     },
     {
+      label: 'Document Name',
+      accessor: 'document_details',
+      sortable: true,
+      render: (docDetails) => (
+        <span className="text-sm font-medium text-gray-800">
+          {docDetails?.document_name || 'N/A'}
+        </span>
+      ),
+    },
+    {
       label: 'Request Date',
-      accessor: 'requestDate',
+      accessor: 'created_at',
       sortable: true,
       render: (value) => new Date(value).toLocaleDateString(),
     },
@@ -83,39 +93,36 @@ const ResidentCertificates = () => {
       accessor: 'status',
       sortable: true,
       render: (value) => (
-        <span
-          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-            value === 'Pending'
-              ? 'bg-yellow-50 text-yellow-700'
-              : value === 'Approved'
-              ? 'bg-green-50 text-green-700'
-              : 'bg-red-50 text-red-700'
-          }`}
-        >
-          {value}
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+          value === 'pending' ? 'bg-yellow-50 text-yellow-700' :
+          value === 'approved' ? 'bg-green-50 text-green-700' :
+          'bg-red-50 text-red-700'
+        }`}>
+          {value.charAt(0).toUpperCase() + value.slice(1)}
         </span>
       ),
-    },
-    {
-      label: 'Purpose',
-      accessor: 'purpose',
-      sortable: true,
-    },
+    }
   ];
 
   const handleRequestDocument = (document) => {
-    setSelectedDocument(document);
+    console.log('Selected document:', document); // Add this for debugging
+    setSelectedDocument({
+      id: document.id,
+      document_name: document.document_name,
+      description: document.description,
+      requirements: document.requirements,
+      contact_no: document.contact_no
+    });
     setShowRequestModal(true);
   };
 
   const handleSubmitRequest = async (formData) => {
     try {
       setIsLoading(true);
-      const response = await createDocumentRequest(formData);
+      await createDocumentRequest(formData);
       showCustomToast('Request submitted successfully', 'success');
       setShowRequestModal(false);
-      // Refresh requests list
-      // loadRequests(); // Implement this function when needed
+      loadRequests(); // Reload requests after successful submission
     } catch (error) {
       showCustomToast(error.message || 'Failed to submit request', 'error');
     } finally {
@@ -124,21 +131,54 @@ const ResidentCertificates = () => {
   };
 
   // Fetch certificates
+  const loadCertificates = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllDocuments();
+      setCertificates(response.data || []);
+    } catch (error) {
+      showCustomToast(error.message || 'Failed to load certificates', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load requests
+  const loadRequests = async () => {
+    try {
+      setRequestsLoading(true);
+      const response = await getAllRequests({
+        per_page: 10,
+        page
+      });
+      
+      // Filter requests for current user
+      const userRequests = response.data.filter(
+        request => request.requestor === currentUser?.id
+      );
+      
+      setRequests(userRequests);
+      setTotal(userRequests.length);
+    } catch (error) {
+      showCustomToast(error.message || 'Failed to load requests', 'error');
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  // Fetch both certificates and requests on mount
   useEffect(() => {
-    const loadCertificates = async () => {
-      try {
-        setLoading(true);
-        const response = await getAllDocuments();
-        setCertificates(response.data || []);
-      } catch (error) {
-        showCustomToast(error.message || 'Failed to load certificates', 'error');
-      } finally {
-        setLoading(false);
-      }
+    const loadData = async () => {
+      await Promise.all([
+        loadCertificates(),
+        loadRequests()
+      ]);
     };
 
-    loadCertificates();
-  }, []);
+    if (currentUser) {
+      loadData();
+    }
+  }, [currentUser, page]);
 
   return (
     <>
@@ -224,4 +264,3 @@ const ResidentCertificates = () => {
 };
 
 export default ResidentCertificates;
-     

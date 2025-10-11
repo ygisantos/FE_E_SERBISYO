@@ -151,11 +151,11 @@ function App() {
                 element={<WorkerCertificateLogs />}
               />
               {/* Residence Management */}
-              <Route path="/worker/residents/new" element={<AddResident />} />
-              <Route path="/worker/residents" element={<PendingResidents />} />
-              <Route
-                path="/worker/residents/pending"
-                element={<PendingResidents />}
+              <Route path="/worker/resident-management/new" element={<AddResident />} />
+              <Route path="/worker/resident-management/pending" element={<PendingResidents />} />
+             <Route
+                path="/worker/resident-management/all-resident"
+                element={<AllResidents />}
               />
               {/* Blotter Management */}
               <Route path="/worker/blotter/new" element={<Blotter />} />

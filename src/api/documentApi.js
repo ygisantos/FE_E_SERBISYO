@@ -1,21 +1,23 @@
 import axios from '../axios';
 
-export const createDocumentRequest = async (data) => {
+export const createDocumentRequest = async (formData) => {
   try {
-    const formData = new FormData();
-    formData.append('document', data.document);
-    
-    // Append requirements with files
-    data.requirements.forEach((req, index) => {
-      formData.append(`requirements[${index}][requirement_id]`, req.requirement_id);
-      formData.append(`requirements[${index}][file]`, req.file);
+    console.log('Request Data:', {
+      document: formData.get('document'),
+      purpose: formData.get('purpose'),
+      requirements: Array.from(formData.entries())
+        .filter(([key]) => key.includes('requirements'))
     });
 
     const response = await axios.post('/request-documents/create', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 
+        'Content-Type': 'multipart/form-data',
+      }
     });
+    
     return response.data;
   } catch (error) {
+    console.error('Document request error:', error);
     throw error.response?.data?.message || 'Failed to create document request';
   }
 };
@@ -78,5 +80,25 @@ export const getAllDocuments = async (params = {}) => {
   } catch (error) {
     console.error('Documents fetch error:', error);
     throw error.response?.data?.error || 'Failed to fetch documents';
+  }
+};
+
+export const getAllRequests = async (params = {}) => {
+  try {
+    const queryParams = {
+      status: params.status,
+      requestor: params.requestor,
+      document: params.document,
+      per_page: params.per_page || 10,
+      sort_by: params.sort_by || 'created_at',
+      order: params.order || 'desc',
+      page: params.page || 1
+    };
+
+    const response = await axios.get('/request-documents', { params: queryParams });
+    return response.data;
+  } catch (error) {
+    console.error('Request fetch error:', error);
+    throw error.response?.data?.message || 'Failed to fetch requests';
   }
 };

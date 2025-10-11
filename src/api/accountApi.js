@@ -90,3 +90,16 @@ export const fetchAllAccounts = async (params = {}) => {
     throw error.response?.data?.message || 'Failed to fetch accounts';
   }
 };
+
+export const updatePassword = async (userId, data) => {
+  try {
+    const response = await axios.put(`/accounts/${userId}/update-password`, {
+      current_password: data.current_password,
+      password: data.new_password,
+      password_confirmation: data.confirm_password
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || 'Failed to update password';
+  }
+};

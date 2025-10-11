@@ -72,9 +72,9 @@ const workerMenu = [
     label: "Residence Management",
     icon: FaUserAlt,
     subMenu: [
-      { to: "/worker/residents/new", label: "Add Resident", icon: FaUserPlus },
-      { to: "/worker/residents", label: "All Residents", icon: FaUsers },
-      { to: "/worker/residents/pending", label: "Pending Residents", icon: FaEye },
+      { to: "/worker/resident-management/new", label: "Add Resident", icon: FaUserPlus },
+      { to: "/worker/resident-management/all-resident", label: "All Residents", icon: FaUsers },
+      { to: "/worker/resident-management/pending", label: "Pending Residents", icon: FaEye },
     ],
   },
   {

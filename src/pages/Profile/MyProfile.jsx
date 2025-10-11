@@ -7,6 +7,8 @@ import EditProfileModal from '../../components/Profile/EditProfileModal';
 import { useUser } from '../../contexts/UserContext';
 import { toast } from 'react-toastify';
 import { createActivityLog } from '../../api/activityLogApi';
+import { updatePassword } from '../../api/accountApi';
+import ChangePasswordModal from '../../components/modals/ChangePasswordModal';
 
 const MyProfile = () => {
   const { currentUser, loading: userLoading } = useUser();
@@ -15,6 +17,8 @@ const MyProfile = () => {
   const [profileImage, setProfileImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -44,6 +48,24 @@ const MyProfile = () => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePasswordUpdate = async (passwordData) => {
+    try {
+      setIsPasswordLoading(true);
+      await updatePassword(currentUser.id, passwordData);
+      await createActivityLog({
+        account: currentUser.id,
+        module: "Profile",
+        remark: "Updated password"
+      });
+      toast.success('Password updated successfully');
+      setIsPasswordModalOpen(false);
+    } catch (error) {
+      toast.error(error.message || 'Failed to update password');
+    } finally {
+      setIsPasswordLoading(false);
     }
   };
 
@@ -94,6 +116,21 @@ const MyProfile = () => {
               profile={currentUser}
               onEdit={() => setIsEditModalOpen(true)}
             />
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-medium text-gray-900">Security</h2>
+                <button
+                  onClick={() => setIsPasswordModalOpen(true)}
+                  className="px-3 py-1.5 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700"
+                >
+                  Change Password
+                </button>
+              </div>
+              <p className="text-sm text-gray-600">
+                Manage your password and account security settings.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -104,6 +141,13 @@ const MyProfile = () => {
         editForm={editForm}
         setEditForm={setEditForm}
         onSave={handleProfileUpdate}
+      />
+
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        onSubmit={handlePasswordUpdate}
+        isLoading={isPasswordLoading}
       />
     </div>
   );

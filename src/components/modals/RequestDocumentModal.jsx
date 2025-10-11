@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../Modal/Modal';
 import { FaCloudUploadAlt } from 'react-icons/fa';
+import { showCustomToast } from '../Toast/CustomToast';
 
 const RequestDocumentModal = ({ 
   isOpen, 
@@ -10,10 +11,21 @@ const RequestDocumentModal = ({
   isLoading 
 }) => {
   const [formData, setFormData] = useState({
-    document: document?.id,
+    document: '',
     requirements: [],
     purpose: ''
   });
+
+  // Reset form when document changes
+  useEffect(() => {
+    if (document) {
+      setFormData(prev => ({
+        ...prev,
+        document: document.id,
+        requirements: []
+      }));
+    }
+  }, [document]);
 
   const handleFileUpload = (requirementId, file) => {
     if (file) {
@@ -38,8 +50,19 @@ const RequestDocumentModal = ({
   };
 
   const handleSubmit = async () => {
+    // Validate required fields
+    if (!formData.purpose.trim()) {
+      showCustomToast('Please enter a purpose', 'error');
+      return;
+    }
+
+    if (document?.requirements?.length > 0 && formData.requirements.length < document.requirements.length) {
+      showCustomToast('Please upload all required documents', 'error');
+      return;
+    }
+
     const formDataToSend = new FormData();
-    formDataToSend.append('document', formData.document);
+    formDataToSend.append('document', document.id);
     formDataToSend.append('purpose', formData.purpose);
     
     formData.requirements.forEach((req, index) => {
@@ -54,7 +77,7 @@ const RequestDocumentModal = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Request Document"
+      title={`Request ${document?.document_name || 'Document'}`}
       footer={
         <div className="flex justify-end gap-2">
           <button
@@ -78,6 +101,11 @@ const RequestDocumentModal = ({
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
           <h4 className="font-medium text-gray-900">{document?.document_name}</h4>
           <p className="text-sm text-gray-600 mt-1">{document?.description}</p>
+          {document?.contact_no && (
+            <p className="text-xs text-gray-500 mt-2">
+              Contact: {document.contact_no}
+            </p>
+          )}
         </div>
 
         {/* Purpose Field */}
