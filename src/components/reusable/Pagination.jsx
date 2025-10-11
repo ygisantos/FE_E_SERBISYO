@@ -56,7 +56,7 @@ const Pagination = ({
         <button
           onClick={() => onPageChange(1)}
           disabled={isFirstPage}
-          className={`px-3 py-1 text-sm rounded border ${
+          className={`px-3 py-1 text-xs rounded border ${
             isFirstPage
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
               : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -67,10 +67,10 @@ const Pagination = ({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={isFirstPage}
-          className={`px-3 py-1 text-sm rounded border ${
+          className={`px-3 py-1 text-xs rounded border ${
             isFirstPage
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white text-gray-700 hover:bg-gray-50'
+              : 'bg-white text-gray-700  hover:bg-gray-50'
           }`}
         >
           Previous
@@ -85,9 +85,9 @@ const Pagination = ({
             <button
               key={pageNum}
               onClick={() => onPageChange(pageNum)}
-              className={`px-3 py-1 text-sm rounded border ${
+              className={`px-3 py-1 text-xs rounded border ${
                 currentPage === pageNum
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-red-900 text-white' 
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
@@ -99,7 +99,7 @@ const Pagination = ({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={isLastPage}
-          className={`px-3 py-1 text-sm rounded border ${
+          className={`px-3 py-1 text-xs rounded border ${
             isLastPage
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
               : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -110,7 +110,7 @@ const Pagination = ({
         <button
           onClick={() => onPageChange(totalPages)}
           disabled={isLastPage}
-          className={`px-3 py-1 text-sm rounded border ${
+          className={`px-3 py-1 text-xs rounded border ${
             isLastPage
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
               : 'bg-white text-gray-700 hover:bg-gray-50'

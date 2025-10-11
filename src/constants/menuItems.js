@@ -20,12 +20,9 @@ import {
 const adminMenu = [
   { to: "/admin/dashboard", label: "Dashboard", icon: FaTachometerAlt },
   {
-    label: "Official Management",
-    icon: FaUserTie,
-    subMenu: [
-      { to: "/admin/official-management/officials", label: "Current Officials", icon: FaUsers },
-       { to: "/admin/official-management/end-term", label: "End Term Officials", icon: FaArchive },
-    ],
+    to: "/admin/official-management/officials", 
+    label: "Official Management", 
+    icon: FaUserTie 
   },
   {
     label: "Worker Management",
@@ -41,7 +38,7 @@ const adminMenu = [
       { to: "/admin/resident-management/new", label: "Add Resident", icon: FaUserPlus },
       { to: "/admin/resident-management/all-resident", label: "All Residents", icon: FaUsers },
       { to: "/admin/resident-management/pending", label: "Pending Residents", icon: FaEye },
-      { to: "/admin/resident-management/archived", label: "Archived Residents", icon: FaArchive },
+      { to: "/admin/resident-management/rejected", label: "Rejected Residents", icon: FaArchive },
     ],
   },
   {
@@ -104,6 +101,14 @@ const menuItems = {
         { to: "/resident/certificates", label: "Available Certificates", icon: FaCertificate },
         { to: "/resident/certificates/request", label: "Request Certificate", icon: FaFileAlt },
         { to: "/resident/certificates/logs", label: "Request Logs", icon: FaBook },
+      ],
+    },
+    {
+      label: "Blotter",
+      icon: FaBook,
+      subMenu: [
+        { to: "/resident/blotter/create", label: "File a Blotter", icon: FaFileAlt },
+        { to: "/resident/blotter/my-cases", label: "My Cases", icon: FaBook },
       ],
     },
     { to: "/resident/feedback", label: "Submit Feedback", icon: FaCommentDots },

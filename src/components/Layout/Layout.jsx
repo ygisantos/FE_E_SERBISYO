@@ -1,5 +1,4 @@
 import React, { useState, createContext, useEffect } from "react";
-import Modal from "../Modal/Modal";
 import { logout } from "../../api/logoutApi";
 import { showCustomToast } from "../Toast/CustomToast";
 import { Outlet, useLocation } from "react-router-dom";
@@ -9,6 +8,8 @@ import logo from "../../assets/logo/santol_logo.png";
 import { LoadingProvider, useLoading } from "../LoadingContext";
 import LoadingSpinner from "../Loading";
 import CustomToastContainer from "../Toast/CustomToast";
+import { createActivityLog } from "../../api/activityLogApi";
+import ConfirmationModal from "../modals/ConfirmationModal";
 
 // UserContext to provide user role throughout the app
 export const UserContext = createContext({ role: null });
@@ -47,9 +48,19 @@ const Layout = ({
     setLogoutLoading(true);
     try {
       const userData = JSON.parse(localStorage.getItem("userData") || "{}");
-      const email = userData.email || "";
-      const password = userData.password || "";
-      const res = await logout(email, password);
+
+      // Create activity log before logging out
+      try {
+        await createActivityLog({
+          account: userData.id, // Changed from account_id to account
+          module: "Auth",
+          remark: `User logged out`,
+        });
+      } catch (logError) {
+        console.error("Failed to create logout activity log:", logError);
+      }
+
+      const res = await logout(userData.email || "", userData.password || "");
       showCustomToast(res.message || "Logout successful", "success");
       setTimeout(() => {
         setLogoutLoading(false);
@@ -117,29 +128,17 @@ const Layout = ({
     <UserContext.Provider value={{ role }}>
       <LoadingProvider>
         <CustomToastContainer />
-        <Modal
+        <ConfirmationModal
           isOpen={showLogoutModal}
           onClose={() => setShowLogoutModal(false)}
+          onConfirm={confirmLogout}
           title="Confirm Logout"
-          footer={
-            <div className="flex justify-end gap-2">
-              <button
-                className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                onClick={() => setShowLogoutModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 rounded bg-red-800 text-white hover:bg-red-900"
-                onClick={confirmLogout}
-              >
-                Logout
-              </button>
-            </div>
-          }
-        >
-          <div className="text-gray-700">Are you sure you want to logout?</div>
-        </Modal>
+          message="Are you sure you want to logout?"
+          confirmText="Logout"
+          cancelText="Cancel"
+          type="warning"
+        />
+        
         <div className="min-h-screen flex flex-col bg-white">
           <Navbar
             logo={logoImg}
@@ -222,3 +221,4 @@ const Layout = ({
 };
 
 export default Layout;
+         

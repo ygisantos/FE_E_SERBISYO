@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -19,6 +19,8 @@ import {
 import PieChart from "../../components/charts/PieChart";
 import BarChart from "../../components/charts/BarChart";
 import StatCard from "../../components/reusable/StatCard";
+import { getAllBlotters } from '../../api/blotterApi';
+import Select from '../../components/reusable/Select';
 
 const stats = [
   {
@@ -93,6 +95,9 @@ const topRequest = {
 const AdminDashboard = () => {
   const scrollRef = React.useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [blotterStats, setBlotterStats] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -105,7 +110,60 @@ const AdminDashboard = () => {
   };
 
   const navigate = useNavigate();  
-  
+
+  useEffect(() => {
+    const fetchBlotterStats = async () => {
+      try {
+        setLoading(true);
+        const response = await getAllBlotters({
+          from_date: `${selectedYear}-01-01`,
+          to_date: `${selectedYear}-12-31`,
+          per_page: 999999
+        });
+
+        if (response.success) {
+          // Initialize monthly data with zeros
+          const monthlyData = Array(12).fill(0).map((_, index) => ({
+            label: new Date(0, index).toLocaleString('default', { month: 'short' }),
+            value: 0
+          }));
+
+          // Only process if there is data
+          if (response.data && response.data.length > 0) {
+            response.data.forEach(blotter => {
+              const date = new Date(blotter.date_filed);
+              // Make sure the date is valid and matches the selected year
+              if (!isNaN(date) && date.getFullYear() === selectedYear) {
+                const monthIndex = date.getMonth();
+                monthlyData[monthIndex].value++;
+              }
+            });
+          }
+
+          const totalCases = monthlyData.reduce((sum, month) => sum + month.value, 0);
+          const averagePerMonth = totalCases / 12;
+
+          setBlotterStats({
+            monthlyData,
+            totalCases,
+            averagePerMonth
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch blotter stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlotterStats();
+  }, [selectedYear]);
+
+  const yearOptions = Array.from({ length: 5 }, (_, i) => ({
+    value: new Date().getFullYear() - i,
+    label: (new Date().getFullYear() - i).toString()
+  }));
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header Section */}
@@ -119,24 +177,44 @@ const AdminDashboard = () => {
                 Barangay management overview
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors w-40 sm:w-48 text-sm"
-                />
-              </div>
-              <button className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                <Bell className="w-3 h-3" />
+          
+          
+          </div>
+        </div>
+
+            {/* Quick Actions */}
+        <div className="bg-white rounded-lg shadow-sm mb-4 border border-gray-200 p-4 sm:p-6">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-4">
+            Quick Actions
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              {
+                icon: <UserPlus className="w-4 h-4" />,
+                label: "Add Resident",
+                color: "border-green-200 text-green-700 hover:bg-green-50",
+                onClick: () => navigate('/admin/resident-management/new')
+              },
+              
+              {
+                icon: <Users className="w-4 h-4" />,
+                label: "View Residents",
+                color: "border-purple-200 text-purple-700 hover:bg-purple-50",
+                onClick: () => navigate('/admin/resident-management/all-resident')
+              },
+              
+            ].map((action, idx) => (
+              <button
+                key={idx}
+                onClick={action.onClick}
+                className={`${action.color} bg-white border-2 p-3 rounded-lg transition-colors duration-200 flex flex-col items-center gap-2 hover:shadow-sm`}
+              >
+                <div>{action.icon}</div>
+                <span className="text-xs font-medium text-center">
+                  {action.label}
+                </span>
               </button>
-              <button className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-                <Filter className="w-3 h-3" />
-              </button>
-            </div>
+            ))}
           </div>
         </div>
 
@@ -206,61 +284,41 @@ const AdminDashboard = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm sm:text-base font-semibold text-gray-900">
-                Blotter Cases (2024)
+                Blotter Cases
               </h3>
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                Monthly
+              <div className="flex items-center gap-3">
+                <Select
+                  value={yearOptions.find(opt => opt.value === selectedYear)}
+                  onChange={(option) => setSelectedYear(option.value)}
+                  options={yearOptions}
+                  isClearable={false}
+                  className="w-32"
+                />
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Monthly
+                </div>
               </div>
             </div>
             <div className="mb-4">
-              <BarChart data={barChartData} />
+              {loading ? (
+                <div className="flex items-center justify-center h-[200px]">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-900"></div>
+                </div>
+              ) : (
+                <BarChart data={blotterStats?.monthlyData || []} />
+              )}
             </div>
             <div className="flex justify-between text-xs text-gray-600 pt-3 border-t border-gray-100">
-              <span>Total Cases: 94</span>
-              <span>Average: 7.8/month</span>
+              <span>Total Cases: {blotterStats?.totalCases || 0}</span>
+              <span>
+                Average: {blotterStats?.averagePerMonth?.toFixed(1) || 0}/month
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-4">
-            Quick Actions
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              {
-                icon: <UserPlus className="w-4 h-4" />,
-                label: "Add Resident",
-                color: "border-green-200 text-green-700 hover:bg-green-50",
-              },
-              
-              {
-                icon: <Users className="w-4 h-4" />,
-                label: "View Residents",
-                color: "border-purple-200 text-purple-700 hover:bg-purple-50",
-                onClick: () => navigate('/admin/resident-management/all-resident')
-              },
-              {
-                icon: <BarChart3 className="w-4 h-4" />,
-                label: "Analytics",
-                color: "border-orange-200 text-orange-700 hover:bg-orange-50",
-              },
-            ].map((action, idx) => (
-              <button
-                key={idx}
-                onClick={action.onClick}
-                className={`${action.color} bg-white border-2 p-3 rounded-lg transition-colors duration-200 flex flex-col items-center gap-2 hover:shadow-sm`}
-              >
-                <div>{action.icon}</div>
-                <span className="text-xs font-medium text-center">
-                  {action.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+    
       </div>
   );
 };

@@ -1,12 +1,13 @@
 import axios from '../axios';
 
-export const fetchPendingResidents = async (page = 1, perPage = 10) => {
+export const fetchPendingResidents = async (page = 1, params = {}) => {
   const res = await axios.get(`/accounts/all`, {
     params: {
-      per_page: perPage,
+      page,
       status: 'pending',
       type: 'residence',
-      page,
+      sort_by: params.sort_by,
+      order: params.order,
     },
   });
   return res.data;
@@ -24,34 +25,92 @@ export const fetchArchivedResidents = async (page = 1, perPage = 10) => {
   return res.data;
 };
 
-export const fetchAllResidents = async (page = 1, perPage = 10) => {
-  const res = await axios.get(`/accounts/all`, {
-    params: {
-      per_page: perPage,
-      status: 'active',
-      type: 'residence',
-      page,
-    },
-  });
+export const fetchAllResidents = async (page = 1, params = {}) => {
+  const queryParams = {
+    per_page: params.per_page,
+    status: 'active',
+    type: 'residence',
+    page,
+    sort_by: params.sort_by,
+    order: params.order,
+    search: params.search,
+  };
+
+  // Remove undefined values
+  Object.keys(queryParams).forEach(
+    (key) => queryParams[key] === undefined && delete queryParams[key]
+  );
+
+  const res = await axios.get('/accounts/all', { params: queryParams });
   return res.data;
 };
 
-export const createOfficial = async (officialData) => {
-  const formData = new FormData();
-  formData.append('full_name', officialData.full_name);
-  formData.append('position', officialData.position);
-  formData.append('term_start', officialData.term_start);
-  formData.append('term_end', officialData.term_end);
-  formData.append('status', officialData.status);
-  if (officialData.image) {
-    formData.append('image', officialData.image);
+export const fetchRejectedAccounts = async (params = {}) => {
+  try {
+    const queryParams = {
+      page: params.page || 1,
+      per_page: params.per_page || 10,
+      sort_by: params.sort_by || 'created_at',
+      order: params.order || 'desc',
+      search: params.search || '',
+    };
+
+    const response = await axios.get('/rejected-accounts', { params: queryParams });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || 'Failed to fetch rejected accounts';
   }
-
-  const res = await axios.post('/officials/create', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  return res.data;
 };
 
+export const createOfficial = async (formData) => {
+  try {
+    const response = await axios.post('/officials/create', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || 'Failed to create official';
+  }
+};
+
+export const fetchOfficials = async (params = {}) => {
+  try {
+    const queryParams = {
+      status: params.status || 'active',
+      sort_by: params.sort_by || 'full_name',
+      order: params.order || 'desc',
+      page: params.page || 1,
+      search: params.search || '',
+    };
+
+    const response = await axios.get('/officials/get', { params: queryParams });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || 'Failed to fetch officials';
+  }
+};
+
+export const updateOfficial = async (id, formData) => {
+  try {
+    const response = await axios.post(`/officials/update/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || 'Failed to update official';
+  }
+};
+
+export const updateOfficialStatus = async (id, status) => {
+  try {
+    const response = await axios.post(`/officials/update/status/${id}`, { status });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || 'Failed to update official status';
+  }
+};
+   

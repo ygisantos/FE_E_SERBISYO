@@ -4,68 +4,35 @@ import ProfileHeader from '../../components/Profile/ProfileHeader';
 import PersonalInformation from '../../components/Profile/PersonalInformation';
 import AddressInformation from '../../components/Profile/AddressInformation';
 import EditProfileModal from '../../components/Profile/EditProfileModal';
-import { getCurrentUser } from '../../api/accountApi';
+import { useUser } from '../../contexts/UserContext';
 import { toast } from 'react-toastify';
+import { createActivityLog } from '../../api/activityLogApi';
 
 const MyProfile = () => {
-  const [profile, setProfile] = useState(null);
+  const { currentUser, loading: userLoading } = useUser();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [profileImage, setProfileImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    const fetchProfileData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const userData = await getCurrentUser();
-        
-        setProfile({
-          id: userData.id,
-          first_name: userData.first_name,
-          middle_name: userData.middle_name,
-          last_name: userData.last_name,
-          suffix: userData.suffix,
-          email: userData.email,
-          contact_no: userData.contact_no,
-          sex: userData.sex,
-          nationality: userData.nationality,
-          birthday: userData.birthday,
-          birth_place: userData.birth_place,
-          type: userData.type,
-          municipality: userData.municipality,
-          barangay: userData.barangay,
-          house_no: userData.house_no,
-          zip_code: userData.zip_code,
-          street: userData.street,
-          created_at: userData.created_at,
-          updated_at: userData.updated_at
-        });
-      } catch (error) {
-        console.error('Error loading profile data:', error);
-        setError(error.message || 'Failed to load profile data');
-        toast.error(error.message || 'Failed to load profile data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfileData();
-  }, []);
-
-  useEffect(() => {
-    if (profile) {
-      setEditForm({ ...profile });
+    if (currentUser) {
+      setEditForm({ ...currentUser });
     }
-  }, [profile]);
+  }, [currentUser]);
 
-  const handleProfileUpdate = () => {
-    setProfile(editForm);
-    setIsEditModalOpen(false);
+  const handleProfileUpdate = async (updatedProfile) => {
+    try {
+      await createActivityLog({
+        account: currentUser.id,
+        module: "Profile",
+        remark: "Updated profile information"
+      });
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error('Failed to log profile update:', error);
+    }
   };
 
   const handleImageChange = (e) => {
@@ -80,7 +47,7 @@ const MyProfile = () => {
     }
   };
 
-  if (isLoading) {
+  if (userLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -91,18 +58,7 @@ const MyProfile = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 text-lg mb-2">Error loading profile</div>
-          <p className="text-gray-600">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!profile) {
+  if (!currentUser) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-600">No profile information available.</p>
@@ -121,20 +77,21 @@ const MyProfile = () => {
       <div className="min-h-screen bg-gray-50 p-4 lg:p-8">
         <div className="max-w-7xl mx-auto">
           <ProfileHeader 
-            profile={profile}
+            profile={currentUser}
             imagePreview={imagePreview}
             handleImageChange={handleImageChange}
             fileInputRef={fileInputRef}
+            onEdit={() => setIsEditModalOpen(true)}
           />
           
           <div className="space-y-6">
             <PersonalInformation 
-              profile={profile}
+              profile={currentUser}
               onEdit={() => setIsEditModalOpen(true)}
             />
 
             <AddressInformation 
-              profile={profile}
+              profile={currentUser}
               onEdit={() => setIsEditModalOpen(true)}
             />
           </div>

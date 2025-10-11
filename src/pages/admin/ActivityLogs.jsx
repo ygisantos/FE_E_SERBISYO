@@ -1,23 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/reusable/DataTable';
+import { getAllActivityLogs } from '../../api/activityLogApi';
+import { showCustomToast } from '../../components/Toast/CustomToast';
+ 
 
 const ActivityLogs = () => {
-  const [logs, setLogs] = useState([
-    {
-      id: 4,
-      account: {
-        id: 1,
-        email: "admin@example.com",
-        type: "admin",
-        first_name: "System",
-        last_name: "Administrator",
-      },
-      module: "Auth",
-      remark: "Logged in",
-      created_at: "2025-08-30T11:56:55.000000Z",
-    },
-    // Add more mock data here if needed
-  ]);
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalItems: 0
+  });
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: 'created_at',
+    order: 'desc'
+  });
+
+  const fetchActivityLogs = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllActivityLogs({
+        page: pagination.currentPage,
+        sort_by: sortConfig.sort_by,
+        order: sortConfig.order,
+        search: search
+      });
+
+      setLogs(response.data);
+      setPagination(prev => ({
+        ...prev,
+        currentPage: response.current_page,
+        totalItems: response.total,
+        lastPage: response.last_page
+      }));
+    } catch (error) {
+      showCustomToast(error || 'Failed to fetch activity logs', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchActivityLogs();
+  }, [pagination.currentPage, sortConfig, search]);
 
   const columns = [
     {
@@ -47,16 +73,17 @@ const ActivityLogs = () => {
       label: 'User Type',
       accessor: 'account.type',
       sortable: true,
-      render: (value) => {
-        const type = value || 'N/A';
+      render: (value, row) => {
+
+        const type = row?.account?.type || 'N/A';
         return (
           <span
             className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
               type === 'admin'
                 ? 'bg-purple-50 text-purple-700'
-                : type === 'worker'
+                : type === 'staff'
                 ? 'bg-blue-50 text-blue-700'
-                : type === 'resident'
+                : type === 'residence'
                 ? 'bg-green-50 text-green-700'
                 : 'bg-gray-50 text-gray-600'
             }`}
@@ -87,44 +114,37 @@ const ActivityLogs = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Activity Logs</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Track all system activities and user actions
-            </p>
-          </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+ 
 
+      {/* Main Content */}
+      <div className="bg-white rounded-lg border border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h3 className="text-lg font-medium text-gray-800">Activity Log List</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Monitor all user activities and system actions
+          </p>
+        </div>
+        <div className="p-6">
           <DataTable
             columns={columns}
             data={logs}
+            loading={loading}
             enableSearch={true}
+            searchValue={search}
+            onSearchChange={setSearch}
             enableSelection={false}
             enablePagination={true}
-            itemsPerPage={10}
-            searchPlaceholder="Search by module or action..."
-            filterOptions={{
-              module: {
-                label: 'Module',
-                options: [
-                  { value: '', label: 'All Modules' },
-                  { value: 'Auth', label: 'Authentication' },
-                  { value: 'User', label: 'User Management' },
-                  { value: 'Certificate', label: 'Certificates' }
-                ]
-              },
-              'account.type': {
-                label: 'User Type',
-                options: [
-                  { value: '', label: 'All User Types' },
-                  { value: 'admin', label: 'Admin' },
-                  { value: 'worker', label: 'Worker' },
-                  { value: 'resident', label: 'Resident' }
-                ]
-              }
+            currentPage={pagination.currentPage}
+            totalItems={pagination.totalItems}
+            onPageChange={(page) => setPagination(prev => ({ ...prev, currentPage: page }))}
+            onSort={({ column, direction }) => {
+              setSortConfig({
+                sort_by: column,
+                order: direction
+              });
             }}
+            searchPlaceholder="Search by module or remark..."
           />
         </div>
       </div>

@@ -41,6 +41,7 @@ const DataTable = ({
   actionButton = null, // { label, icon, onClick, show, className }
   totalItems,
   currentPage,
+  dateFilter = null, // { label, startDate, endDate, onStartDateChange, onEndDateChange }
 }) => {
   const [selectedRows, setSelectedRows] = useState([]);
   // State management
@@ -366,26 +367,8 @@ const DataTable = ({
       {/* Table controls */}
       <div className="mb-3 space-y-2">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <div className="flex items-center gap-2 flex-wrap w-full">
-            {/* ComboBox Filter (optional) */}
-            {comboBoxFilter && (
-              <div className="flex items-center gap-1">
-                <label className="text-xs text-gray-600 font-medium">
-                  {comboBoxFilter.label}:
-                </label>
-                <select
-                  value={comboBoxFilter.value}
-                  onChange={(e) => comboBoxFilter.onChange(e.target.value)}
-                  className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  {comboBoxFilter.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+          <div className="flex flex-wrap items-center gap-2 w-full">
+         
             {actionButton && (!actionButton.show || actionButton.show()) && (
               <button
                 onClick={actionButton.onClick}
@@ -425,6 +408,26 @@ const DataTable = ({
               </div>
             )}
 
+               {/* ComboBox Filter (optional) */}
+            {comboBoxFilter && (
+              <div className="flex items-center gap-1">
+                <label className="text-xs text-gray-600 font-medium">
+                  {comboBoxFilter.label}:
+                </label>
+                <select
+                  value={comboBoxFilter.value}
+                  onChange={(e) => comboBoxFilter.onChange(e.target.value)}
+                  className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  {comboBoxFilter.options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {enableColumnFilters && (
               <button
                 onClick={() => setShowFilterPanel(!showFilterPanel)}
@@ -438,6 +441,34 @@ const DataTable = ({
                   </span>
                 )}
               </button>
+            )}
+
+            {/* Update Date Range Filter */}
+            {dateFilter && (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                <label className="text-xs text-gray-600 font-medium whitespace-nowrap">
+                  {dateFilter.label}:
+                </label>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:flex-none">
+                    <input
+                      type="date"
+                      value={dateFilter.startDate}
+                      onChange={(e) => dateFilter.onStartDateChange(e.target.value)}
+                      className="w-full sm:w-auto border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 bg-white"
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 px-1">to</span>
+                  <div className="relative flex-1 sm:flex-none">
+                    <input
+                      type="date"
+                      value={dateFilter.endDate}
+                      onChange={(e) => dateFilter.onEndDateChange(e.target.value)}
+                      className="w-full sm:w-auto border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 

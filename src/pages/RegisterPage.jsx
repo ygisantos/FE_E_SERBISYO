@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import Register from "../components/Register"; // Import the multi-step Register component
+import Register from "../components/Register"; 
 import logo from '../assets/logo/santol_logo.png';
 import CustomToastContainer, { showCustomToast } from "../components/Toast/CustomToast";
 import { register } from "../api/registerApi";
@@ -30,6 +30,10 @@ const initialState = {
   single_parent_number: "",
   profile_picture: null,
   status: "pending",
+  id_front: null,
+  id_back: null,
+  selfie_with_id: null,
+  civil_status: "",
 };
 
 const RegisterPage = () => {
@@ -51,15 +55,14 @@ const RegisterPage = () => {
       ) {
         setErrors({
           ...errors,
-          profile_picture: [
-            "The profile picture field must be an image.",
-            "The profile picture field must be a file of type: jpeg, jpg, png.",
+          [e.target.name]: [
+            `The ${e.target.name.replace('_', ' ')} field must be an image (jpeg, jpg, png).`
           ],
         });
-        updatedForm = { ...form, profile_picture: null };
+        updatedForm = { ...form, [e.target.name]: null };
       } else {
         setErrors((prev) => {
-          const { profile_picture, ...rest } = prev;
+          const { [e.target.name]: removed, ...rest } = prev;
           return rest;
         });
         updatedForm = { ...form, [e.target.name]: file };
@@ -75,7 +78,7 @@ const RegisterPage = () => {
 
     // Validate the changed field
     const fieldName = e.target.name;
-    if (fieldName && fieldName !== 'profile_picture') {  // Skip file validation here
+    if (fieldName && fieldName !== 'profile_picture') {
       const fieldValidation = validateForm({ [fieldName]: updatedForm[fieldName] });
       if (!fieldValidation.isValid) {
         setErrors(prev => ({
@@ -98,7 +101,7 @@ const RegisterPage = () => {
     // Validate form before submission
     const validation = validateForm(form);
     if (!validation.isValid) {
-      // Convert validation errors to match API error format
+
       const formattedErrors = {};
       Object.entries(validation.errors).forEach(([field, message]) => {
         formattedErrors[field] = [message];
@@ -111,7 +114,6 @@ const RegisterPage = () => {
     try {
       const formData = new FormData();
       Object.entries(form).forEach(([key, value]) => {
-        // Only append if value is not undefined or null
         if (value !== undefined && value !== null) {
           formData.append(key, value);
         }
@@ -120,7 +122,7 @@ const RegisterPage = () => {
       const res = await register(formData);
       setSuccess(res);
       setForm(initialState);
-      setResetSignal((prev) => prev + 1); // Trigger reset for Register stepper
+      setResetSignal((prev) => prev + 1);  
       showCustomToast("Registration successful!", "success");
     } catch (err) {
       setErrors(err);
@@ -129,43 +131,59 @@ const RegisterPage = () => {
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300"
-      style={{
-        backgroundImage: `linear-gradient(rgba(30,30,30,0.5),rgba(30,30,30,0.5)), url('/src/assets/background/santol_hall.jpg')`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
-      <CustomToastContainer />
-      <Navbar navOpen={navOpen} setNavOpen={setNavOpen} logo={logo} />     
-      <div className="flex-1 flex flex-col items-center justify-center pt-32 pb-10 w-full bg-transparent">
-        <div className="w-full max-w-4xl bg-white/95 rounded-3xl shadow-2xl p-6 sm:p-12 flex flex-col items-center border border-[var(--color-accent)]">
-          <span className="text-[var(--color-primary)] mb-6 font-bold text-2xl tracking-wide">Resident Registration</span>
-          {/* Show API validation errors */}
-          {Object.keys(errors).length > 0 && (
-            <div className="mb-4 w-full">
-              <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-sm">
-                <ul className="list-disc list-inside space-y-1">
-                  {Object.entries(errors).map(([field, msgs]) =>
-                    msgs.map((msg, idx) => (
-                      <li key={field + idx}>{msg}</li>
-                    ))
-                  )}
-                </ul>
+    <div className="relative min-h-screen">
+      {/* Fixed Background */}
+      <div 
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: `linear-gradient(rgba(30,30,30,0.5),rgba(30,30,30,0.5)), url('/src/assets/background/santol_hall.jpg')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed"
+        }}
+      />
+
+      {/* Content Container */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        <CustomToastContainer />
+        <Navbar navOpen={navOpen} setNavOpen={setNavOpen} logo={logo} />
+        
+        {/* Adjust padding and max-width for better responsiveness */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 py-8">
+          <div className="max-w-4xl mx-auto mt-16 mb-8">
+            <div className="bg-white/95 rounded-3xl shadow-2xl p-4 sm:p-8 md:p-12 border border-[var(--color-accent)]">
+              <span className="block text-center text-[var(--color-primary)] mb-8 font-bold text-2xl tracking-wide">
+                Resident Registration
+              </span>
+              
+              {/* Error Messages */}
+              {Object.keys(errors).length > 0 && (
+                <div className="mb-6 w-full">
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-sm">
+                    <ul className="list-disc list-inside space-y-1">
+                      {Object.entries(errors).map(([field, msgs]) =>
+                        msgs.map((msg, idx) => (
+                          <li key={field + idx}>{msg}</li>
+                        ))
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+
+              <div className="w-full max-w-3xl mx-auto">
+                <Register 
+                  form={form} 
+                  handleChange={handleChange} 
+                  handleSubmit={handleSubmit}
+                  resetSignal={resetSignal}
+                />
               </div>
             </div>
-          )}
-          <Register 
-            form={form} 
-            handleChange={handleChange} 
-            handleSubmit={handleSubmit}
-            resetSignal={resetSignal}
-          />
+          </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

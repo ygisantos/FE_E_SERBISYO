@@ -11,7 +11,7 @@ const WorkerCertificateLogs = () => {
       requestDate: '2024-07-25',
       status: 'Approved',
       actionDate: '2024-07-25',
-      remarks: 'Approved and released',
+      remarks: 'Approved and released'  ,
     },
    ]);
 
@@ -20,90 +20,103 @@ const WorkerCertificateLogs = () => {
       label: 'Certificate Type',
       accessor: 'certificateType',
       sortable: true,
+      render: (value) => (
+        <span className="text-xs text-gray-800">{value}</span>
+      ),
     },
     {
       label: 'Resident Name',
       accessor: 'residentName',
       sortable: true,
+      render: (value) => (
+        <span className="text-xs text-gray-600">{value}</span>
+      ),
     },
     {
       label: 'Request Date',
       accessor: 'requestDate',
       sortable: true,
-      render: (value) => new Date(value).toLocaleDateString(),
+      render: (value) => (
+        <span className="text-xs text-gray-600">
+          {new Date(value).toLocaleDateString()}
+        </span>
+      ),
     },
     {
       label: 'Status',
       accessor: 'status',
       sortable: true,
-      render: (value) => (
-        <span
-          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-            value === 'Approved'
-              ? 'bg-green-50 text-green-700'
-              : value === 'Rejected'
-              ? 'bg-red-50 text-red-700'
-              : 'bg-yellow-50 text-yellow-700'
-          }`}
-        >
-          {value}
-        </span>
-      ),
+      type: 'badge',
+      badgeColors: {
+        Approved: 'green',
+        Rejected: 'red',
+        Pending: 'yellow'
+      }
     },
     {
       label: 'Action Date',
       accessor: 'actionDate',
       sortable: true,
-      render: (value) => new Date(value).toLocaleDateString(),
+      render: (value) => (
+        <span className="text-xs text-gray-600">
+          {new Date(value).toLocaleDateString()}
+        </span>
+      ),
     },
     {
       label: 'Remarks',
       accessor: 'remarks',
       sortable: false,
+      render: (value) => (
+        <span className="text-xs text-gray-600">{value}</span>
+      ),
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">My Certificate Logs</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              View history of your processed certificates
-            </p>
-          </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h3 className="text-lg font-medium text-gray-800">
+            Certificate Logs
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">
+            View history of processed certificates
+          </p>
+        </div>
 
-          <div className="mb-4 flex justify-between items-center">
-            <div className="flex gap-4">
-              <select className="border rounded-lg px-3 py-2">
-                <option value="">All Status</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-              <input
-                type="date"
-                className="border rounded-lg px-3 py-2"
-                placeholder="Filter by date"
-              />
-            </div>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-              Export Logs
-            </button>
-          </div>
-
+        <div className="p-6">
           <DataTable
             columns={columns}
             data={logs}
             enableSearch={true}
             enablePagination={true}
             itemsPerPage={10}
+            searchPlaceholder="Search certificates..."
+            comboBoxFilter={{
+              label: "Status",
+              options: [
+                { value: '', label: 'All Status' },
+                { value: 'Approved', label: 'Approved' },
+                { value: 'Rejected', label: 'Rejected' },
+                { value: 'Pending', label: 'Pending' }
+              ],
+              value: '',
+              onChange: () => {}
+            }}
+            dateFilter={{
+              label: "Date Range",
+              startDate: '',
+              endDate: '',
+              onStartDateChange: () => {},
+              onEndDateChange: () => {}
+            }}
             actions={[
               {
-                icon: <FaEye className="text-blue-600" />,
+                icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
                 label: 'View Details',
                 onClick: (row) => console.log('View', row),
-              },
+              }
             ]}
           />
         </div>

@@ -1,7 +1,7 @@
 import React from 'react';
-import { FaCamera } from 'react-icons/fa';
+import { FaCamera, FaEdit } from 'react-icons/fa';
 
-const ProfileHeader = ({ profile, imagePreview, handleImageChange, fileInputRef }) => {
+const ProfileHeader = ({ profile, imagePreview, handleImageChange, fileInputRef, onEdit }) => {
   // Get initials from name
   const getInitials = () => {
     const firstName = profile?.first_name || '';
@@ -45,10 +45,17 @@ const ProfileHeader = ({ profile, imagePreview, handleImageChange, fileInputRef 
           className="hidden"
         />
       </div>
-      <div className="mt-4 text-center">
+      <div className="mt-4 text-center space-y-2">
         <h2 className="text-xl font-semibold text-gray-900">
           {`${profile?.first_name || ''} ${profile?.last_name || ''}`}
         </h2>
+        <button
+          onClick={onEdit}
+          className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-900 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+        >
+          <FaEdit className="w-4 h-4 mr-1.5" />
+          Edit Profile
+        </button>
       </div>
     </div>
   );

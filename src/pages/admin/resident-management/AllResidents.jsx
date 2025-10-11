@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../../components/reusable/DataTable';
 import { fetchAllResidents } from '../../../api/adminApi';
+import { FaEye, FaEdit, FaArchive } from 'react-icons/fa';
+import { showCustomToast } from '../../../components/Toast/CustomToast';
+import ViewResidentModal from '../../../components/modals/ViewResidentModal';
+import EditResidentModal from '../../../components/modals/EditResidentModal';
+import ConfirmationModal from '../../../components/modals/ConfirmationModal';
 
 const AllResidents = () => {
   const [residents, setResidents] = useState([]);
@@ -9,6 +14,28 @@ const AllResidents = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const itemsPerPage = 10;
+  const [selectedResident, setSelectedResident] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [residentToArchive, setResidentToArchive] = useState(null);
+
+  const getProfilePicUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    const base = import.meta.env.VITE_API_BASE_URL;
+    return `${base}${path}`;
+  };
+
+  const confirmArchive = async () => {
+    try {
+      // API call to archive resident
+      showCustomToast('Resident archived successfully', 'success');
+      fetchAllResidents(page, itemsPerPage);
+    } catch (error) {
+      showCustomToast('Failed to archive resident', 'error');
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -24,25 +51,43 @@ const AllResidents = () => {
       })
       .catch(() => {
         setError('Failed to fetch residents.');
+        showCustomToast('Failed to fetch residents', 'error');
         setLoading(false);
       });
   }, [page]);
 
+  const handleView = (resident) => {
+    setSelectedResident(resident);
+    setShowViewModal(true);
+  };
+
+  const handleEdit = (resident) => {
+    setSelectedResident(resident);
+    setShowEditModal(true);
+  };
+
+  const handleArchive = (resident) => {
+    setResidentToArchive(resident);
+    setShowConfirmModal(true);
+  };
+
   const columns = [
     {
-      label: 'Name',
-      accessor: 'name',
+      label: 'Profile Picture',
+      accessor: 'profile_picture_path',
       render: (value, row) => {
-        const hasProfilePic = !!row.profile_picture_path;
+        const hasProfilePic = !!value;
         const initials = row.first_name && row.last_name
           ? `${row.first_name[0]}${row.last_name[0]}`
-          : value?.[0] || '';
+          : '';
+        const imgUrl = getProfilePicUrl(value);
+        
         return (
-          <div className="flex items-center space-x-2">
+          <div className="w-10 h-10">
             {hasProfilePic ? (
               <img
-                src={row.profile_picture_path}
-                alt={value}
+                src={imgUrl}
+                alt={`${row.first_name}'s profile`}
                 className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white"
                 onError={e => { e.target.src = '/placeholder-avatar.png'; }}
               />
@@ -51,10 +96,16 @@ const AllResidents = () => {
                 {initials}
               </div>
             )}
-            <span className="text-xs text-gray-800">{value}</span>
           </div>
         );
       }
+    },
+    {
+      label: 'Name',
+      accessor: 'name',
+      render: (value) => (
+        <span className="text-xs text-gray-800">{value}</span>
+      )
     },
     { label: 'Email', accessor: 'email' },
     { label: 'Contact No.', accessor: 'contact_no' },
@@ -72,28 +123,107 @@ const AllResidents = () => {
         pending: 'yellow',
         rejected: 'red'
       },
-    },
+    }
   ];
 
-  if (error) return <div className="text-red-500">{error}</div>;
-
+ 
   return (
-    <div className="p-6 rounded-md bg-white shadow-md border border-gray-200 h-screen">
-      <h2 className="text-2xl font-semibold text-neutral-950 mb-4">
-        All Residents
-      </h2>
-      <DataTable
-        columns={columns}
-        data={residents}
-        loading={loading}
-        enableSearch
-        enablePagination
-        itemsPerPage={itemsPerPage}
-        enableSelection={false}
-        onPageChange={setPage}
-        emptyMessage="No residents found."
-        totalItems={total}
-        currentPage={page}
+    <div className="min-h-screen bg-gray-50/50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header Section - Simplified */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-lg font-medium text-gray-900">
+                Residence List
+              </h1>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Manage and monitor registered residents
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="bg-white rounded-lg shadow-sm">
+          <div className="px-6 py-4">
+            <DataTable
+              columns={columns}
+              data={residents}
+              loading={loading}
+              enableSearch={true}
+              enablePagination={true}
+              onPageChange={setPage}
+              totalItems={total}
+              currentPage={page}
+              enableSelection={false}
+              striped={false}
+              hover={true}
+              cellClassName="py-2.5 text-xs"
+              headerClassName="text-xs font-medium text-gray-500 bg-gray-50/50"
+              tableClassName="border-none"
+              searchPlaceholder="Search residents..."
+              emptyMessage="No residents found"
+              actions={[
+                {
+                  icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
+                  label: "View Details",
+                  onClick: handleView,
+                },
+                {
+                  icon: <FaEdit className="h-3.5 w-3.5 text-gray-400" />,
+                  label: "Edit",
+                  onClick: handleEdit,
+                },
+                {
+                  icon: <FaArchive className="h-3.5 w-3.5 text-gray-400" />,
+                  label: "Archive",
+                  onClick: handleArchive,
+                },
+              ]}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* View Resident Modal */}
+      {showViewModal && (
+        <ViewResidentModal
+          resident={selectedResident}
+          isOpen={showViewModal}
+          onClose={() => {
+            setShowViewModal(false);
+            setSelectedResident(null);
+          }}
+        />
+      )}
+
+      {/* Edit Resident Modal */}
+      {showEditModal && (
+        <EditResidentModal
+          resident={selectedResident}
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedResident(null);
+          }}
+          onSuccess={() => {
+            setShowEditModal(false);
+            setSelectedResident(null);
+            fetchAllResidents(page, itemsPerPage);
+          }}
+        />
+      )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmArchive}
+        title="Archive Resident"
+        message={`Are you sure you want to archive ${residentToArchive?.name}? This action cannot be undone.`}
+        type="danger"
+        confirmText="Archive"
       />
     </div>
   );

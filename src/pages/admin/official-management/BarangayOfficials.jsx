@@ -1,28 +1,166 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DataTable from "../../../components/reusable/DataTable";
 import Button from "../../../components/reusable/Button";
-import { FaEye, FaEdit } from "react-icons/fa";
+import { FaEye, FaEdit, FaToggleOn } from "react-icons/fa";
 import AddOfficialModal from "../../../components/modals/AddOfficialModal";
-import { createOfficial } from "../../../api/adminApi";
+import EditOfficialModal from "../../../components/modals/EditOfficialModal";
+import { createOfficial, fetchOfficials, updateOfficial, updateOfficialStatus } from "../../../api/adminApi";
+import { showCustomToast } from "../../../components/Toast/CustomToast";
 
 const BarangayOfficials = () => {
+  const [data, setData] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: "full_name",
+    order: "desc",
+  });
+  const [selectedOfficial, setSelectedOfficial] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('active');
+  const [search, setSearch] = useState('');
 
-   const columns = [
+  useEffect(() => {
+    loadOfficials();
+  }, [page, sortConfig, statusFilter, search]);
+
+  const loadOfficials = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchOfficials({
+        page,
+        status: statusFilter,
+        search: search,
+        ...sortConfig,
+      });
+      setData(response.data); // Response data contains paginated results
+      setTotal(response.total); // Total from backend pagination
+    } catch (error) {
+      setError(error.message);
+      showCustomToast("Failed to load officials", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddOfficial = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleView = (official) => {
+    console.log("View", official);
+    // Add your view logic here
+  };
+
+  const handleEdit = (official) => {
+    console.log("Edit", official);
+    setSelectedOfficial(official);
+    setShowEditModal(true);
+  };
+
+  const handleSubmitOfficial = async (officialData) => {
+    try {
+      const response = await createOfficial(officialData);
+      await loadOfficials(); // Reload the list after adding
+      setIsModalOpen(false);
+      showCustomToast("Official added successfully", "success");
+    } catch (error) {
+      showCustomToast(error.message || "Failed to add official", "error");
+    }
+  };
+
+  const handleUpdateOfficial = async (officialData) => {
+    try {
+      await updateOfficial(selectedOfficial.id, officialData);
+      await loadOfficials();
+      setShowEditModal(false);
+      showCustomToast("Official updated successfully", "success");
+    } catch (error) {
+      showCustomToast(error.message || "Failed to update official", "error");
+    }
+  };
+
+  const handleUpdateStatus = async (official) => {
+    try {
+      const newStatus = official.status === 'active' ? 'inactive' : 'active';
+      await updateOfficialStatus(official.id, newStatus);
+      await loadOfficials();
+      showCustomToast(`Official status updated to ${newStatus}`, 'success');
+    } catch (error) {
+      showCustomToast(error.message || 'Failed to update status', 'error');
+    }
+  };
+
+  const handleSort = (column) => {
+    setSortConfig((prev) => ({
+      sort_by: column,
+      order: prev.sort_by === column && prev.order === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const handleSearch = (value) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
+  };
+
+  const getProfilePicUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    const base = import.meta.env.VITE_API_BASE_URL;
+    return `${base}${path}`;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "-";
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit"
+    });
+  };
+
+  // Table columns configuration
+  const columns = [
     {
-      label: "Official",
-      accessor: "name",
+      label: "Profile Picture",
+      accessor: "image_path",
+      render: (value, row) => {
+        const hasProfilePic = !!value;
+        const initials = row.full_name
+          ? row.full_name.charAt(0)
+          : '';
+        const imgUrl = getProfilePicUrl(value);
+        
+        return (
+          <div className="w-10 h-10">
+            {hasProfilePic ? (
+              <img
+                src={imgUrl}
+                alt={`${row.full_name}'s profile`}
+                className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white"
+                onError={e => { e.target.src = '/placeholder-avatar.png'; }}
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm border border-gray-200">
+                {initials}
+              </div>
+            )}
+          </div>
+        );
+      }
+    },
+    {
+      label: "Name",
+      accessor: "full_name",
       sortable: true,
-      render: (value, row) => (
-        <div className="flex items-center space-x-4">
-          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-base">
-            {value.charAt(0)}
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-900">{value}</p>
-          </div>
-        </div>
-      ),
+      render: (value) => (
+        <span className="text-xs text-gray-800">{value}</span>
+      )
     },
     {
       label: "Position",
@@ -31,21 +169,23 @@ const BarangayOfficials = () => {
       render: (value) => <span className="text-sm text-gray-700">{value}</span>,
     },
     {
-      label: "Term",
+      label: "Term Start",
       accessor: "term_start",
       sortable: true,
-      render: (value, row) => (
-        <div className="text-sm text-gray-700">
-          {new Date(value).toLocaleDateString("en-US", {
-            month: "short",
-            year: "numeric",
-          })}{" "}
-          -{" "}
-          {new Date(row.term_end).toLocaleDateString("en-US", {
-            month: "short",
-            year: "numeric",
-          })}
-        </div>
+      render: (value) => (
+        <span className="text-sm text-gray-700">
+          {formatDate(value)}
+        </span>
+      ),
+    },
+    {
+      label: "Term End",
+      accessor: "term_end",
+      sortable: true,
+      render: (value) => (
+        <span className="text-sm text-gray-700">
+          {formatDate(value)}
+        </span>
       ),
     },
     {
@@ -55,7 +195,7 @@ const BarangayOfficials = () => {
       render: (value) => (
         <span
           className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-            value === "Active"
+            value === "active"
               ? "bg-green-50 text-green-700"
               : "bg-gray-50 text-red-600"
           }`}
@@ -66,143 +206,98 @@ const BarangayOfficials = () => {
     },
   ];
 
-  // Sample data
-  const [data, setData] = useState([
-    {
-      id: 1,
-      name: "Juan Dela Cruz",
-      position: "Barangay Captain",
-      term_start: "2022-07-01",
-      term_end: "2025-06-30",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Maria Santos",
-      position: "Kagawad",
-      term_start: "2022-07-01",
-      term_end: "2025-06-30",
-      status: "Active",
-    },
-    {
-      id: 3,
-      name: "Pedro Reyes",
-      position: "Secretary",
-      term_start: "2022-07-01",
-      term_end: "2025-06-30",
-      status: "Inactive",
-    },
-    {
-      id: 4,
-      name: "Ana Garcia",
-      position: "Treasurer",
-      term_start: "2022-07-01",
-      term_end: "2025-06-30",
-      status: "Active",
-    },
-    {
-      id: 5,
-      name: "Jose Martinez",
-      position: "Kagawad",
-      term_start: "2022-07-01",
-      term_end: "2025-06-30",
-      status: "Active",
-    },
-  ]);
-
-  // Add new official handler
-  const handleAddOfficial = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleSubmitOfficial = async (officialData) => {
-    try {
-      const response = await createOfficial(officialData);
-      const newOfficial = {
-        id: response.official.id,
-        name: response.official.full_name,
-        position: response.official.position,
-        term_start: response.official.term_start,
-        term_end: response.official.term_end,
-        status: response.official.status,
-      };
-      setData([...data, newOfficial]);
-    } catch (error) {
-      console.error("Error creating official:", error);
-    }
-  };
-
   // Active officials count
   const activeOfficials = data.filter(
     (official) => official.status === "Active"
   ).length;
 
   return (
-    <div className="min-h-screen bg-white border border-gray-200 rounded-md shadow-md">
+    <div className="min-h-screen bg-gray-50/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">
-                Barangay Officials
-              </h1>
-              <p className="mt-1 text-sm text-gray-500">
-                {data.length} officials, {activeOfficials} currently active
-              </p>
-            </div>
-            <Button
-              onClick={handleAddOfficial}
-              className="w-fit inline-flex items-center px-4 py-2 border shadow-sm text-sm font-med focus:outline-none"
-            >
-              Add Official
-            </Button>
+        {/* Header Section - Without Add Button */}
+        <div className="mb-6">
+          <div>
+            <h1 className="text-lg font-medium text-gray-900">
+              Barangay Officials
+            </h1>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Manage and oversee barangay officials
+            </p>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="bg-white shadow-sm rounded-lg border border-gray-200">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-base font-medium text-gray-900">
-                Officials Directory
-              </h3>
-            </div>
-          </div>
+        <div className="bg-white rounded-lg shadow-sm">
           <div className="px-6 py-4">
             <DataTable
               columns={columns}
               data={data}
+              loading={loading}
               enableSearch={true}
               enablePagination={true}
+              totalItems={total} // Total items from backend
+              currentPage={page}
+              onPageChange={setPage}
               enableSelection={false}
-              itemsPerPage={5}
               striped={false}
               hover={true}
-              cellClassName="py-3"
+              cellClassName="py-2.5 text-xs"
+              headerClassName="text-xs font-medium text-gray-500 bg-gray-50/50"
+              tableClassName="border-none"
+              searchPlaceholder="Search by name or position..."
+              comboBoxFilter={{
+                label: "Status",
+                value: statusFilter,
+                onChange: (value) => setStatusFilter(value),
+                options: [
+                  { value: "active", label: "Active Officials" },
+                  { value: "inactive", label: "Inactive Officials" },
+                ]
+              }}
+              searchValue={search}
+              onSearchChange={handleSearch}
+              actionButton={{
+                label: "Add Official",
+                onClick: handleAddOfficial,
+              className: "bg-red-900 text-white hover:bg-red-800",
+              }}
               actions={[
                 {
-                  icon: <FaEye className="h-4 w-4 text-gray-400" />,
+                  icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
                   label: "View",
-                  handler: (row) => console.log("View", row),
+                  onClick: handleView,
                 },
                 {
-                  icon: <FaEdit className="h-4 w-4 text-gray-400" />,
+                  icon: <FaEdit className="h-3.5 w-3.5 text-gray-400" />,
                   label: "Edit",
-                  handler: (row) => console.log("Edit", row),
+                  onClick: handleEdit,
+                },
+                {
+                  icon: <FaToggleOn className="h-3.5 w-3.5 text-gray-400" />,
+                  label: "Toggle Status",
+                  onClick: handleUpdateStatus,
                 },
               ]}
             />
           </div>
         </div>
       </div>
+
       <AddOfficialModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSubmitOfficial}
+      />
+      <EditOfficialModal 
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={handleUpdateOfficial}
+        official={selectedOfficial}
       />
     </div>
   );
 };
 
 export default BarangayOfficials;
+
+

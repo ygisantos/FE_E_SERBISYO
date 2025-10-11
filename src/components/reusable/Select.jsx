@@ -1,0 +1,73 @@
+import React from 'react';
+import ReactSelect from 'react-select';
+
+const Select = ({
+  options,
+  value,
+  onChange,
+  placeholder = 'Select...',
+  isMulti = false,
+  isSearchable = true,
+  isClearable = true,
+  isDisabled = false,
+  className = '',
+  label,
+  error,
+  required = false,
+}) => {
+  const customStyles = {
+    control: (provided, state) => ({
+      ...provided,
+      borderColor: error ? '#ef4444' : state.isFocused ? '#ef4444' : '#e5e7eb',
+      boxShadow: state.isFocused ? '0 0 0 1px #ef4444' : 'none',
+      '&:hover': {
+        borderColor: '#ef4444',
+      },
+    }),
+    option: (provided, state) => ({
+      ...provided,
+      backgroundColor: state.isSelected ? '#7f1d1d' : state.isFocused ? '#fee2e2' : 'white',
+      color: state.isSelected ? 'white' : '#374151',
+      '&:active': {
+        backgroundColor: '#7f1d1d',
+      },
+    }),
+  };
+
+  return (
+    <div className={`w-full ${className}`}>
+      {label && (
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+      )}
+      <ReactSelect
+        options={options}
+        value={value}
+        onChange={onChange}
+        isMulti={isMulti}
+        isSearchable={isSearchable}
+        isClearable={isClearable}
+        isDisabled={isDisabled}
+        placeholder={placeholder}
+        styles={customStyles}
+        className="text-sm"
+        theme={(theme) => ({
+          ...theme,
+          colors: {
+            ...theme.colors,
+            primary: '#7f1d1d',
+            primary75: '#991b1b',
+            primary50: '#fee2e2',
+            primary25: '#fef2f2',
+          },
+        })}
+      />
+      {error && (
+        <p className="mt-1 text-sm text-red-600">{error}</p>
+      )}
+    </div>
+  );
+};
+
+export default Select;

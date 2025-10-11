@@ -1,120 +1,136 @@
-import React, { useState } from 'react';
-import { FaTimes } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
 import Modal from '../Modal/Modal';
 
 const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit, formData, setFormData, isLoading }) => {
-  const [showConfirm, setShowConfirm] = useState(false);
-  if (!isOpen) return null;
+  const [previewUrls, setPreviewUrls] = useState([]);
 
-  // Check if form has content
-  const hasContent = formData?.type || formData?.description;
+  // Always define useEffect, don't make it conditional
+  useEffect(() => {
+    // Cleanup function for preview URLs
+    return () => {
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
 
-  const handleClose = () => {
-    if (hasContent) {
-      setShowConfirm(true);
-    } else {
-      onClose();
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      // Create new preview URLs
+      const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+      setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+      
+      // Update form data
+      setFormData(prev => ({
+        ...prev,
+        images: [...(prev.images || []), ...files]
+      }));
     }
   };
 
-  const handleDiscard = () => {
-    setShowConfirm(false);
-    onClose();
+  const removeImage = (index) => {
+    // Remove preview URL
+    URL.revokeObjectURL(previewUrls[index]);
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+    
+    // Remove from form data
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
   };
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 backdrop-brightness-50 backdrop-blur-xs flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Create New Announcement</h2>
-            <button
-              className="text-gray-500 hover:text-gray-700"
-              onClick={handleClose}
-            >
-              <FaTimes className="w-5 h-5" />
-            </button>
-          </div>
-
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Announcement Type
-              </label>
-              <select
-                className="w-full rounded-lg border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                required
-              >
-                <option value="">Select a type</option>
-                <option value="information">Information</option>
-                <option value="problem">Problem</option>
-                <option value="warning">Warning</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                className="w-full rounded-lg border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows="4"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                required
-                placeholder="Enter announcement description..."
-              />
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-                onClick={handleClose}
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Creating...' : 'Create Announcement'}
-              </button>
-            </div>
-          </form>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create New Announcement"
+    >
+      <form onSubmit={onSubmit} className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Type</label>
+          <select
+            value={formData.type}
+            onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+            required
+          >
+            <option value="">Select type...</option>
+            <option value="information">Information</option>
+            <option value="warning">Warning</option>
+            <option value="problem">Problem</option>
+          </select>
         </div>
-      </div>
-      {/* Confirmation Modal using shared Modal */}
-      <Modal
-        isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        title="Discard changes?"
-        showCloseButton={false}
-        footer={
-          <div className="flex justify-end gap-2">
-            <button
-              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-              onClick={() => setShowConfirm(false)}
-            >
-              No
-            </button>
-            <button
-              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
-              onClick={handleDiscard}
-            >
-              Yes, Discard
-            </button>
-          </div>
-        }
-      >
-        <div className="text-gray-700">Are you sure you want to discard your changes?</div>
-      </Modal>
-    </>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Description</label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+            rows={4}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Images</label>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleImageChange}
+            className="hidden"
+            id="images"
+          />
+          <label
+            htmlFor="images"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm text-gray-700 hover:bg-gray-50 cursor-pointer"
+          >
+            Choose Images
+          </label>
+
+          {previewUrls.length > 0 && (
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              {previewUrls.map((url, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={url}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-24 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-900 rounded-md hover:bg-red-800 disabled:opacity-50"
+          >
+            {isLoading ? 'Creating...' : 'Create'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 
 export default CreateAnnouncementModal;
+     

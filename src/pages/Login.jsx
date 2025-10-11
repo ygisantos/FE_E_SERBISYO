@@ -10,6 +10,7 @@ import CustomToastContainer, {
   showCustomToast,
 } from "../components/Toast/CustomToast";
 import { login } from "../api/loginApi";
+import { createActivityLog } from "../api/activityLogApi";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -63,13 +64,21 @@ const Login = () => {
     }
     setLoading(true);
     try {
-      const data = await login(form.email, form.password, (msg) =>
-        showCustomToast(msg, "error")
-      );
+      const data = await login(form.email, form.password);
       
       if (data && data.token && data.account) {
         authLogin(data.token, data.account);
         showCustomToast("Login successful!", "success");
+        
+        try {
+          await createActivityLog({
+            account: data.account.id,
+            module: "Authentication",
+            remark: "User logged in"
+          });
+        } catch (logError) {
+          console.error('Activity log error:', logError);
+        }
         
         setTimeout(() => {
           const role = data.account.type || "resident";
@@ -144,4 +153,8 @@ const Login = () => {
   );
 };
 
+ 
 export default Login;
+
+
+

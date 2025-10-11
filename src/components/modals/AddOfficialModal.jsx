@@ -1,15 +1,15 @@
 import React, { useState, useRef } from "react";
-import Button from "../reusable/Button";
 import Modal from "../Modal/Modal";
-import FormInput from '../Input/InputField';
-import { FaUser, FaBriefcase, FaCalendarAlt, FaImage, FaCloudUploadAlt, FaSearch, FaTrash } from "react-icons/fa";
-import { IoClose } from "react-icons/io5";
+import FormInput from '../reusable/InputField';
+import Select from "../reusable/Select";
+import { FaUpload, FaImage, FaTrash } from "react-icons/fa";
 
 const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     first_name: "",
     middle_name: "",
     last_name: "",
+    suffix: "",
     position: "",
     image_path: "",
     term_start: "",
@@ -55,18 +55,25 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      const fullName = `${formData.first_name} ${formData.middle_name ? formData.middle_name + ' ' : ''}${formData.last_name}`;
-      const apiData = {
-        full_name: fullName.trim(),
-        position: formData.position,
-        image: formData.image_path,
-        term_start: formData.term_start,
-        term_end: formData.term_end,
-        status: formData.status,
-      };
+      const formDataToSend = new FormData();
+      const fullName = `${formData.first_name} ${formData.middle_name ? formData.middle_name + ' ' : ''}${formData.last_name}${formData.suffix ? ' ' + formData.suffix : ''}`;
       
-      await onSubmit(apiData);
-      onClose();
+      formDataToSend.append('full_name', fullName.trim());
+      formDataToSend.append('position', formData.position);
+      formDataToSend.append('term_start', formData.term_start);
+      formDataToSend.append('term_end', formData.term_end);
+      formDataToSend.append('status', 'active');
+      
+      if (formData.image_path) {
+        formDataToSend.append('image', formData.image_path);
+      }
+      
+      try {
+        await onSubmit(formDataToSend);
+        onClose();
+      } catch (error) {
+        console.error('Error submitting form:', error);
+      }
     }
   };
 
@@ -106,221 +113,189 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
-  const modalFooter = (
-    <div className="flex justify-end space-x-3">
-      <Button
-        type="button"
-        onClick={onClose}
-        variant="secondary"
-        className="px-5 py-2 text-sm font-medium hover:bg-red-700"
-      >
-        Cancel
-      </Button>
-      <Button
-        type="submit"
-        form="addOfficialForm"
-        className="px-5 py-2 text-sm font-medium bg-red-800 hover:bg-red-700 text-white shadow-sm"
-      >
-        Save Changes
-      </Button>
-    </div>
-  );
+  const positionOptions = [
+    { value: "Barangay Captain", label: "Barangay Captain" },
+    { value: "Barangay Secretary", label: "Barangay Secretary" },
+    { value: "Barangay Treasurer", label: "Barangay Treasurer" },
+    { value: "Barangay Kagawad", label: "Barangay Kagawad" },
+    { value: "SK Chairman", label: "SK Chairman" },
+    { value: "Barangay Tanod", label: "Barangay Tanod" }
+  ];
 
-  const ImagePreviewModal = () => (
-    <Modal
-      isOpen={showPreview}
-      onClose={() => setShowPreview(false)}
-      title="Profile Photo Preview"
-      modalClass="max-w-md"
-    >
-      <div className="relative flex flex-col items-center">
-        <div className="w-72 h-72 rounded-full overflow-hidden border-4 border-gray-100 shadow-lg">
-          <img
-            src={previewImage}
-            alt="Full Preview"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <Button
-          type="button"
-          onClick={() => setShowPreview(false)}
-          className="mt-6 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700"
-        >
-          Close Preview
-        </Button>
-      </div>
-    </Modal>
-  );
-
-  const renderImageSection = () => (
-    <div className="space-y-3">
-      <div>
-        <label className="block text-sm font-medium text-gray-900">
-          Profile Photo
-        </label>
-        <p className="mt-1 text-xs text-gray-500">
-          Upload a square photo in JPG or PNG format
-        </p>
-      </div>
-      <div
-        className="relative group"
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
+  const renderImageUpload = () => (
+    <div className="flex flex-col items-center justify-center space-y-3">
+      <div 
+        className="relative group w-32 h-32 rounded-full border-2 border-dashed border-gray-300 hover:border-red-500 transition-colors duration-200"
+        onClick={() => fileInputRef.current?.click()}
       >
-        <div className="w-48 h-48 mx-auto rounded-full border-2 border-dashed border-gray-300 group-hover:border-red-500 transition-all bg-white overflow-hidden">
-          {previewImage ? (
-            <div className="relative w-full h-full group">
-              <img
-                src={previewImage}
-                alt="Preview"
-                className="w-full h-full object-cover"
-              />
-              {/* Overlay with actions */}
-              <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+        {previewImage ? (
+          <>
+            <img 
+              src={previewImage} 
+              alt="Preview" 
+              className="w-full h-full rounded-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="flex space-x-1">
                 <button
                   type="button"
-                  onClick={() => setShowPreview(true)}
-                  className="p-2 bg-white rounded-full hover:bg-red-50 text-gray-600 hover:text-red-600 transition-colors"
-                  title="View photo"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPreview(true);
+                  }}
+                  className="p-1.5 bg-white rounded-full hover:bg-gray-100"
                 >
-                  <FaSearch className="w-4 h-4" />
+                  <FaImage className="w-3.5 h-3.5 text-gray-600" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to remove this photo?')) {
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm('Remove this photo?')) {
                       setPreviewImage(null);
-                      setFormData({ ...formData, image_path: "" });
+                      setFormData({ ...formData, image_path: null });
                     }
                   }}
-                  className="p-2 bg-white rounded-full hover:bg-red-50 text-red-500 transition-colors"
-                  title="Remove photo"
+                  className="p-1.5 bg-white rounded-full hover:bg-red-100"
                 >
-                  <FaTrash className="w-4 h-4" />
+                  <FaTrash className="w-3.5 h-3.5 text-red-500" />
                 </button>
               </div>
             </div>
-          ) : (
-            <div
-              className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <div className="p-3 rounded-full bg-gray-50 text-gray-400 group-hover:text-red-500 transition-colors">
-                <FaCloudUploadAlt className="w-7 h-7" />
-              </div>
-              <p className="mt-2 text-sm font-medium text-gray-700">
-                Click to upload
-              </p>
-            </div>
-          )}
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          name="image_path"
-          onChange={handleImageChange}
-          accept="image/*"
-          className="hidden"
-        />
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <FaUpload className="w-6 h-6 text-gray-400 group-hover:text-red-500 transition-colors duration-200" />
+            <span className="mt-2 text-xs text-gray-500 group-hover:text-red-500">Upload Photo</span>
+          </div>
+        )}
       </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        onChange={handleImageChange}
+        accept="image/*"
+        className="hidden"
+      />
     </div>
   );
 
   return (
-    <>
-      <Modal isOpen={isOpen} onClose={onClose} title="Add New Official" footer={modalFooter}>
-        <form id="addOfficialForm" onSubmit={handleSubmit} className="space-y-8">
-          <div className="border-b border-gray-200 pb-4">
-            <p className="text-sm text-gray-600">
-              Complete the form below to add a new barangay official. Required fields are marked with an asterisk (*).
-            </p>
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title="Add Official"
+      modalClass="max-w-2xl"
+      footer={
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="addOfficialForm"
+            className="px-3 py-1.5 text-xs text-white bg-red-600 rounded-lg hover:bg-red-700"
+          >
+            Save Official
+          </button>
+        </div>
+      }
+    >
+      <form id="addOfficialForm" onSubmit={handleSubmit} className="p-4 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Left Column - Image Upload */}
+          <div className="flex items-center justify-center p-4 bg-gray-50/50 rounded-lg">
+            {renderImageUpload()}
           </div>
 
-          <div className="grid grid-cols-1 gap-8">
-            {/* Profile Photo Section */}
-            <div className="flex justify-center">
-              {renderImageSection()}
+          {/* Right Column - Form Fields */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <FormInput
+                label="First Name"
+                name="first_name"
+                value={formData.first_name}
+                onChange={handleChange}
+                required
+                error={errors.first_name}
+                placeholder="First name"
+                className="text-xs"
+              />
+              <FormInput
+                label="Last Name"
+                name="last_name"
+                value={formData.last_name}
+                onChange={handleChange}
+                required
+                error={errors.last_name}
+                placeholder="Last name"
+                className="text-xs"
+              />
             </div>
 
-            {/* Form Fields Section - Vertical Layout */}
-            <div className="space-y-6">
-              {/* Name Fields */}
-              <div className="space-y-4">
-                <FormInput
-                  label="First Name"
-                  name="first_name"
-                  value={formData.first_name}
-                  onChange={handleChange}
-                  icon={FaUser}
-                  placeholder="Enter first name"
-                  required
-                  error={errors.first_name}
-                />
+            <div className="grid grid-cols-2 gap-3">
+              <FormInput
+                label="Middle Name"
+                name="middle_name"
+                value={formData.middle_name}
+                onChange={handleChange}
+                placeholder="Optional"
+                className="text-xs"
+              />
+              <FormInput
+                label="Suffix"
+                name="suffix"
+                value={formData.suffix}
+                onChange={handleChange}
+                placeholder="Jr, Sr, III, etc."
+                className="text-xs"
+              />
+            </div>
 
-                <FormInput
-                  label="Middle Name"
-                  name="middle_name"
-                  value={formData.middle_name}
-                  onChange={handleChange}
-                  icon={FaUser}
-                  placeholder="Enter middle name (optional)"
-                />
+            <Select
+              label="Position"
+              value={positionOptions.find(opt => opt.value === formData.position)}
+              onChange={(selected) => handleChange({
+                target: { name: 'position', value: selected.value }
+              })}
+              options={positionOptions}
+              required
+              error={errors.position}
+              placeholder="Select position"
+              className="text-xs"
+            />
 
-                <FormInput
-                  label="Last Name"
-                  name="last_name"
-                  value={formData.last_name}
-                  onChange={handleChange}
-                  icon={FaUser}
-                  placeholder="Enter last name"
-                  required
-                  error={errors.last_name}
-                />
-              </div>
-
-              {/* Other Fields */}
-              <div className="space-y-4">
-                <FormInput
-                  label="Position"
-                  name="position"
-                  value={formData.position}
-                  onChange={handleChange}
-                  icon={FaBriefcase}
-                  placeholder="Enter position"
-                  required
-                  error={errors.position}
-                />
-
-                <FormInput
-                  label="Term Start"
-                  name="term_start"
-                  type="date"
-                  value={formData.term_start}
-                  onChange={handleChange}
-                  icon={FaCalendarAlt}
-                  required
-                  error={errors.term_start}
-                />
-
-                <FormInput
-                  label="Term End"
-                  name="term_end"
-                  type="date"
-                  value={formData.term_end}
-                  onChange={handleChange}
-                  icon={FaCalendarAlt}
-                  required
-                  error={errors.term_end}
-                />
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              <FormInput
+                label="Term Start"
+                name="term_start"
+                type="date"
+                value={formData.term_start}
+                onChange={handleChange}
+                required
+                error={errors.term_start}
+                className="text-xs"
+              />
+              <FormInput
+                label="Term End"
+                name="term_end"
+                type="date"
+                value={formData.term_end}
+                onChange={handleChange}
+                required
+                error={errors.term_end}
+                className="text-xs"
+              />
             </div>
           </div>
-        </form>
-      </Modal>
-      {showPreview && <ImagePreviewModal />}
-    </>
+        </div>
+      </form>
+    </Modal>
   );
 };
 
 export default AddOfficialModal;
+     

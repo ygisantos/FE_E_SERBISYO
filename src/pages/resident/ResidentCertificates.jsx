@@ -1,79 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useUser } from '../../contexts/UserContext';
 import DataTable from '../../components/reusable/DataTable';
-import { FaEye, FaDownload, FaPlus } from 'react-icons/fa';
-import Modal from '../../components/Modal/Modal';
+import { FaEye, FaPlus } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { getAllDocuments, createDocumentRequest } from '../../api/documentApi';
+import RequestDocumentModal from '../../components/modals/RequestDocumentModal';
+import { showCustomToast } from '../../components/Toast/CustomToast';
 
 const ResidentCertificates = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCertificate, setSelectedCertificate] = useState(null);
-  const [selectedPurpose, setSelectedPurpose] = useState('');
-  const [otherPurpose, setOtherPurpose] = useState('');
+  const { currentUser, loading: userLoading } = useUser();
+  const navigate = useNavigate();
+  const [certificates, setCertificates] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const purposeCategories = [
-    { value: 'employment', label: 'Employment Requirement' },
-    { value: 'business', label: 'Business Permit Application' },
-    { value: 'scholarship', label: 'Scholarship Application' },
-    { value: 'loan', label: 'Bank/Loan Requirement' },
-    { value: 'school', label: 'School Requirement' },
-    { value: 'police', label: 'Police Clearance Requirement' },
-    { value: 'travel', label: 'Travel Requirement' },
-    { value: 'other', label: 'Other Purpose' },
-  ];
-
-  const [certificates, setCertificates] = useState([
-    {
-      id: 1,
-      name: 'Barangay Clearance',
-      requirements: ['Valid ID', 'Proof of Residence'],
-      price: 100,
-      processingTime: '1-2 days',
-      description: 'General clearance for employment, loans, etc.',
-    },
-
-  ]);
-
-  const [requests, setRequests] = useState([
-    {
-      id: 1,
-      certificateType: 'Barangay Clearance',
-      requestDate: '2024-07-25',
-      status: 'Pending',
-      purpose: 'Employment',
-    },
-
-   ]);
-
+  // Define columns for certificates table
   const certificateColumns = [
     {
-      label: 'Certificate Name',
-      accessor: 'name',
+      label: 'Document Name',
+      accessor: 'document_name',
       sortable: true,
+      render: (value) => (
+        <span className="text-sm font-medium text-gray-800">{value}</span>
+      )
+    },
+    {
+      label: 'Description',
+      accessor: 'description',
+      sortable: true,
+      render: (value) => (
+        <p className="text-xs text-gray-600 max-w-md">{value}</p>
+      )
     },
     {
       label: 'Requirements',
       accessor: 'requirements',
       sortable: false,
-      render: (value) => (
-        <ul className="list-disc list-inside">
-          {value.map((req, index) => (
-            <li key={index} className="text-sm">{req}</li>
+      render: (requirements) => (
+        <div className="space-y-1">
+          {requirements?.map((req, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <div className="w-1 h-1 rounded-full bg-red-600"></div>
+              <span className="text-xs text-gray-600">{req.name}</span>
+            </div>
           ))}
-        </ul>
-      ),
+        </div>
+      )
     },
     {
-      label: 'Price',
-      accessor: 'price',
+      label: 'Status',
+      accessor: 'status',
       sortable: true,
-      render: (value) => `₱${value.toFixed(2)}`,
-    },
-    {
-      label: 'Processing Time',
-      accessor: 'processingTime',
-      sortable: true,
-    },
+      type: 'badge',
+      badgeColors: {
+        active: 'green',
+        inactive: 'gray'
+      }
+    }
   ];
 
+  // Define columns for requests table
   const requestColumns = [
     {
       label: 'Certificate Type',
@@ -111,203 +103,125 @@ const ResidentCertificates = () => {
     },
   ];
 
+  const handleRequestDocument = (document) => {
+    setSelectedDocument(document);
+    setShowRequestModal(true);
+  };
+
+  const handleSubmitRequest = async (formData) => {
+    try {
+      setIsLoading(true);
+      const response = await createDocumentRequest(formData);
+      showCustomToast('Request submitted successfully', 'success');
+      setShowRequestModal(false);
+      // Refresh requests list
+      // loadRequests(); // Implement this function when needed
+    } catch (error) {
+      showCustomToast(error.message || 'Failed to submit request', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch certificates
+  useEffect(() => {
+    const loadCertificates = async () => {
+      try {
+        setLoading(true);
+        const response = await getAllDocuments();
+        setCertificates(response.data || []);
+      } catch (error) {
+        showCustomToast(error.message || 'Failed to load certificates', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCertificates();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Available Certificates Section */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Available Certificates</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              View and request barangay certificates
-            </p>
+    <>
+      {userLoading ? (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-red-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading user information...</p>
           </div>
-
-          <DataTable
-            columns={certificateColumns}
-            data={certificates}
-            enableSearch={true}
-            enablePagination={true}
-            itemsPerPage={5}
-            enableSelection={false}
-            actionButton={{
-              label: "Request Certificate",
-              icon: <FaPlus />,
-              onClick: () => setIsModalOpen(true),
-              className: "bg-red-900 text-white hover:bg-red-800"
-            }}
-            actions={[
-              {
-                icon: <FaEye className="text-blue-600" />,
-                label: 'View Details',
-                onClick: (row) => console.log('View', row),
-              },
-            ]}
-          />
         </div>
-
-        {/* My Requests Section */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900">My Requests</h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Track your certificate requests
-            </p>
-          </div>
-
-          <DataTable
-            columns={requestColumns}
-            data={requests}
-            enableSearch={true}
-            enablePagination={true}
-            itemsPerPage={5}
-            actions={[
-              {
-                icon: <FaEye className="text-blue-600" />,
-                label: 'View Details',
-                onClick: (row) => console.log('View', row),
-              },
-              {
-                icon: <FaDownload className="text-green-600" />,
-                label: 'Download',
-                onClick: (row) => console.log('Download', row),
-                show: (row) => row.status === 'Approved',
-              },
-            ]}
-          />
-        </div>
-      </div>
-
-      {/* Request Certificate Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedCertificate(null);
-          setPurpose('');
-        }}
-        title="Request Certificate"
-        footer={
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={() => {
-                setIsModalOpen(false);
-                setSelectedCertificate(null);
-                setSelectedPurpose('');
-                setOtherPurpose('');
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                // Here will make an API call to submit the request
-                const finalPurpose = selectedPurpose === 'other' 
-                  ? otherPurpose 
-                  : purposeCategories.find(cat => cat.value === selectedPurpose)?.label;
-
-                const newRequest = {
-                  id: requests.length + 1,
-                  certificateType: selectedCertificate.name,
-                  requestDate: new Date().toISOString(),
-                  status: 'Pending',
-                  purpose: finalPurpose,
-                };
-                setRequests([...requests, newRequest]);
-                setIsModalOpen(false);
-                setSelectedCertificate(null);
-                setSelectedPurpose('');
-                setOtherPurpose('');
-              }}
-              disabled={!selectedCertificate || !selectedPurpose || (selectedPurpose === 'other' && !otherPurpose.trim())}
-              className="px-4 py-2 bg-red-900 text-white rounded-md text-sm font-medium hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Submit Request
-            </button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Select Certificate
-            </label>
-            <select
-              value={selectedCertificate?.id || ''}
-              onChange={(e) => {
-                const cert = certificates.find(c => c.id === Number(e.target.value));
-                setSelectedCertificate(cert);
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Select a certificate...</option>
-              {certificates.map((cert) => (
-                <option key={cert.id} value={cert.id}>
-                  {cert.name} - ₱{cert.price}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {selectedCertificate && (
-            <div>
-              <h4 className="font-medium text-sm text-gray-700 mb-2">Requirements:</h4>
-              <ul className="list-disc list-inside text-sm text-gray-600 mb-4">
-                {selectedCertificate.requirements.map((req, index) => (
-                  <li key={index}>{req}</li>
-                ))}
-              </ul>
-              <div className="text-sm text-gray-600">
-                <p>Processing Time: {selectedCertificate.processingTime}</p>
-                <p>Price: ₱{selectedCertificate.price}</p>
+      ) : (
+        <div className="min-h-screen bg-gray-50 p-4">
+          <div className="max-w-7xl mx-auto space-y-6">
+            {/* Available Certificates Section */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900">Available Certificates</h1>
+                <p className="mt-2 text-sm text-gray-600">
+                  View and request barangay certificates
+                </p>
               </div>
-            </div>
-          )}
 
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Purpose Category
-              </label>
-              <select
-                value={selectedPurpose}
-                onChange={(e) => {
-                  setSelectedPurpose(e.target.value);
-                  if (e.target.value !== 'other') {
-                    setOtherPurpose('');
+              <DataTable
+                columns={certificateColumns}
+                data={certificates}
+                loading={loading}
+                enableSearch={true}
+                searchPlaceholder="Search documents..."
+                enablePagination={true}
+                itemsPerPage={5}
+                actions={[
+                  {
+                    icon: <FaPlus className="h-3.5 w-3.5 text-gray-400" />,
+                    label: 'Request Document',
+                    onClick: handleRequestDocument,
                   }
-                }}
-                className="w-full px-3 py-2 border text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select purpose category...</option>
-                {purposeCategories.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
+                ]}
+              />
             </div>
 
-            {selectedPurpose === 'other' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Specify Other Purpose
-                </label>
-                <textarea
-                  value={otherPurpose}
-                  onChange={(e) => setOtherPurpose(e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 border text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Please specify your purpose..."
-                />
+            {/* My Requests Section */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-gray-900">My Requests</h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  Track your certificate requests
+                </p>
               </div>
-            )}
+
+              <DataTable
+                columns={requestColumns}
+                data={requests}
+                loading={requestsLoading}
+                enableSearch={true}
+                enablePagination={true}
+                totalItems={total}
+                currentPage={page}
+                onPageChange={setPage}
+                itemsPerPage={10}
+                actions={[
+                  {
+                    icon: <FaEye className="text-blue-600" />,
+                    label: 'View Details',
+                    onClick: (row) => navigate(`/resident/certificates/view/${row.id}`),
+                  }
+                ]}
+              />
+            </div>
           </div>
+
+          {/* Request Document Modal */}
+          <RequestDocumentModal
+            isOpen={showRequestModal}
+            onClose={() => setShowRequestModal(false)}
+            document={selectedDocument}
+            onSubmit={handleSubmitRequest}
+            isLoading={isLoading}
+          />
         </div>
-      </Modal>
-    </div>
+      )}
+    </>
   );
 };
 
 export default ResidentCertificates;
+     

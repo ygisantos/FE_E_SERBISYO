@@ -1,33 +1,121 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/reusable/DataTable';
 import { FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import { UserPlus } from 'lucide-react';
+import AddStaffModal from '../../components/modals/AddStaffModal';
+import { createAccount, fetchAllAccounts } from '../../api/accountApi';
+import { showCustomToast } from '../../components/Toast/CustomToast';
+import { useAuth } from '../../contexts/AuthContext';  
 
 const WorkerManagement = () => {
-  const [workers, setWorkers] = useState([
-    {
-      id: 1,
-      name: 'Juan Dela Cruz',
-      email: 'juan@example.com',
-      position: 'Clerk',
-      status: 'Active',
-      dateAdded: '2024-01-15',
-    },
-   ]);
+  const [workers, setWorkers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: 'created_at',
+    order: 'desc'
+  });
+  const [showAddModal, setShowAddModal] = useState(false);
+  const { user } = useAuth();  
+
+  // Add status filter options
+  const statusOptions = [
+    { value: "", label: "All Status" },
+    { value: "active", label: "Active" },
+    { value: "pending", label: "Pending" },
+    { value: "inactive", label: "Inactive" }
+  ];
+
+  // Add type filter options
+  const typeOptions = [
+    { value: "", label: "All Types" },
+    { value: "admin", label: "Admin" },
+    { value: "staff", label: "Staff" }
+  ];
+
+  const [filters, setFilters] = useState({
+    status: "",
+    type: "",
+  });
+
+  const handleFilterChange = (name, value) => {
+    setFilters(prev => ({ ...prev, [name]: value }));
+    setPage(1);
+  };
+
+  const loadWorkers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchAllAccounts({
+        page,
+        search,
+        ...sortConfig
+      });
+      
+      // Filter only admin and staff accounts, excluding current user
+      const filteredData = response.data ? response.data.filter(account => 
+        (account.type === 'admin' || account.type === 'staff') && 
+        account.id !== user?.id
+      ) : [];
+      
+
+      setWorkers(filteredData);
+      setTotal(filteredData.length);
+    } catch (error) {
+
+      showCustomToast(error.message || 'Failed to load accounts', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) { // Only load if we have user info
+      loadWorkers();
+    }
+  }, [page, search, sortConfig, user?.id]);
+
+  const handleSort = ({ column, direction }) => {
+    // Map frontend column names to backend sort fields
+    const sortMapping = {
+      first_name: 'name', // When sorting by first_name, use 'name' for backend
+      created_at: 'created_at'
+    };
+
+    setSortConfig({
+      sort_by: sortMapping[column] || column,
+      order: direction
+    });
+  };
+
+  const handleAddStaff = async (staffData) => {
+    try {
+      const response = await createAccount(staffData);
+      showCustomToast('Staff account created successfully', 'success');
+      setShowAddModal(false);
+      loadWorkers(); // Refresh staff list here
+    } catch (error) {
+      showCustomToast(error.message || 'Failed to create staff account', 'error');
+    }
+  };
 
   const columns = [
     {
       label: 'Name',
-      accessor: 'name',
+      accessor: 'first_name', // Keep this as first_name for display
       sortable: true,
-      render: (value) => (
-        <div className="flex items-center">
-          <div className="h-8 w-8 flex-shrink-0 bg-gray-100 rounded-full flex items-center justify-center mr-3">
-            <span className="text-sm font-medium text-gray-600">
-              {value.charAt(0)}
+      render: (value, row) => (
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            <span className="text-xs font-medium text-gray-600">
+              {row.first_name?.charAt(0)}
             </span>
           </div>
-          <span className="font-medium text-gray-900">{value}</span>
+          <span className="text-xs text-gray-800">
+            {`${row.first_name} ${row.last_name}`}
+          </span>
         </div>
       ),
     },
@@ -35,17 +123,15 @@ const WorkerManagement = () => {
       label: 'Email',
       accessor: 'email',
       sortable: true,
-      render: (value) => (
-        <span className="text-sm text-gray-600">{value}</span>
-      ),
+      render: (value) => <span className="text-xs text-gray-600">{value}</span>,
     },
     {
-      label: 'Position',
-      accessor: 'position',
+      label: 'Type',
+      accessor: 'type',
       sortable: true,
       render: (value) => (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-700 text-sm font-medium">
-          {value}
+        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-gray-100 text-gray-700">
+          {value?.toUpperCase()}
         </span>
       ),
     },
@@ -53,89 +139,104 @@ const WorkerManagement = () => {
       label: 'Status',
       accessor: 'status',
       sortable: true,
-      render: (value) => (
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${
-            value === 'Active'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}
-        >
-          <span className={`h-1.5 w-1.5 mr-1.5 rounded-full ${
-            value === 'Active' ? 'bg-green-400' : 'bg-red-400'
-          }`}></span>
-          {value}
-        </span>
-      ),
+      type: 'badge',
+      badgeColors: {
+        active: 'green',
+        pending: 'yellow',
+        inactive: 'red'
+      }
     },
     {
       label: 'Date Added',
-      accessor: 'dateAdded',
+      accessor: 'created_at',
       sortable: true,
       render: (value) => (
-        <span className="text-sm text-gray-600">
-          {new Date(value).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          })}
+        <span className="text-xs text-gray-600">
+          {new Date(value).toLocaleDateString()}
         </span>
       ),
-    },
+    }
   ];
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
-      <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-           <div className="p-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Worker Management</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Manage barangay worker accounts and permissions
-              </p>
-            </div>
-          </div>
- 
+    <div className="min-h-screen bg-gray-50/50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+
         {/* Main Content */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg border border-gray-100">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-lg font-medium text-gray-800">
+              Staff & Admin List
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Manage staff and admin accounts
+            </p>
+          </div>
           <div className="p-6">
             <DataTable
               columns={columns}
               data={workers}
+              loading={loading}
               enableSearch={true}
+              searchValue={search}
+              onSearchChange={setSearch}
               enablePagination={true}
-              itemsPerPage={10}
-              searchPlaceholder="Search workers..."
+              onPageChange={setPage}
+              totalItems={total}
+              currentPage={page}
+              searchPlaceholder="Search staff..."
+              onSort={handleSort}
+              enableSelection={false}
+              comboBoxFilters={[
+                {
+                  label: "Status",
+                  value: filters.status,
+                  onChange: (value) => handleFilterChange("status", value),
+                  options: statusOptions
+                },
+                {
+                  label: "Type",
+                  value: filters.type,
+                  onChange: (value) => handleFilterChange("type", value),
+                  options: typeOptions
+                }
+              ]}
               actions={[
                 {
-                  icon: <FaEye className="w-4 h-4 text-blue-600 hover:text-blue-700" />,
-                  label: 'View',
+                  icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
+                  label: "View",
                   onClick: (row) => console.log('View', row),
                 },
                 {
-                  icon: <FaEdit className="w-4 h-4 text-green-600 hover:text-green-700" />,
-                  label: 'Edit',
+                  icon: <FaEdit className="h-3.5 w-3.5 text-gray-400" />,
+                  label: "Edit",
                   onClick: (row) => console.log('Edit', row),
                 },
                 {
-                  icon: <FaTrash className="w-4 h-4 text-red-600 hover:text-red-700" />,
-                  label: 'Delete',
+                  icon: <FaTrash className="h-3.5 w-3.5 text-gray-400" />,
+                  label: "Delete",
                   onClick: (row) => console.log('Delete', row),
                 },
               ]}
               actionButton={{
-                label: 'Add New Worker',
-                icon: <UserPlus className="w-4 h-4" />,
-                onClick: () => console.log('Add new worker clicked'),
-                className: 'bg-red-900 hover:bg-red-800 text-white'
+                label: "Add Staff",
+                icon: <UserPlus className="w-3.5 h-3.5" />,
+                onClick: () => setShowAddModal(true),
+                className: "bg-red-900 text-white hover:bg-red-800"
               }}
             />
           </div>
         </div>
       </div>
+
+      <AddStaffModal 
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddStaff}
+      />
     </div>
   );
 };
 
- export default WorkerManagement;
+export default WorkerManagement;

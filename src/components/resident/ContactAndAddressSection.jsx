@@ -66,7 +66,19 @@ const ContactAndAddressSection = ({ formData, handleChange, errors, styleClasses
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label htmlFor="municipality" className={styleClasses.label}>Municipality</label>
+                <input
+                  type="text"
+                  id="municipality"
+                  name="municipality"
+                  value={formData.municipality}
+                  className={`${styleClasses.input} bg-gray-100`}
+                  disabled
+                />
+              </div>
+
               <div>
                 <label htmlFor="barangay" className={styleClasses.label}>Barangay</label>
                 <input

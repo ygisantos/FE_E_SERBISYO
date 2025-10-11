@@ -1,121 +1,160 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/reusable/DataTable';
 import { FaEye, FaCheck, FaTimes } from 'react-icons/fa';
+import { fetchAllRequests } from '../../api/requestApi';
+import { showCustomToast } from '../../components/Toast/CustomToast';
 
 const RequestManagement = () => {
-  const [requests, setRequests] = useState([
-    {
-      id: 1,
-      residentName: 'Juan Dela Cruz',
-      certificateType: 'Barangay Clearance',
-      requestDate: '2024-07-25',
-      status: 'Pending',
-      purpose: 'Employment',
-    },
-   ]);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: 'created_at',
+    order: 'desc'
+  });
+  const [filters, setFilters] = useState({
+    status: ''
+  });
+
+  const loadRequests = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchAllRequests({
+        page,
+        search,
+        ...sortConfig,
+        ...filters
+      });
+      
+      setRequests(response.data);
+      setTotal(response.total);
+    } catch (error) {
+      showCustomToast(error.message || 'Failed to load requests', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRequests();
+  }, [page, search, sortConfig, filters]);
 
   const columns = [
     {
-      label: 'Resident Name',
-      accessor: 'residentName',
+      label: 'Document Name',
+      accessor: 'document.document_name',
       sortable: true,
+      render: (value) => (
+        <span className="text-xs text-gray-800">{value}</span>
+      ),
     },
     {
-      label: 'Certificate Type',
-      accessor: 'certificateType',
+      label: 'Requestor',
+      accessor: 'account',
       sortable: true,
+      render: (value) => (
+        <span className="text-xs text-gray-600">
+          {`${value.first_name} ${value.last_name}`}
+        </span>
+      ),
     },
     {
-      label: 'Request Date',
-      accessor: 'requestDate',
-      sortable: true,
-      render: (value) => new Date(value).toLocaleDateString(),
+      label: 'Requirements',
+      accessor: 'uploaded_requirements',
+      sortable: false,
+      render: (value) => (
+        <div className="space-y-1">
+          {value.slice(0, 2).map((req, idx) => (
+            <span key={idx} className="text-xs text-gray-600 block">
+              {req.requirement.name}
+            </span>
+          ))}
+          {value.length > 2 && (
+            <span className="text-xs text-gray-400">
+              +{value.length - 2} more
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       label: 'Status',
       accessor: 'status',
       sortable: true,
-      render: (value) => (
-        <span
-          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-            value === 'Pending'
-              ? 'bg-yellow-50 text-yellow-700'
-              : value === 'Approved'
-              ? 'bg-green-50 text-green-700'
-              : 'bg-red-50 text-red-700'
-          }`}
-        >
-          {value}
-        </span>
-      ),
+      type: 'badge',
+      badgeColors: {
+        pending: 'yellow',
+        approved: 'emerald',
+        rejected: 'gray'
+      }
     },
     {
-      label: 'Purpose',
-      accessor: 'purpose',
+      label: 'Date Requested',
+      accessor: 'created_at',
       sortable: true,
-    },
+      render: (value) => (
+        <span className="text-xs text-gray-600">
+          {new Date(value).toLocaleDateString()}
+        </span>
+      ),
+    }
   ];
 
-  const handleApprove = (row) => {
-    // Add logic for approving request
-    console.log('Approve', row);
-  };
-
-  const handleReject = (row) => {
-    // Add logic for rejecting request
-    console.log('Reject', row);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Request Management</h1>
-            <p className="mt-2 text-sm text-gray-600">
-              Process and manage certificate requests
-            </p>
-          </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h3 className="text-lg font-medium text-gray-800">
+            Certificate Requests
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">
+            Process and manage certificate requests
+          </p>
+        </div>
 
-          <div className="mb-4 flex justify-between items-center">
-            <div className="flex gap-4">
-              <select className="border rounded-lg px-3 py-2">
-                <option value="">All Status</option>
-                <option value="Pending">Pending</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-              <select className="border rounded-lg px-3 py-2">
-                <option value="">All Certificate Types</option>
-                <option value="Barangay Clearance">Barangay Clearance</option>
-                <option value="Certificate of Indigency">Certificate of Indigency</option>
-              </select>
-            </div>
-          </div>
-
+        <div className="p-6">
           <DataTable
             columns={columns}
             data={requests}
+            loading={loading}
             enableSearch={true}
+            searchValue={search}
+            onSearchChange={setSearch}
             enablePagination={true}
-            itemsPerPage={10}
+            onPageChange={setPage}
+            totalItems={total}
+            currentPage={page}
+            searchPlaceholder="Search requests..."
+            comboBoxFilter={{
+              label: "Status",
+              options: [
+                { value: '', label: 'All Status' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'approved', label: 'Approved' },
+                { value: 'rejected', label: 'Rejected' }
+              ],
+              value: filters.status,
+              onChange: (value) => setFilters(prev => ({ ...prev, status: value }))
+            }}
             actions={[
               {
-                icon: <FaEye className="text-blue-600" />,
+                icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
                 label: 'View Details',
                 onClick: (row) => console.log('View', row),
               },
               {
-                icon: <FaCheck className="text-green-600" />,
+                icon: <FaCheck className="h-3.5 w-3.5 text-gray-400" />,
                 label: 'Approve',
-                onClick: handleApprove,
-                show: (row) => row.status === 'Pending',
+                onClick: (row) => console.log('Approve', row),
+                show: (row) => row.status === 'pending',
               },
               {
-                icon: <FaTimes className="text-red-600" />,
+                icon: <FaTimes className="h-3.5 w-3.5 text-gray-400" />,
                 label: 'Reject',
-                onClick: handleReject,
-                show: (row) => row.status === 'Pending',
+                onClick: (row) => console.log('Reject', row),
+                show: (row) => row.status === 'pending',
               },
             ]}
           />

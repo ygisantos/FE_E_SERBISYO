@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/reusable/DataTable';
+import Modal from '../../components/Modal/Modal';
 import { FaEye } from 'react-icons/fa';
-import { MessageSquare, Star, Filter } from 'lucide-react';
-import { toast } from 'react-toastify';
 import { getFeedbacks } from '../../api/feedbackApi';
-import StatCard from '../../components/reusable/StatCard';
+import { showCustomToast } from '../../components/Toast/CustomToast';
 
 const FeedbackManagement = () => {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -19,10 +18,17 @@ const FeedbackManagement = () => {
     category: '',
     rating: ''
   });
+  const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [search, setSearch] = useState('');
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: 'created_at',
+    order: 'desc'
+  });
 
   useEffect(() => {
     fetchFeedbacks();
-  }, [pagination.currentPage, pagination.perPage, filters]);
+  }, [pagination.currentPage, pagination.perPage, filters, sortConfig]);
 
   const fetchFeedbacks = async () => {
     try {
@@ -30,7 +36,8 @@ const FeedbackManagement = () => {
       const response = await getFeedbacks({
         page: pagination.currentPage,
         per_page: pagination.perPage,
-        ...filters
+        ...filters,
+        ...sortConfig
       });
       
       if (response.success) {
@@ -59,15 +66,25 @@ const FeedbackManagement = () => {
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
+  const handleView = (feedback) => {
+    setSelectedFeedback(feedback);
+    setShowViewModal(true);
+  };
+
+  const handleSort = ({ column, direction }) => {
+    setSortConfig({
+      sort_by: column,
+      order: direction
+    });
+  };
+
   const columns = [
     {
       label: 'Category',
       accessor: 'category',
       sortable: true,
       render: (value) => (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700">
-          {value}
-        </span>
+        <span className="text-xs text-gray-600">{value}</span>
       ),
     },
     {
@@ -76,84 +93,61 @@ const FeedbackManagement = () => {
       sortable: true,
       render: (value) => (
         <div className="flex items-center">
-          {[...Array(parseInt(value))].map((_, index) => (
-            <svg
-              key={index}
-              className="w-5 h-5 text-yellow-400"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-          ))}
+          <span className="text-xs text-gray-600">{value}/5</span>
         </div>
       ),
     },
     {
       label: 'Remarks',
       accessor: 'remarks',
-      sortable: false,
+      sortable: true,
       render: (value) => (
-        <div className="max-w-lg" title={value}>
-          <div className="truncate">
-            {value.length > 150 ? `${value.substring(0, 150)}...` : value}
-          </div>
+        <div className="max-w-lg">
+          <span className="text-xs text-gray-600">
+            {value.length > 80 ? `${value.substring(0, 80)}...` : value}
+          </span>
         </div>
       ),
     },
     {
-      label: 'Created',
+      label: 'Date Added',
       accessor: 'created_at',
       sortable: true,
-      render: (value) => new Date(value).toLocaleString(),
-    },
+      render: (value) => (
+        <span className="text-xs text-gray-600">
+          {new Date(value).toLocaleDateString()}
+        </span>
+      ),
+    }
   ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header Section */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Feedback Management</h1>
-            <p className="text-sm text-gray-600 mt-1">View and manage resident feedback</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          icon={<MessageSquare className="text-blue-600" />}
-          label="Total Feedbacks"
-          value={pagination.total}
-          color="bg-white border-gray-200"
-        />
-        <StatCard
-          icon={<Star className="text-yellow-400" />}
-          label="Average Rating"
-          value={feedbacks.length > 0 
-            ? (feedbacks.reduce((acc, curr) => acc + parseInt(curr.rating), 0) / feedbacks.length).toFixed(1)
-            : 0}
-          color="bg-white border-gray-200"
-        />
-      </div>
-
       {/* Main Content */}
-      <div className="bg-white rounded-lg shadow">
-        {/* DataTable */}
-        <div className="overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h3 className="text-lg font-medium text-gray-800">
+            Feedback List
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">
+            View and manage resident feedback
+          </p>
+        </div>
+
+        <div className="p-6">
           <DataTable
             columns={columns}
             data={feedbacks}
             loading={isLoading}
             enableSearch={true}
-            searchPlaceholder="Search remarks..."
+            searchValue={search}
+            onSearchChange={setSearch}
             enablePagination={true}
             itemsPerPage={pagination.perPage}
+            totalItems={pagination.total}
             currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
             onPageChange={handlePageChange}
+            searchPlaceholder="Search feedbacks..."
             comboBoxFilter={{
               label: "Category",
               options: [
@@ -165,16 +159,50 @@ const FeedbackManagement = () => {
             }}
             actions={[
               {
-                icon: <FaEye className="text-blue-600" />,
+                icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
                 label: 'View Details',
-                onClick: (row) => toast.info(`Viewing feedback details: ${row.id}`),
+                onClick: handleView
               }
             ]}
+            onSort={handleSort}
           />
         </div>
       </div>
+
+      {/* View Feedback Modal */}
+      <Modal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setSelectedFeedback(null);
+        }}
+        title="Feedback Details"
+        modalClass="max-w-2xl"
+      >
+        {selectedFeedback && (
+          <div className="p-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500">Category</label>
+                <p className="text-sm mt-1">{selectedFeedback.category}</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500">Rating</label>
+                <p className="text-sm mt-1">{selectedFeedback.rating}/5</p>
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-500">Feedback</label>
+                <p className="text-sm mt-1 p-3 bg-gray-50 rounded-lg">
+                  {selectedFeedback.remarks}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
 
 export default FeedbackManagement;
+    

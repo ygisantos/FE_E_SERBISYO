@@ -47,6 +47,9 @@ const patterns = {
   
   // Image file validation
   imageFile: /\.(jpg|jpeg|png|gif)$/i,
+  
+  // Add barangay pattern
+  barangay: /^[a-zA-ZÀ-ÿñÑ\s.-]{2,100}$/,
 };
 
 // Validation functions
@@ -115,18 +118,22 @@ const validators = {
     if (!date) return 'Date is required';
     if (!patterns.date.test(date)) return 'Invalid date format (YYYY-MM-DD)';
     
-    const birthDate = new Date(date);
-    const today = new Date();
-    const age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+    try {
+      const birthDate = new Date(date);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      if (age < 0) return 'Birth date cannot be in the future';
+      if (age > 150) return 'Invalid birth date';
+      return '';
+    } catch (error) {
+      return 'Invalid date format';
     }
-    
-    if (age < 0) return 'Birth date cannot be in the future';
-    if (age > 150) return 'Invalid birth date';
-    return '';
   },
 
   // House number validation
@@ -187,16 +194,16 @@ const validators = {
     return '';
   },
 
-// Age validation (must be at least 18 years old)
-validateAge: (inputDate) => {
-  const today = new Date();
-  const age = today.getFullYear() - inputDate.getFullYear();
-  if (age < 18) return 'Must be at least 18 years old';
-  return '';
-},
+  // Age validation (must be at least 18 years old)
+  validateAge: (inputDate) => {
+    const today = new Date();
+    const age = today.getFullYear() - inputDate.getFullYear();
+    if (age < 18) return 'Must be at least 18 years old';
+    return '';
+  },
 
-// Address validation
-validateAddress: {
+  // Address validation
+  validateAddress: {
     street: (street) => {
       if (!street) return 'Street address is required';
       if (!patterns.streetAddress.test(street)) return 'Invalid street address format';
@@ -212,6 +219,15 @@ validateAddress: {
   // Required field validation
   validateRequired: (value, fieldName) => {
     if (!value || value.trim() === '') return `${fieldName} is required`;
+    return '';
+  },
+
+  // Add barangay validation
+  validateBarangay: (barangay) => {
+    if (!barangay) return 'Barangay is required';
+    if (!patterns.barangay.test(barangay)) return 'Invalid barangay name format';
+    if (barangay.length < 2) return 'Barangay name is too short';
+    if (barangay.length > 100) return 'Barangay name is too long';
     return '';
   },
 };
@@ -343,14 +359,14 @@ export const validateForm = (form) => {
     }
   }
 
-  // Account type validation
-  if ('type' in form) {
-    const error = validators.validateAccountType(form.type);
-    if (error) {
-      errors.type = error;
-      isValid = false;
-    }
-  }
+//   // Account type validation
+//   if ('type' in form) {
+//     const error = validators.validateAccountType(form.type);
+//     if (error) {
+//       errors.type = error;
+//       isValid = false;
+//     }
+//   }
 
   // Password validation (for registration/password change)
   if ('password' in form) {

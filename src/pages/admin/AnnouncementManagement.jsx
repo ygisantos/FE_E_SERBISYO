@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/reusable/DataTable';
 import { FaEye, FaEdit, FaTrash } from 'react-icons/fa';
-import { FileText, AlertTriangle, MessageCircle, Bell } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { createAnnouncement, getAnnouncements } from '../../api/announcementApi';
 import CreateAnnouncementModal from '../../components/modals/CreateAnnouncementModal';
-import StatCard from '../../components/reusable/StatCard';
+import Modal from '../../components/Modal/Modal';
+import ViewAnnouncementModal from '../../components/modals/ViewAnnouncementModal';
 
 const AnnouncementManagement = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -13,7 +14,8 @@ const AnnouncementManagement = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     type: '',
-    description: ''
+    description: '',
+    images: []
   });
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -24,6 +26,8 @@ const AnnouncementManagement = () => {
   const [filters, setFilters] = useState({
     type: ''
   });
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
   useEffect(() => {
     fetchAnnouncements();
@@ -68,7 +72,7 @@ const AnnouncementManagement = () => {
       if (response.success) {
         toast.success('Announcement created successfully');
         setIsCreateModalOpen(false);
-        setFormData({ type: '', description: '' });
+        setFormData({ type: '', description: '', images: [] });
         fetchAnnouncements();
       }
     } catch (error) {
@@ -92,180 +96,121 @@ const AnnouncementManagement = () => {
       label: 'Type',
       accessor: 'type',
       sortable: true,
-      render: (value) => {
-        let bgColor = "bg-blue-50";
-        let textColor = "text-blue-700";
-        
-        switch(value) {
-          case "information":
-            bgColor = "bg-blue-50";
-            textColor = "text-blue-700";
-            break;
-          case "problem":
-            bgColor = "bg-red-50";
-            textColor = "text-red-700";
-            break;
-          case "warning":
-            bgColor = "bg-yellow-50";
-            textColor = "text-yellow-700";
-            break;
-          default:
-            break;
-        }
-        
-        return (
-          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${bgColor} ${textColor} capitalize`}>
-            {value}
-          </span>
-        );
+      type: 'badge',
+      badgeColors: {
+        information: 'blue',
+        problem: 'red',
+        warning: 'yellow'
       },
+      render: (value) => (
+        <span className="capitalize text-xs">{value}</span>
+      ),
     },
     {
       label: 'Description',
       accessor: 'description',
       sortable: false,
       render: (value) => (
-        <div className="max-w-lg" title={value}>
-          <div className="truncate">
-            {value.length > 150 ? `${value.substring(0, 150)}...` : value}
-          </div>
+        <div className="max-w-lg">
+          <span className="text-xs text-gray-600">
+            {value.length > 80 ? `${value.substring(0, 80)}...` : value}
+          </span>
         </div>
       ),
+    },
+    {
+      label: 'Images',
+      accessor: 'images',
+      sortable: false,
+      render: (value) => (
+        <span className="text-xs text-gray-600">
+          {value?.length || 0} image{value?.length !== 1 ? 's' : ''}
+        </span>
+      )
     },
     {
       label: 'Created',
       accessor: 'created_at',
       sortable: true,
-      render: (value) => new Date(value).toLocaleString(),
-    },
-    {
-      label: 'Last Updated',
-      accessor: 'updated_at',
-      sortable: true,
-      render: (value) => new Date(value).toLocaleString(),
-    },
+      render: (value) => (
+        <span className="text-xs text-gray-600">
+          {new Date(value).toLocaleDateString()}
+        </span>
+      ),
+    }
   ];
+
+  const handleView = (row) => {
+    setSelectedAnnouncement(row);
+    setShowViewModal(true);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header Section */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          <div>
-            <h1 className="text-3xl font-semibold text-gray-900">Announcements</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center px-5 py-2.5 bg-red-900 text-white rounded-lg text-sm font-medium hover:bg-red-800 cursor-pointer transition-all shadow-sm"
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              New Announcement
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          icon={<FileText className="text-blue-600" />}
-          label="Total Announcements"
-          value={announcements.length}
-          color="bg-white border-gray-200"
-        />
-        <StatCard
-          icon={<MessageCircle className="text-green-600" />}
-          label="Information Posts"
-          value={announcements.filter(a => a.type === 'information').length}
-          color="bg-white border-gray-200"
-        />
-        <StatCard
-          icon={<Bell className="text-yellow-600" />}
-          label="Warning Announcements"
-          value={announcements.filter(a => a.type === 'warning').length}
-          color="bg-white border-gray-200"
-        />
-        <StatCard
-          icon={<AlertTriangle className="text-red-600" />}
-          label="Problem Reports"
-          value={announcements.filter(a => a.type === 'problem').length}
-          color="bg-white border-gray-200"
-        />
-      </div>
-
       {/* Main Content */}
-      <div className="bg-white rounded-lg border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h3 className="text-base font-medium text-gray-800">Announcement List</h3>
-            <p className="text-sm text-gray-500 mt-1">Manage and track all announcements</p>
-          </div>
-          <div className="w-full sm:w-auto">
-            <select
-              className="border rounded-lg px-3 py-2 text-sm text-gray-600"
-              value={filters.type}
-              onChange={(e) => {
-                setFilters(prev => ({ ...prev, type: e.target.value }));
-                setPagination(prev => ({ ...prev, currentPage: 1 }));
-              }}
-            >
-              <option value="">All Types</option>
-              <option value="information">Information</option>
-              <option value="problem">Problem</option>
-              <option value="warning">Warning</option>
-            </select>
-          </div>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h3 className="text-lg font-medium text-gray-800">
+            Announcement List
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">
+            Manage and track all announcements
+          </p>
         </div>
 
         <div className="p-6">
           <DataTable
             columns={columns}
             data={announcements}
+            loading={isLoading}
             enableSearch={true}
             enablePagination={true}
             itemsPerPage={pagination.perPage}
             currentPage={pagination.currentPage}
             totalItems={pagination.total}
             onPageChange={(page) => fetchAnnouncements(page)}
-            striped={true}
-            hover={true}
-            cellClassName="py-3"
+            searchPlaceholder="Search announcements..."
+            comboBoxFilter={{
+              label: "Type",
+              value: filters.type,
+              onChange: (value) => {
+                setFilters(prev => ({ ...prev, type: value }));
+                setPagination(prev => ({ ...prev, currentPage: 1 }));
+              },
+              options: [
+                { value: '', label: 'All Types' },
+                { value: 'information', label: 'Information' },
+                { value: 'problem', label: 'Problem' },
+                { value: 'warning', label: 'Warning' }
+              ]
+            }}
             actions={[
               {
-                icon: <FaEye />,
+                icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
                 label: 'View Details',
-                handler: (row) => {
-                  toast.info(`${row.type}: ${row.description}`);
-                },
+                onClick: handleView,
               },
               {
-                icon: <FaEdit />,
+                icon: <FaEdit className="h-3.5 w-3.5 text-gray-400" />,
                 label: 'Edit',
-                handler: (row) => {
+                onClick: (row) => {
                   toast.info('Edit functionality coming soon');
                 },
               },
               {
-                icon: <FaTrash />,
+                icon: <FaTrash className="h-3.5 w-3.5 text-gray-400" />,
                 label: 'Delete',
-                handler: (row) => {
+                onClick: (row) => {
                   toast.info('Delete functionality coming soon');
                 },
               },
             ]}
+            actionButton={{
+              label: "New Announcement",
+              icon: <FileText className="w-3.5 h-3.5" />,
+              onClick: () => setIsCreateModalOpen(true),
+              className: "bg-red-900 text-white hover:bg-red-800"
+            }}
           />
         </div>
       </div>
@@ -279,8 +224,18 @@ const AnnouncementManagement = () => {
         enablePagination={true}
         isLoading={isLoading}
       />
+
+      <ViewAnnouncementModal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setSelectedAnnouncement(null);
+        }}
+        announcement={selectedAnnouncement}
+      />
     </div>
   );
 };
 
 export default AnnouncementManagement;
+   

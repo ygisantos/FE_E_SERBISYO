@@ -7,6 +7,7 @@ import AccountInformationSection from '../../../components/resident/AccountInfor
 import PersonalInformationSection from '../../../components/resident/PersonalInformationSection';
 import ContactAndAddressSection from '../../../components/resident/ContactAndAddressSection';
 import AdditionalInformationSection from '../../../components/resident/AdditionalInformationSection';
+import { createAccount } from '../../../api/accountApi';
 
 const AddResident = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -20,7 +21,7 @@ const AddResident = () => {
     birthday: '',
     contact_no: '',
     birth_place: '',
-    municipality: '',
+    municipality: 'Balagtas', 
     barangay: 'Pulong Gubat',
     house_no: '',
     zip_code: '3014',
@@ -143,12 +144,24 @@ const AddResident = () => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        // Show loading toast - Note: Custom toast doesn't support loading state currently
+        // Create FormData object
+        const formDataToSend = new FormData();
         
-        // TODO: Add your API call here
-        console.log('Form data ready for submission:', formData);
+        // Append all form fields
+        Object.keys(formData).forEach(key => {
+          if (key === 'profile_picture' && formData[key]) {
+            formDataToSend.append(key, formData[key]);
+          } else if (formData[key] !== null && formData[key] !== undefined) {
+            formDataToSend.append(key, formData[key]);
+          }
+        });
+
+        // Force type to be 'residence'
+        formDataToSend.set('type', 'residence');
         
-        // Success notification
+        // Make API call
+        const response = await createAccount(formDataToSend);
+        
         showCustomToast('Resident registered successfully!', 'success');
 
         // Reset form
@@ -162,7 +175,7 @@ const AddResident = () => {
           birthday: '',
           contact_no: '',
           birth_place: '',
-          municipality: '',
+          municipality: 'San Jose del Monte', // Reset municipality to default
           barangay: 'Pulong Gubat',
           house_no: '',
           zip_code: '3014',
@@ -174,6 +187,7 @@ const AddResident = () => {
           status: 'active'
         });
         setPreviewUrl(null);
+        
       } catch (error) {
         showCustomToast(error.message || 'Failed to register resident', 'error');
         console.error('Error submitting form:', error);
@@ -232,6 +246,7 @@ const AddResident = () => {
               handleChange={handleChange}
               errors={errors}
               styleClasses={styleClasses}
+              disableMunicipality={true} // Add this prop to make municipality read-only
             />
 
             <AdditionalInformationSection

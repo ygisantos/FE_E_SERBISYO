@@ -1,66 +1,74 @@
 import React from "react";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  Title,
+} from "chart.js";
+import { Pie } from "react-chartjs-2";
 
-const PieChart = ({ data, width = 200, height = 200 }) => {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  let currentAngle = 0;
+// Register ChartJS components
+ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
-  const center = width / 2;
-  const radius = Math.min(width, height) / 2 - 15;
+const PieChart = ({ title, data, height = 300 }) => {
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            size: 12,
+          },
+        },
+      },
+      title: {
+        display: !!title,
+        text: title,
+        font: {
+          size: 16,
+          weight: "bold",
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const label = context.label || "";
+            const value = context.parsed || 0;
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const percentage = ((value * 100) / total).toFixed(1);
+            return `${label}: ${percentage}% (${value})`;
+          },
+        },
+      },
+    },
+  };
+
+  const chartData = {
+    labels: data.map((item) => item.label),
+    datasets: [
+      {
+        data: data.map((item) => item.value),
+        backgroundColor: [
+          "rgba(127, 29, 29, 0.8)", // red-900
+          "rgba(30, 64, 175, 0.8)", // blue-800
+          "rgba(146, 64, 14, 0.8)", // amber-800
+          "rgba(21, 128, 61, 0.8)", // green-700
+          "rgba(109, 40, 217, 0.8)", // violet-700
+        ],
+        borderColor: "white",
+        borderWidth: 2,
+      },
+    ],
+  };
 
   return (
-    <div className="flex flex-col items-center w-full">
-      <div className="w-full max-w-[200px] mx-auto">
-        <svg
-          width="100%"
-          height={height}
-          viewBox={`0 0 ${width} ${height}`}
-          className="mb-3"
-        >
-          {data.map((item, index) => {
-            const percentage = item.value / total;
-            const angle = percentage * 2 * Math.PI;
-            const startAngle = currentAngle;
-            const endAngle = currentAngle + angle;
-
-            const x1 = center + radius * Math.cos(startAngle);
-            const y1 = center + radius * Math.sin(startAngle);
-            const x2 = center + radius * Math.cos(endAngle);
-            const y2 = center + radius * Math.sin(endAngle);
-
-            const largeArc = angle > Math.PI ? 1 : 0;
-
-            const pathData = [
-              `M ${center} ${center}`,
-              `L ${x1} ${y1}`,
-              `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
-              "Z",
-            ].join(" ");
-
-            currentAngle += angle;
-
-            return (
-              <path
-                key={index}
-                d={pathData}
-                fill={item.color}
-                stroke="white"
-                strokeWidth="2"
-              />
-            );
-          })}
-        </svg>
-      </div>
-      <div className="flex flex-wrap justify-center gap-3">
-        {data.map((item, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: item.color }}
-            ></div>
-            <span className="text-xs text-gray-600">{item.label}</span>
-          </div>
-        ))}
-      </div>
+    <div style={{ height }}>
+      <Pie data={chartData} options={options} />
     </div>
   );
 };

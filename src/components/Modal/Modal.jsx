@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { IoClose } from 'react-icons/io5';
 
 const Modal = ({
@@ -10,6 +10,21 @@ const Modal = ({
   showCloseButton = true,
   modalClass = "max-w-3xl",
 }) => {
+  useEffect(() => {
+    if (isOpen) {
+      // Lock scroll when modal opens
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Restore scroll when modal closes
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleBackdropClick = (e) => {
