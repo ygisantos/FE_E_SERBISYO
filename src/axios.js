@@ -8,7 +8,7 @@ export function setLoadingContext(ctx) {
 
  const BASE_URL = 'http://127.0.0.1:8000/api';
 const UNAUTHORIZED = 401;
-const EXEMPTED_PATHS = ["/login", "/track-certificate"];
+const EXEMPTED_PATHS = ["/login"];
 
 const axiosInstance = axios.create({
    baseURL: BASE_URL,

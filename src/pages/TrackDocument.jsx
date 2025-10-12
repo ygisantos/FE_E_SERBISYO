@@ -70,8 +70,8 @@ const TrackDocument = () => {
 
         {/* Search Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-            <div className="flex flex-col sm:flex-row gap-4">
+          <form onSubmit={handleSearch} className="max-w-4xl items-center mx-auto">
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
               <div className="flex-1">
                 <InputField
                   type="text"
@@ -82,15 +82,15 @@ const TrackDocument = () => {
                   className="mb-0"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex md:flex-row flex-col gap-2">
                 <Button
                   type="submit"
                   loading={loading}
                   loadingText="Tracking..."
                   disabled={loading}
-                  className="!bg-red-900 hover:!bg-red-800 !mt-0 flex items-center gap-2 px-6"
+                  className="!bg-red-900 hover:!bg-red-800 !mt-0 flex items-center gap-2 px-6 md:justify-between justify-center"
                 >
-                  <FaSearch className="w-4 h-4" />
+                  <FaSearch className="w-4 h-4"/>
                   Track Document
                 </Button>
                 {trackingData && (

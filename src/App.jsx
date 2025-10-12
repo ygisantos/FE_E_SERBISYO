@@ -67,6 +67,16 @@ function App() {
   const { loading } = useLoading();
 
   return (
+    <>
+    <Router>
+        <Routes>
+          <Route
+            path="/track-certificate"
+            element={ <TrackDocument /> }
+          />
+        </Routes>
+    </Router>
+      
     <AuthProvider>
       <UserProvider>
         <Router>
@@ -187,17 +197,13 @@ function App() {
                 path="/resident/certificates/logs"
                 element={<CertificateRequestLogs />}
               />
-
-              <Route
-                path="/track-certificate"
-                element={ <TrackDocument /> }
-              />
               
             </Route>
           </Routes>
         </Router>
       </UserProvider>
     </AuthProvider>
+    </>
   );
 }
 
