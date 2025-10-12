@@ -27,6 +27,7 @@ import Blotter from "./pages/admin/Blotter";
 import AnnouncementManagement from "./pages/admin/AnnouncementManagement";
 import ActivityLogs from "./pages/admin/ActivityLogs";
 import FeedbackManagement from "./pages/admin/FeedbackManagement";
+import ConfigurationManagement from "./pages/admin/ConfigurationManagement";
 import PendingResidents from "./pages/admin/resident-management/PendingResidents";
 import RejectedResidents from "./pages/admin/resident-management/RejectedResidents";
 
@@ -148,6 +149,7 @@ function App() {
                 element={<AnnouncementManagement />}
               />
               <Route path="/admin/feedback" element={<FeedbackManagement />} />
+              <Route path="/admin/configurations" element={<ConfigurationManagement />} />
               <Route path="/admin/activity-logs" element={<ActivityLogs />} />
               <Route path="/admin/profile" element={<MyProfile />} />
 
