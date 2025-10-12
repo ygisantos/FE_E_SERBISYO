@@ -50,6 +50,8 @@ import MyRequests from "./pages/resident/MyRequests";
 import MyProfile from "./pages/Profile/MyProfile";
 import AllResidents from "./pages/admin/resident-management/AllResidents";
 
+import TrackDocument from "./pages/TrackDocument";
+
 function ScrollToTop() {
   const location = useLocation();
   useEffect(() => {
@@ -67,6 +69,16 @@ function App() {
   const { loading } = useLoading();
 
   return (
+    <>
+    <Router>
+        <Routes>
+          <Route
+            path="/track-certificate"
+            element={ <TrackDocument /> }
+          />
+        </Routes>
+    </Router>
+      
     <AuthProvider>
       <UserProvider>
         <Router>
@@ -77,6 +89,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/track-document" element={<TrackDocument />} />
 
             <Route
               element={
@@ -194,11 +207,13 @@ function App() {
                 path="/resident/certificates/logs"
                 element={<CertificateRequestLogs />}
               />
+              
             </Route>
           </Routes>
         </Router>
       </UserProvider>
     </AuthProvider>
+    </>
   );
 }
 
