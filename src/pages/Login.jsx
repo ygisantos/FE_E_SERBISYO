@@ -66,29 +66,43 @@ const Login = () => {
     try {
       const data = await login(form.email, form.password);
       
-      if (data && data.token && data.account) {
-        authLogin(data.token, data.account);
-        showCustomToast("Login successful!", "success");
-        
-        try {
-          await createActivityLog({
-            account: data.account.id,
-            module: "Authentication",
-            remark: "User logged in"
-          });
-        } catch (logError) {
-          console.error('Activity log error:', logError);
+      if (data && data.account) {
+        if (data.account.status === 'pending') {
+          showCustomToast("You are not allowed to login. Your account status is pending.", "warning");
+          setLoading(false);
+          return;
         }
-        
-        setTimeout(() => {
-          const role = data.account.type || "resident";
-          if (role === "admin") navigate("/admin/dashboard");
-          else if (role === "staff") navigate("/worker/dashboard");
-          else navigate("/resident/chatbot");
-        }, 2000);
+
+        if (data.account.status === 'inactive' || data.account.status === 'rejected') {
+          showCustomToast("Your account is not active. Please contact the administrator.", "error");
+          setLoading(false);
+          return;
+        }
+
+        if (data.token) {
+          authLogin(data.token, data.account);
+          showCustomToast("Login successful!", "success");
+          
+          try {
+            await createActivityLog({
+              account: data.account.id,
+              module: "Authentication",
+              remark: "User logged in"
+            });
+          } catch (logError) {
+            console.error('Activity log error:', logError);
+          }
+          
+          setTimeout(() => {
+            const role = data.account.type || "resident";
+            if (role === "admin") navigate("/admin/dashboard");
+            else if (role === "staff") navigate("/worker/dashboard");
+            else navigate("/resident/chatbot");
+          }, 2000);
+        }
       }
     } catch (err) {
-      // Error handled in login API via setError
+      showCustomToast(err.message, "error");
     } finally {
       setLoading(false);
     }

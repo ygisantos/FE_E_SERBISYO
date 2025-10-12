@@ -98,9 +98,9 @@ const menuItems = {
       label: "Certificates",
       icon: FaCertificate,
       subMenu: [
-        { to: "/resident/certificates", label: "Available Certificates", icon: FaCertificate },
-        { to: "/resident/certificates/request", label: "Request Certificate", icon: FaFileAlt },
-        { to: "/resident/certificates/logs", label: "Request Logs", icon: FaBook },
+        { to: "/resident/certificates/available-certificates", label: "Available Certificates", icon: FaCertificate },
+        { to: "/resident/certificates/my-requests", label: "My Requests", icon: FaFileAlt },
+        { to: "/resident/certificates/logs", label: "Request History", icon: FaBook },
       ],
     },
     {

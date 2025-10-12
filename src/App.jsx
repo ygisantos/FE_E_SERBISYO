@@ -39,10 +39,12 @@ import WorkerCertificateLogs from "./pages/worker/WorkerCertificateLogs";
 
 // Resident Pages
 import ChatbotAssistant from "./pages/resident/ChatbotAssistant";
-import ResidentCertificates from "./pages/resident/ResidentCertificates";
+
 import ResidentFeedback from "./pages/resident/ResidentFeedback";
 import ViewCertificateRequest from "./pages/resident/ViewCertificateRequest";
 import CertificateRequestLogs from "./pages/resident/CertificateRequestLogs";
+import AvailableCertificates from "./pages/resident/AvailableCertificates";
+import MyRequests from "./pages/resident/MyRequests";
 
 // All user type Pages
 import MyProfile from "./pages/Profile/MyProfile";
@@ -166,17 +168,25 @@ function App() {
               <Route path="/resident/chatbot" element={<ChatbotAssistant />} />
               {/* Certificates */}
               <Route
+                path="/resident/certificates/available-certificates"
+                element={<AvailableCertificates />}
+              />
+              <Route
+                path="/resident/certificates/my-requests"
+                element={<MyRequests />}
+              />
+              <Route
                 path="/resident/certificates/view/:requestId"
                 element={<ViewCertificateRequest />}
               />
-              <Route
+              {/* <Route
                 path="/resident/certificates"
                 element={<ResidentCertificates />}
-              />
-              <Route
+              /> */}
+              {/* <Route
                 path="/resident/certificates/request"
                 element={<ResidentCertificates />}
-              />
+              /> */}
               
               <Route path="/resident/feedback" element={<ResidentFeedback />} />
               <Route path="/resident/profile" element={<MyProfile />} />
