@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../components/reusable/DataTable";
 import { FileText, CheckCircle, Clock, AlertTriangle } from "lucide-react";
-import { FaEye, FaPlus } from "react-icons/fa"; // Add this import
+import { FaEye } from "react-icons/fa"; 
 import { getAllBlotters } from "../../api/blotterApi";
 import { toast } from "react-toastify";
 import CreateBlotterModal from "../../components/modals/CreateBlotterModal";
@@ -149,44 +149,13 @@ const Blotter = () => {
   
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header Section */}
-      {/* <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          <div>
-            <h1 className="text-3xl font-semibold text-gray-900">
-              Blotter Reports
-            </h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setShowNewCaseModal(true)}
-              className="inline-flex items-center px-5 py-2.5 bg-red-900 text-white rounded-lg text-sm font-medium hover:bg-red-800 cursor-pointer transition-all shadow-sm"
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              New Case
-            </button>
-             
-          </div>
-        </div> */}
-      {/* Main Content */}
       <div className="bg-white rounded-lg border border-gray-100">
         <div className="px-6 py-4 border-b border-gray-100">
           <h3 className="text-lg font-medium text-gray-800">
             Blotter Case List
           </h3>
           <p className="text-sm text-gray-500 mt-1">
-            Manage and track all reported cases
+            View and manage reported cases
           </p>
         </div>
         <div className="p-6">
@@ -224,23 +193,10 @@ const Blotter = () => {
                 onClick: handleView,
               },
             ]}
-            actionButton={{
-              label: "New Case",
-              icon: <FaPlus />,
-              onClick: () => setShowNewCaseModal(true),
-              className: "bg-red-900 text-white hover:bg-red-800",
-            }}
             onSort={handleSort}
           />
         </div>
       </div>
-
-      {/* Create Blotter Modal */}
-      <CreateBlotterModal
-        isOpen={showNewCaseModal}
-        onClose={() => setShowNewCaseModal(false)}
-        onSuccess={fetchBlotters}
-      />
 
       {/* View Blotter Modal */}
       {showViewModal && (
@@ -259,4 +215,4 @@ const Blotter = () => {
  
 
 export default Blotter;
-        
+ 

@@ -45,6 +45,7 @@ import ViewCertificateRequest from "./pages/resident/ViewCertificateRequest";
 import CertificateRequestLogs from "./pages/resident/CertificateRequestLogs";
 import AvailableCertificates from "./pages/resident/AvailableCertificates";
 import MyRequests from "./pages/resident/MyRequests";
+import MyCases from "./pages/resident/MyCases";
 
 // All user type Pages
 import MyProfile from "./pages/Profile/MyProfile";
@@ -194,6 +195,7 @@ function App() {
                 path="/resident/certificates/logs"
                 element={<CertificateRequestLogs />}
               />
+              <Route path="/resident/blotter/my-cases" element={<MyCases />} />
             </Route>
           </Routes>
         </Router>

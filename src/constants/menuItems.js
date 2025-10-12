@@ -49,7 +49,7 @@ const adminMenu = [
        { to: "/admin/certificates/logs", label: "Certificate Logs", icon: FaBook },
     ],
   },
-  { to: "/admin/blotter", label: "Blotter Management", icon: FaBook },
+  { to: "/admin/blotter", label: "View Blotter Cases", icon: FaBook },
   { to: "/admin/announcements", label: "Announcement Management", icon: FaCommentDots },
   { to: "/admin/feedback", label: "Feedback Reports", icon: FaCommentDots },
   { to: "/admin/activity-logs", label: "Activity Logs", icon: FaChartBar },
@@ -81,8 +81,7 @@ const workerMenu = [
     label: "Blotter Management",
     icon: FaBook,
     subMenu: [
-      { to: "/worker/blotter/new", label: "Create Blotter", icon: FaUserPlus },
-      { to: "/worker/blotter", label: "All Blotter Records", icon: FaBook },
+      { to: "/worker/blotter", label: "View Blotter Cases", icon: FaBook },
     ],
   },
   { to: "/worker/profile", label: "My Profile", icon: FaUserAlt }
@@ -107,7 +106,6 @@ const menuItems = {
       label: "Blotter",
       icon: FaBook,
       subMenu: [
-        { to: "/resident/blotter/create", label: "File a Blotter", icon: FaFileAlt },
         { to: "/resident/blotter/my-cases", label: "My Cases", icon: FaBook },
       ],
     },
