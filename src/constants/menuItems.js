@@ -14,7 +14,8 @@ import {
   FaChartBar,
   FaEye,
   FaEdit,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaCog
 } from "react-icons/fa";
 
 const adminMenu = [
@@ -52,6 +53,7 @@ const adminMenu = [
   { to: "/admin/blotter", label: "View Blotter Cases", icon: FaBook },
   { to: "/admin/announcements", label: "Announcement Management", icon: FaCommentDots },
   { to: "/admin/feedback", label: "Feedback Reports", icon: FaCommentDots },
+  { to: "/admin/configurations", label: "System Configuration", icon: FaCog },
   { to: "/admin/activity-logs", label: "Activity Logs", icon: FaChartBar },
   { to: "/admin/profile", label: "My Profile", icon: FaUserAlt },
 ];
