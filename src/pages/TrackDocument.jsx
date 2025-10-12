@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import { trackDocument } from '../api/trackingApi';
 import { 
   FaSearch, 
-  FaClock, 
-  FaCheckCircle, 
-  FaCog, 
-  FaClipboardList, 
-  FaGift, 
-  FaTimes,
   FaEye,
   FaUser,
   FaCalendarAlt,
-  FaInfoCircle
+  FaInfoCircle,
+  FaTimes
 } from 'react-icons/fa';
+import InputField from '../components/reusable/InputField';
+import Button from '../components/reusable/Button';
+import StatusBadge from '../components/reusable/StatusBadge';
+import TimelineItem from '../components/reusable/TimelineItem';
+import InfoCard from '../components/reusable/InfoCard';
+import { showCustomToast } from '../components/Toast/CustomToast';
 
 const TrackDocument = () => {
   const [trackingData, setTrackingData] = useState(null);
@@ -26,8 +27,11 @@ const TrackDocument = () => {
       setError(null);
       const data = await trackDocument(id);
       setTrackingData(data);
+      showCustomToast('Document tracking data loaded successfully!', 'success');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch tracking data');
+      const errorMessage = err.response?.data?.message || 'Failed to fetch tracking data';
+      setError(errorMessage);
+      showCustomToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -38,7 +42,9 @@ const TrackDocument = () => {
     if (searchId.trim()) {
       fetchTrackingData(searchId.trim());
     } else {
-      setError('Please enter a valid transaction ID');
+      const errorMessage = 'Please enter a valid transaction ID';
+      setError(errorMessage);
+      showCustomToast(errorMessage, 'error');
     }
   };
 
@@ -46,30 +52,7 @@ const TrackDocument = () => {
     setSearchId('');
     setTrackingData(null);
     setError(null);
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: 'bg-yellow-500',
-      approved: 'bg-green-500',
-      processing: 'bg-blue-500',
-      ready_to_pickup: 'bg-purple-500',
-      released: 'bg-emerald-600',
-      rejected: 'bg-red-500'
-    };
-    return colors[status] || 'bg-gray-500';
-  };
-
-  const getStatusIcon = (status) => {
-    const icons = {
-      pending: <FaClock className="w-4 h-4" />,
-      approved: <FaCheckCircle className="w-4 h-4" />,
-      processing: <FaCog className="w-4 h-4" />,
-      ready_to_pickup: <FaClipboardList className="w-4 h-4" />,
-      released: <FaGift className="w-4 h-4" />,
-      rejected: <FaTimes className="w-4 h-4" />
-    };
-    return icons[status] || <FaInfoCircle className="w-4 h-4" />;
+    showCustomToast('Results cleared', 'info');
   };
 
   return (
@@ -89,42 +72,37 @@ const TrackDocument = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
+              <div className="flex-1">
+                <InputField
                   type="text"
                   value={searchId}
                   onChange={(e) => setSearchId(e.target.value)}
                   placeholder="Enter Transaction ID (e.g., TXN_DOC_4080675)"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+                  icon={<FaSearch className="w-4 h-4" />}
+                  className="mb-0"
                 />
               </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-3 bg-red-900 text-white font-medium rounded-lg hover:bg-red-800 disabled:bg-red-400 transition-colors duration-200 flex items-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Tracking...
-                  </>
-                ) : (
-                  <>
-                    <FaSearch className="w-4 h-4" />
-                    Track Document
-                  </>
-                )}
-              </button>
-              {trackingData && (
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="px-6 py-3 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors duration-200"
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  loading={loading}
+                  loadingText="Tracking..."
+                  disabled={loading}
+                  className="!bg-red-900 hover:!bg-red-800 !mt-0 flex items-center gap-2 px-6"
                 >
-                  Clear Results
-                </button>
-              )}
+                  <FaSearch className="w-4 h-4" />
+                  Track Document
+                </Button>
+                {trackingData && (
+                  <Button
+                    type="button"
+                    onClick={handleClear}
+                    className="!bg-gray-600 hover:!bg-gray-700 !mt-0 px-6"
+                  >
+                    Clear Results
+                  </Button>
+                )}
+              </div>
             </div>
           </form>
         </div>
@@ -151,17 +129,13 @@ const TrackDocument = () => {
                     <FaInfoCircle className="w-4 h-4" />
                     Transaction ID: {trackingData.transaction_id}
                   </p>
-                  <div className={`inline-flex items-center px-4 py-2 rounded-full text-white font-medium ${getStatusColor(trackingData.status)}`}>
-                    <span className="mr-2">{getStatusIcon(trackingData.status)}</span>
-                    <span>{trackingData.status.replace('_', ' ').toUpperCase()}</span>
-                  </div>
+                  <StatusBadge status={trackingData.status} />
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                  <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <FaUser className="w-4 h-4" />
-                    Requestor Information
-                  </h3>
-                  <div className="space-y-2 text-sm">
+                <InfoCard 
+                  title="Requestor Information" 
+                  icon={<FaUser className="w-4 h-4" />}
+                >
+                  <div className="space-y-2">
                     <p><span className="font-medium text-gray-700">Name:</span> {trackingData.requestor.name}</p>
                     <p><span className="font-medium text-gray-700">Email:</span> {trackingData.requestor.email}</p>
                     <p className="flex items-center gap-2">
@@ -173,7 +147,7 @@ const TrackDocument = () => {
                       <span className="font-medium text-gray-700">Last Updated:</span> {trackingData.last_updated}
                     </p>
                   </div>
-                </div>
+                </InfoCard>
               </div>
             </div>
 
@@ -186,18 +160,11 @@ const TrackDocument = () => {
                   <div className="absolute top-6 left-0 w-full h-0.5 bg-gray-200"></div>
                   <div className="flex justify-between relative z-10">
                     {Object.entries(trackingData.status_timeline).map(([status, isActive]) => (
-                      <div key={status} className="flex flex-col items-center">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-md text-white ${
-                          isActive ? getStatusColor(status) : 'bg-gray-300'
-                        }`}>
-                          {getStatusIcon(status)}
-                        </div>
-                        <span className={`mt-2 text-xs font-medium text-center max-w-20 ${
-                          isActive ? 'text-gray-900' : 'text-gray-500'
-                        }`}>
-                          {status.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
+                      <TimelineItem 
+                        key={status} 
+                        status={status} 
+                        isActive={isActive} 
+                      />
                     ))}
                   </div>
                 </div>
@@ -206,16 +173,12 @@ const TrackDocument = () => {
               {/* Mobile Timeline */}
               <div className="md:hidden space-y-3">
                 {Object.entries(trackingData.status_timeline).map(([status, isActive]) => (
-                  <div key={status} className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${
-                      isActive ? getStatusColor(status) : 'bg-gray-300'
-                    }`}>
-                      {getStatusIcon(status)}
-                    </div>
-                    <span className={`font-medium ${isActive ? 'text-gray-900' : 'text-gray-500'}`}>
-                      {status.replace('_', ' ').toUpperCase()}
-                    </span>
-                  </div>
+                  <TimelineItem 
+                    key={status} 
+                    status={status} 
+                    isActive={isActive} 
+                    isMobile={true}
+                  />
                 ))}
               </div>
             </div>
@@ -260,15 +223,13 @@ const TrackDocument = () => {
                           Uploaded: {req.uploaded_at}
                         </span>
                       </div>
-                      <a 
-                        href={req.file_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-4 py-2 bg-red-900 text-white text-sm font-medium rounded-lg hover:bg-red-800 transition-colors duration-200"
+                      <Button
+                        onClick={() => window.open(req.file_url, '_blank')}
+                        className="!bg-red-900 hover:!bg-red-800 !mt-0 !py-2 !text-sm p-2 flex flex-row items-center"
                       >
                         <FaEye className="w-4 h-4 mr-2" />
                         View Document
-                      </a>
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -280,23 +241,21 @@ const TrackDocument = () => {
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-6">Additional Information</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <FaInfoCircle className="w-4 h-4 text-gray-600" />
-                      Document Description
-                    </h4>
-                    <p className="text-gray-700 text-sm">{trackingData.full_details.document_details.description}</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <FaUser className="w-4 h-4 text-gray-600" />
-                      Contact Information
-                    </h4>
-                    <div className="text-sm text-gray-700 space-y-1">
+                  <InfoCard 
+                    title="Document Description" 
+                    icon={<FaInfoCircle className="w-4 h-4" />}
+                  >
+                    <p>{trackingData.full_details.document_details.description}</p>
+                  </InfoCard>
+                  <InfoCard 
+                    title="Contact Information" 
+                    icon={<FaUser className="w-4 h-4" />}
+                  >
+                    <div className="space-y-1">
                       <p><span className="font-medium">Phone:</span> {trackingData.full_details.account.contact_no}</p>
                       <p><span className="font-medium">Address:</span> {trackingData.full_details.account.house_no} {trackingData.full_details.account.street}, {trackingData.full_details.account.barangay}, {trackingData.full_details.account.municipality}</p>
                     </div>
-                  </div>
+                  </InfoCard>
                 </div>
               </div>
             )}
