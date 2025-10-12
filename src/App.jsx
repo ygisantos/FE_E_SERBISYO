@@ -48,6 +48,8 @@ import CertificateRequestLogs from "./pages/resident/CertificateRequestLogs";
 import MyProfile from "./pages/Profile/MyProfile";
 import AllResidents from "./pages/admin/resident-management/AllResidents";
 
+import TrackDocument from "./pages/TrackDocument";
+
 function ScrollToTop() {
   const location = useLocation();
   useEffect(() => {
@@ -75,6 +77,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/track-document" element={<TrackDocument />} />
 
             <Route
               element={
@@ -184,6 +187,12 @@ function App() {
                 path="/resident/certificates/logs"
                 element={<CertificateRequestLogs />}
               />
+
+              <Route
+                path="/track-certificate"
+                element={ <TrackDocument /> }
+              />
+              
             </Route>
           </Routes>
         </Router>
