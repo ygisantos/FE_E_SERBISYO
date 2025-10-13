@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/reusable/DataTable';
 import { FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import { FileText } from 'lucide-react';
-import { toast } from 'react-toastify';
-import { createAnnouncement, getAnnouncements } from '../../api/announcementApi';
+import { showCustomToast } from '../../components/Toast/CustomToast';
+import { createAnnouncement, getAnnouncements, deleteAnnouncement } from '../../api/announcementApi';
 import CreateAnnouncementModal from '../../components/modals/CreateAnnouncementModal';
-
 import ViewAnnouncementModal from '../../components/modals/ViewAnnouncementModal';
+import EditAnnouncementModal from '../../components/modals/EditAnnouncementModal';
+import ConfirmationModal from '../../components/modals/ConfirmationModal';
 
 const AnnouncementManagement = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -27,7 +28,10 @@ const AnnouncementManagement = () => {
     type: ''
   });
   const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     fetchAnnouncements();
@@ -57,7 +61,7 @@ const AnnouncementManagement = () => {
         }));
       }
     } catch (error) {
-      toast.error('Failed to fetch announcements');
+      showCustomToast('Failed to fetch announcements', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +74,7 @@ const AnnouncementManagement = () => {
       const response = await createAnnouncement(formData);
       
       if (response.success) {
-        toast.success('Announcement created successfully');
+        showCustomToast('Announcement created successfully', 'success');
         setIsCreateModalOpen(false);
         setFormData({ type: '', description: '', images: [] });
         fetchAnnouncements();
@@ -79,13 +83,46 @@ const AnnouncementManagement = () => {
       if (error.errors) {
         Object.keys(error.errors).forEach(field => {
           const messages = error.errors[field];
-          messages.forEach(message => toast.error(`${field}: ${message}`));
+          messages.forEach(message => 
+            showCustomToast(`${field}: ${message}`, 'error')
+          );
         });
       } else if (error.message) {
-        toast.error(error.message);
+        showCustomToast(error.message, 'error');
       } else {
-        toast.error('Failed to create announcement. Please try again.');
+        showCustomToast('Failed to create announcement. Please try again.', 'error');
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEdit = (announcement) => {
+    setSelectedAnnouncement(announcement);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateSuccess = () => {
+    fetchAnnouncements();
+    setShowEditModal(false);
+    setSelectedAnnouncement(null);
+  };
+
+  const handleDelete = (announcement) => {
+    setSelectedAnnouncement(announcement);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setIsLoading(true);
+      await deleteAnnouncement(selectedAnnouncement.id);
+      showCustomToast('Announcement deleted successfully', 'success');
+      fetchAnnouncements();
+      setShowDeleteModal(false);
+      setSelectedAnnouncement(null);
+    } catch (error) {
+      showCustomToast(error.message || 'Failed to delete announcement', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +178,7 @@ const AnnouncementManagement = () => {
   ];
 
   const handleView = (row) => {
-    setSelectedAnnouncement(row);
+    setSelectedAnnouncementId(row.id);
     setShowViewModal(true);
   };
 
@@ -193,16 +230,12 @@ const AnnouncementManagement = () => {
               {
                 icon: <FaEdit className="h-3.5 w-3.5 text-gray-400" />,
                 label: 'Edit',
-                onClick: (row) => {
-                  toast.info('Edit functionality coming soon');
-                },
+                onClick: handleEdit,
               },
               {
-                icon: <FaTrash className="h-3.5 w-3.5 text-gray-400" />,
+                icon: <FaTrash className="h-3.5 w-3.5 text-red-500" />,
                 label: 'Delete',
-                onClick: (row) => {
-                  toast.info('Delete functionality coming soon');
-                },
+                onClick: handleDelete,
               },
             ]}
             actionButton={{
@@ -229,13 +262,32 @@ const AnnouncementManagement = () => {
         isOpen={showViewModal}
         onClose={() => {
           setShowViewModal(false);
+          setSelectedAnnouncementId(null);
+        }}
+        announcementId={selectedAnnouncementId}
+      />
+
+      <EditAnnouncementModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
           setSelectedAnnouncement(null);
         }}
         announcement={selectedAnnouncement}
+        onSuccess={handleUpdateSuccess}
+      />
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Announcement"
+        message={`Are you sure you want to delete this announcement? This action cannot be undone.`}
+        confirmText="Delete"
+        type="danger"
       />
     </div>
   );
 };
 
 export default AnnouncementManagement;
-   
