@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import Modal from "../Modal/Modal";
 import FormInput from '../reusable/InputField';
 import Select from "../reusable/Select";
-import { FaUser, FaBriefcase, FaCalendarAlt, FaUpload, FaImage, FaTrash } from "react-icons/fa";
+import {  FaUpload, FaImage, FaTrash } from "react-icons/fa";
+import ConfirmationModal from "./ConfirmationModal";
+
 
 const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
   const [formData, setFormData] = useState({
@@ -16,48 +18,72 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
     term_end: "",
     status: "active",
   });
+  const [originalData, setOriginalData] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   const fileInputRef = useRef(null);
+  const initialFormData = useRef(null);
+
+  const getProfilePicUrl = (path) => {
+    if (!path) return '/placeholder-avatar.png';
+    if (path.startsWith('http')) return path;
+    
+    // Use storage URL from env
+    const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
+    return `${storageUrl}/${path}`;
+  };
 
   useEffect(() => {
     if (official) {
-      // Split full name into components
-      const nameParts = official.full_name.split(' ');
-      const lastName = nameParts.pop();
-      const firstName = nameParts.shift();
-      const middleAndSuffix = nameParts.join(' ');
-      
-      // Check for common suffixes
-      const suffixes = ['Jr', 'Sr', 'II', 'III', 'IV'];
-      let middleName = middleAndSuffix;
+      // Since we're getting direct official object from response
+      const data = official;
+
+      // Parse full name
+      const nameParts = data.full_name.split(' ').filter(part => part);
+      let firstName = nameParts[0] || '';
+      let lastName = nameParts[nameParts.length - 1] || '';
+      let middleName = '';
       let suffix = '';
-      
-      suffixes.forEach(s => {
-        if (middleAndSuffix.endsWith(s)) {
-          suffix = s;
-          middleName = middleAndSuffix.slice(0, -(s.length + 1)).trim();
+
+      // Extract middle name and suffix if name has more than 2 parts
+      if (nameParts.length > 2) {
+        const middleParts = nameParts.slice(1, -1);
+        const commonSuffixes = ['Jr', 'Sr', 'II', 'III', 'IV'];
+        const lastMiddlePart = middleParts[middleParts.length - 1];
+        
+        if (commonSuffixes.includes(lastMiddlePart)) {
+          suffix = lastMiddlePart;
+          middleName = middleParts.slice(0, -1).join(' ');
+        } else {
+          middleName = middleParts.join(' ');
         }
-      });
+      }
 
-      setFormData({
-        first_name: firstName || '',
-        middle_name: middleName || '',
-        last_name: lastName || '',
-        suffix: suffix || '',
-        position: official.position,
-        term_start: official.term_start?.split('T')[0],
-        term_end: official.term_end?.split('T')[0],
-        status: official.status,
-      });
+      const formattedData = {
+        first_name: firstName,
+        middle_name: middleName,
+        last_name: lastName,
+        suffix: suffix,
+        position: data.position,
+        term_start: data.term_start?.split('T')[0],
+        term_end: data.term_end?.split('T')[0],
+        status: data.status,
+      };
 
-      if (official.image_path) {
-        const imgUrl = `${import.meta.env.VITE_API_BASE_URL}/${official.image_path}`;
+      setFormData(formattedData);
+      setOriginalData(formattedData);
+
+      // Set preview image
+      if (data.image_path) {
+        const imgUrl = getProfilePicUrl(data.image_path);
         setPreviewImage(imgUrl);
       }
     }
-  }, [official]);
+  }, [official, isOpen]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -65,6 +91,7 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
       ...prev,
       [name]: value
     }));
+    setHasChanges(true);
   };
 
   const handleFileChange = (e) => {
@@ -79,22 +106,30 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
     }
   };
 
+  const handleClose = () => {
+    if (hasChanges) {
+      setShowDiscardModal(true);
+    } else {
+      resetAndClose();
+    }
+  };
+
+  const resetAndClose = () => {
+    setFormData(originalData || {});
+    setPreviewImage(null);
+    setErrors({});
+    setHasChanges(false);
+    onClose();
+  };
+
+  const handleDiscardChanges = () => {
+    setShowDiscardModal(false);
+    resetAndClose();
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const formDataToSend = new FormData();
-    const fullName = `${formData.first_name} ${formData.middle_name ? formData.middle_name + ' ' : ''}${formData.last_name}${formData.suffix ? ' ' + formData.suffix : ''}`;
-    
-    formDataToSend.append('full_name', fullName.trim());
-    formDataToSend.append('position', formData.position);
-    formDataToSend.append('term_start', formData.term_start);
-    formDataToSend.append('term_end', formData.term_end);
-    formDataToSend.append('status', formData.status);
-    
-    if (formData.image_path instanceof File) {
-      formDataToSend.append('image', formData.image_path);
-    }
-    
-    onSubmit(formDataToSend);
+    setShowSaveModal(true);
   };
 
   const positionOptions = [
@@ -109,44 +144,42 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
   const renderImageUpload = () => (
     <div className="flex flex-col items-center justify-center space-y-3">
       <div 
-        className="relative group w-32 h-32 rounded-full border-2 border-dashed border-gray-300 hover:border-red-500 transition-colors duration-200"
+        className="relative group w-32 h-32 rounded-full border-2 border-dashed border-gray-300 hover:border-red-500 transition-colors duration-200 cursor-pointer overflow-hidden"
         onClick={() => fileInputRef.current?.click()}
       >
         {previewImage ? (
-          <>
+          <div className="h-full">
             <img 
               src={previewImage} 
-              alt="Preview" 
+              alt="Official's photo" 
               className="w-full h-full rounded-full object-cover"
             />
-            <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <div className="flex space-x-1">
+            <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full flex items-center justify-center">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowPreview(true);
                   }}
-                  className="p-1.5 bg-white rounded-full hover:bg-gray-100"
+                  className="p-2 bg-white/90 rounded-full hover:bg-white"
                 >
-                  <FaImage className="w-3.5 h-3.5 text-gray-600" />
+                  <FaImage className="w-4 h-4 text-gray-700" />
                 </button>
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (window.confirm('Remove this photo?')) {
-                      setPreviewImage(null);
-                      setFormData(prev => ({ ...prev, image_path: null }));
-                    }
+                    setPreviewImage(null);
+                    setFormData(prev => ({ ...prev, image_path: null }));
                   }}
-                  className="p-1.5 bg-white rounded-full hover:bg-red-100"
+                  className="p-2 bg-white/90 rounded-full hover:bg-red-50"
                 >
-                  <FaTrash className="w-3.5 h-3.5 text-red-500" />
+                  <FaTrash className="w-4 h-4 text-red-500" />
                 </button>
               </div>
             </div>
-          </>
+          </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <FaUpload className="w-6 h-6 text-gray-400 group-hover:text-red-500 transition-colors duration-200" />
@@ -161,6 +194,15 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
         accept="image/*"
         className="hidden"
       />
+      {previewImage && (
+        <button
+          type="button"
+          onClick={() => setShowPreview(true)}
+          className="text-xs text-red-600 hover:text-red-700"
+        >
+          View Photo
+        </button>
+      )}
     </div>
   );
 
@@ -168,14 +210,14 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
     <>
       <Modal 
         isOpen={isOpen} 
-        onClose={onClose} 
+        onClose={handleClose}
         title="Edit Official"
         modalClass="max-w-2xl"
         footer={
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-3 py-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
             >
               Cancel
@@ -281,6 +323,46 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
         </form>
       </Modal>
 
+      {/* Discard Changes Modal */}
+      <ConfirmationModal
+        isOpen={showDiscardModal}
+        onClose={() => setShowDiscardModal(false)}
+        onConfirm={handleDiscardChanges}
+        title="Discard Changes"
+        message="You have unsaved changes. Are you sure you want to discard them?"
+        confirmText="Discard"
+        cancelText="Keep Editing"
+        type="warning"
+      />
+
+      {/* Save Changes Modal */}
+      <ConfirmationModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onConfirm={() => {
+          const formDataToSend = new FormData();
+          const fullName = `${formData.first_name} ${formData.middle_name ? formData.middle_name + ' ' : ''}${formData.last_name}${formData.suffix ? ' ' + formData.suffix : ''}`;
+    
+          formDataToSend.append('full_name', fullName.trim());
+          formDataToSend.append('position', formData.position);
+          formDataToSend.append('term_start', formData.term_start);
+          formDataToSend.append('term_end', formData.term_end);
+          formDataToSend.append('status', formData.status);
+    
+          if (formData.image_path instanceof File) {
+            formDataToSend.append('image', formData.image_path);
+          }
+    
+          onSubmit(formDataToSend);
+          setShowSaveModal(false);
+        }}
+        title="Save Changes"
+        message="Are you sure you want to save these changes?"
+        confirmText="Save"
+        cancelText="Cancel"
+        type="warning"
+      />
+
       {/* Preview Modal */}
       {showPreview && (
         <Modal
@@ -309,3 +391,4 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
 };
  
 export default EditOfficialModal;
+  

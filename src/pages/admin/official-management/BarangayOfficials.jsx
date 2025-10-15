@@ -64,10 +64,14 @@ const BarangayOfficials = () => {
     }
   };
 
-  const handleEdit = (official) => {
-    console.log("Edit", official);
-    setSelectedOfficial(official);
-    setShowEditModal(true);
+  const handleEdit = async (official) => {
+    try {
+
+      setSelectedOfficial(official);
+      setShowEditModal(true);
+    } catch (error) {
+      showCustomToast('Failed to fetch official details', 'error');
+    }
   };
 
   const handleArchive = (official) => {
@@ -99,24 +103,14 @@ const BarangayOfficials = () => {
 
   const confirmArchive = async () => {
     try {
-      await updateOfficialStatus(selectedOfficial.id, 'archived');
+      // Change status to 'inactive' for API
+      await updateOfficialStatus(selectedOfficial.id, 'inactive');
       await loadOfficials();
       setShowArchiveModal(false);
       setSelectedOfficial(null);
       showCustomToast('Official archived successfully', 'success');
     } catch (error) {
       showCustomToast(error.message || 'Failed to archive official', 'error');
-    }
-  };
-
-  const handleUpdateStatus = async (official) => {
-    try {
-      const newStatus = official.status === 'active' ? 'archived' : 'active';
-      await updateOfficialStatus(official.id, newStatus);
-      await loadOfficials();
-      showCustomToast(`Official status updated to ${newStatus}`, 'success');
-    } catch (error) {
-      showCustomToast(error.message || 'Failed to update status', 'error');
     }
   };
 
@@ -228,7 +222,8 @@ const BarangayOfficials = () => {
               : "bg-gray-50 text-red-600"
           }`}
         >
-          {value}
+          {/* Display 'archived' instead of 'inactive' */}
+          {value === 'inactive' ? 'archived' : value}
         </span>
       ),
     },
