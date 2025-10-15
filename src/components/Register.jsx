@@ -87,9 +87,9 @@ const Register = ({ form, handleChange, handleSubmit, isLoading = false, resetSi
         break;
 
       case 5: // Proof of Identity
-        if (!form.id_front) errors.id_front = 'Front of ID is required';
-        if (!form.id_back) errors.id_back = 'Back of ID is required';
-        if (!form.selfie_with_id) errors.selfie_with_id = 'Selfie with ID is required';
+        if (!form.front_id_card) errors.front_id_card = 'Front of ID is required';
+        if (!form.back_id_card) errors.back_id_card = 'Back of ID is required';
+        if (!form.selfie_id_card) errors.selfie_id_card = 'Selfie with ID is required';
         break;
 
       default:
@@ -143,25 +143,24 @@ const Register = ({ form, handleChange, handleSubmit, isLoading = false, resetSi
     const file = e.target.files[0];
     if (file) {
       if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
-        alert("Please upload a valid image file (jpeg, jpg, png)");
+        showCustomToast("Please upload a valid image file (jpeg, jpg, png)", "error");
         return;
       }
 
-      // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
         switch(type) {
-          case 'id_front':
+          case 'front_id_card':
             setIdFrontPreview(e.target.result);
-            handleChange({ target: { name: 'id_front', value: file } });
+            handleChange({ target: { name: 'front_id_card', value: file } });
             break;
-          case 'id_back':
+          case 'back_id_card':
             setIdBackPreview(e.target.result);
-            handleChange({ target: { name: 'id_back', value: file } });
+            handleChange({ target: { name: 'back_id_card', value: file } });
             break;
-          case 'selfie_with_id':
+          case 'selfie_id_card':
             setSelfieWithIdPreview(e.target.result);
-            handleChange({ target: { name: 'selfie_with_id', value: file } });
+            handleChange({ target: { name: 'selfie_id_card', value: file } });
             break;
           default:
             break;

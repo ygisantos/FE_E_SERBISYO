@@ -17,7 +17,7 @@ const ViewOfficialModal = ({ isOpen, onClose, official }) => {
       fields: [
         { label: 'Full Name', value: official?.full_name },
         { label: 'Position', value: official?.position },
-        { label: 'Status', value: official?.status?.toUpperCase() },
+        { label: 'Status', value: official?.status === 'inactive' ? 'ARCHIVED' : official?.status?.toUpperCase() },
       ]
     },
     {

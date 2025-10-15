@@ -1,7 +1,19 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import InputField from "../../reusable/InputField";
 
+const FIXED_ADDRESS = {
+  municipality: 'Balagtas',
+  barangay: 'Santol',
+  zip_code: '3016'
+};
+
 const AddressInformation = ({ form, handleChange, stepErrors }) => {
+  const fixedFields = useMemo(() => ({
+    municipality: FIXED_ADDRESS.municipality,
+    barangay: FIXED_ADDRESS.barangay,
+    zip_code: FIXED_ADDRESS.zip_code
+  }), []);
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
@@ -12,21 +24,23 @@ const AddressInformation = ({ form, handleChange, stepErrors }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <InputField 
           name="municipality" 
-          value={form.municipality || ''} 
-          onChange={handleChange} 
-          required 
+          value={fixedFields.municipality} 
+          onChange={() => {}}
+          disabled
+          readOnly
           placeholder="City/Municipality" 
           label="City/Municipality" 
-          error={stepErrors.municipality}
+          className="bg-gray-50 cursor-not-allowed select-none"
         />
         <InputField 
           name="barangay" 
-          value={form.barangay || ''} 
-          onChange={handleChange} 
-          required 
+          value={fixedFields.barangay} 
+          onChange={() => {}}
+          disabled
+          readOnly
           placeholder="Barangay name" 
           label="Barangay" 
-          error={stepErrors.barangay}
+          className="bg-gray-50 cursor-not-allowed select-none"
         />
         <InputField 
           name="house_no" 
@@ -48,25 +62,25 @@ const AddressInformation = ({ form, handleChange, stepErrors }) => {
         />
         <InputField 
           name="zip_code" 
-          value={form.zip_code || ''} 
-          onChange={handleChange} 
-          required 
+          value={fixedFields.zip_code} 
+          onChange={() => {}}
+          disabled
+          readOnly
           placeholder="4-digit ZIP code" 
           label="ZIP Code" 
-          error={stepErrors.zip_code}
+          className="bg-gray-50 cursor-not-allowed select-none"
         />
-        <InputField 
+        {/* <InputField 
           name="type" 
           value="residence"
           onChange={() => {}}
           disabled
           label="Address Type"
           className="bg-gray-50 cursor-not-allowed"
-        />
+        /> */}
       </div>
     </div>
   );
 };
 
 export default AddressInformation;
-  

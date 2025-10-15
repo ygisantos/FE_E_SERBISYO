@@ -66,7 +66,7 @@ const ReviewSubmit = ({ form, handleProfilePictureChange, profilePreview }) => {
           <div className="space-y-3">
             <ReviewItem label="Nationality" value={form.nationality} />
             <ReviewItem label="Birth Place" value={form.birth_place} />
-            <ReviewItem label="Address Type" value={form.type?.charAt(0).toUpperCase() + form.type?.slice(1)} />
+
             {form.voters_id && <ReviewItem label="Voter's ID" value={form.voters_id} />}
             {form.is_pwd && <ReviewItem label="PWD ID" value={form.pwd_number} />}
             {form.is_single_parent && <ReviewItem label="Single Parent ID" value={form.single_parent_number} />}

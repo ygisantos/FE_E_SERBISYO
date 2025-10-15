@@ -27,6 +27,7 @@ const ProofOfIdentity = ({ handleFileChange, previews, stepErrors }) => {
         <input
           type="file"
           id={id}
+          name={id} // Add name attribute to match API field names
           accept="image/*"
           onChange={(e) => handleFileChange(e, id)}
           className="hidden"
@@ -52,10 +53,10 @@ const ProofOfIdentity = ({ handleFileChange, previews, stepErrors }) => {
       </div>
 
       <div className="space-y-4 sm:space-y-8">
-        {renderUploadSection('id_front', 'Valid ID (Front)', previews.idFront)}
-        {renderUploadSection('id_back', 'Valid ID (Back)', previews.idBack)}
+        {renderUploadSection('front_id_card', 'Valid ID (Front)', previews.idFront)}
+        {renderUploadSection('back_id_card', 'Valid ID (Back)', previews.idBack)}
         {renderUploadSection(
-          'selfie_with_id', 
+          'selfie_id_card', 
           'Selfie with ID', 
           previews.selfieWithId,
           'Take a clear photo of yourself holding your ID next to your face'

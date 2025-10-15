@@ -52,8 +52,8 @@ const NavItem = ({
   }`;
 
   const stateClasses = isActive
-    ? "bg-red-100 text-red-700 font-bold shadow-sm"
-    : "text-white hover:bg-white hover:text-[var(--color-primary)]";
+    ? "bg-red-100 text-red-800 font-bold shadow-sm"
+    : "text-white hover:bg-red-900 hover:text-white";
 
   if (item.subMenu) {
     return (
@@ -248,9 +248,9 @@ const UserSidebar = ({
   };
 
   return (
-  <>
+    <>
       <aside
-      className={`h-screen bg-[var(--color-primary)] border-r border-red-700 shadow-lg flex flex-col transition-all duration-300 ${
+      className={`h-screen bg-red-800 border-r border-red-900 shadow-lg flex flex-col transition-all duration-300 ${
         isCollapsed ? "w-16" : "w-58"
       }`}
     >

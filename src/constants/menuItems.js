@@ -21,9 +21,12 @@ import {
 const adminMenu = [
   { to: "/admin/dashboard", label: "Dashboard", icon: FaTachometerAlt },
   {
-    to: "/admin/official-management/officials", 
-    label: "Official Management", 
-    icon: FaUserTie 
+    label: "Official Management",
+    icon: FaUserTie,
+    subMenu: [
+      { to: "/admin/official-management/officials", label: "Active Officials", icon: FaUsers },
+      { to: "/admin/official-management/archived", label: "Archived Officials", icon: FaArchive },
+    ],
   },
   {
     label: "Worker Management",

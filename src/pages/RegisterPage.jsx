@@ -18,10 +18,10 @@ const initialState = {
   birthday: "",
   contact_no: "",
   birth_place: "",
-  municipality: "",
-  barangay: "",
+  municipality: "Balagtas", // Fixed value
+  barangay: "Santol", // Fixed value
   house_no: "",
-  zip_code: "",
+  zip_code: "3016", // Fixed value
   street: "",
   password: "",
   password_confirmation: "",
@@ -126,7 +126,9 @@ const RegisterPage = () => {
       showCustomToast("Registration successful!", "success");
     } catch (err) {
       setErrors(err);
-      showCustomToast("Registration failed. Please check the form.", "error");
+      // Show first error message in toast
+      const firstError = Object.values(err)[0]?.[0] || "Registration failed. Please check the form.";
+      showCustomToast(firstError, "error");
     }
   };
 
@@ -155,22 +157,6 @@ const RegisterPage = () => {
               <span className="block text-center text-[var(--color-primary)] mb-8 font-bold text-2xl tracking-wide">
                 Resident Registration
               </span>
-              
-              {/* Error Messages */}
-              {Object.keys(errors).length > 0 && (
-                <div className="mb-6 w-full">
-                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-sm">
-                    <ul className="list-disc list-inside space-y-1">
-                      {Object.entries(errors).map(([field, msgs]) =>
-                        msgs.map((msg, idx) => (
-                          <li key={field + idx}>{msg}</li>
-                        ))
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
 
               <div className="w-full max-w-3xl mx-auto">
                 <Register 

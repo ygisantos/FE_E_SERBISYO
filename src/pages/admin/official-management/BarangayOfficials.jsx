@@ -8,6 +8,7 @@ import ViewOfficialModal from "../../../components/modals/ViewOfficialModal";
 import ConfirmationModal from "../../../components/modals/ConfirmationModal";
 import { createOfficial, fetchOfficials, updateOfficial, updateOfficialStatus, getOfficialById } from "../../../api/adminApi";
 import { showCustomToast } from "../../../components/Toast/CustomToast";
+import { Link } from "react-router-dom";
 
 const BarangayOfficials = () => {
   const [data, setData] = useState([]);
@@ -24,19 +25,18 @@ const BarangayOfficials = () => {
     order: "desc",
   });
   const [selectedOfficial, setSelectedOfficial] = useState(null);
-  const [statusFilter, setStatusFilter] = useState('active');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     loadOfficials();
-  }, [page, sortConfig, statusFilter, search]);
+  }, [page, sortConfig, search]);
 
   const loadOfficials = async () => {
     try {
       setLoading(true);
       const response = await fetchOfficials({
         page,
-        status: statusFilter,
+        status: 'active', // Always fetch active officials only
         search: search,
         ...sortConfig,
       });
@@ -99,7 +99,7 @@ const BarangayOfficials = () => {
 
   const confirmArchive = async () => {
     try {
-      await updateOfficialStatus(selectedOfficial.id, 'inactive');
+      await updateOfficialStatus(selectedOfficial.id, 'archived');
       await loadOfficials();
       setShowArchiveModal(false);
       setSelectedOfficial(null);
@@ -111,7 +111,7 @@ const BarangayOfficials = () => {
 
   const handleUpdateStatus = async (official) => {
     try {
-      const newStatus = official.status === 'active' ? 'inactive' : 'active';
+      const newStatus = official.status === 'active' ? 'archived' : 'active';
       await updateOfficialStatus(official.id, newStatus);
       await loadOfficials();
       showCustomToast(`Official status updated to ${newStatus}`, 'success');
@@ -242,16 +242,16 @@ const BarangayOfficials = () => {
   return (
     <div className="min-h-screen bg-gray-50/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Section - Without Add Button */}
-        <div className="mb-6">
+        <div className="mb-6 flex justify-between items-center">
           <div>
             <h1 className="text-lg font-medium text-gray-900">
-              Barangay Officials
+              Active Officials
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
               Manage and oversee barangay officials
             </p>
           </div>
+         
         </div>
 
         {/* Main Content */}
@@ -273,15 +273,6 @@ const BarangayOfficials = () => {
               headerClassName="text-xs font-medium text-gray-500 bg-gray-50/50"
               tableClassName="border-none"
               searchPlaceholder="Search by name or position..."
-              comboBoxFilter={{
-                label: "Status",
-                value: statusFilter,
-                onChange: (value) => setStatusFilter(value),
-                options: [
-                  { value: "active", label: "Active Officials" },
-                  { value: "inactive", label: "Inactive Officials" },
-                ]
-              }}
               searchValue={search}
               onSearchChange={handleSearch}
               actionButton={{

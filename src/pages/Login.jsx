@@ -161,6 +161,17 @@ const Login = () => {
               Login
             </Button>
           </form>
+
+          {/* Add Create Account Link */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">Don't have an account?</p>
+            <button
+              onClick={() => navigate("/register")}
+              className="mt-2 text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors text-sm font-medium"
+            >
+              Create Account
+            </button>
+          </div>
         </div>
       </div>
     </div>

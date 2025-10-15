@@ -29,12 +29,7 @@ const shouldShowSidebar = (pathname) => {
   );
 };
 
-const Layout = ({
-  children,
-  title = "Barangay Santoleño",
-  links = [],
-  logoImg = logo,
-}) => {
+const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg = logo }) => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
 
@@ -143,11 +138,10 @@ const Layout = ({
           <Navbar
             logo={logoImg}
             title={title}
-            links={links}
             navOpen={sidebarOpen}
             setNavOpen={setSidebarOpen}
-            showSidebar={showSidebar}
-            isMobile={isMobile}
+            showSidebar={showSidebar} // Pass showSidebar prop
+            isMobile={isMobile} // Pass isMobile prop
           />
 
           <div className="flex flex-grow pt-16 relative">
@@ -221,4 +215,4 @@ const Layout = ({
 };
 
 export default Layout;
-         
+  

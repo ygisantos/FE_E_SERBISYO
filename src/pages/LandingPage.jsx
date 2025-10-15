@@ -18,11 +18,6 @@ const LandingPage = () => {
         setNavOpen={setNavOpen}
         logo={logo}
         title="Barangay Santoleño"
-        links={[
-          { to: '/', label: 'Home' },
-          { to: '/register', label: 'Register' },
-          { to: '/login', label: 'Login' }
-        ]}
       />
       <HeroSection />
       <AnnouncementsSection />
@@ -36,3 +31,5 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
+ 
+ 

@@ -19,6 +19,7 @@ import { UserProvider } from "./contexts/UserContext";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
 import OfficialManagement from "./pages/admin/official-management/BarangayOfficials";
+import ArchivedOfficials from "./pages/admin/official-management/ArchivedOfficials";
 
 import WorkerManagement from "./pages/admin/worker-management/WorkerManagement";
 import ArchivedWorkers from "./pages/admin/worker-management/ArchivedWorkers";
@@ -107,6 +108,10 @@ function App() {
               <Route
                 path="/admin/official-management/officials"
                 element={<OfficialManagement />}
+              />
+              <Route
+                path="/admin/official-management/archived"
+                element={<ArchivedOfficials />}
               />
 
               
