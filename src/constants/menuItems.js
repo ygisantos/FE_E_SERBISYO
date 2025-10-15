@@ -29,7 +29,8 @@ const adminMenu = [
     label: "Worker Management",
     icon: FaUserCog,
     subMenu: [
-      { to: "/admin/workers", label: "View Workers", icon: FaUsers },
+      { to: "/admin/workers", label: "Active Workers", icon: FaUsers },
+      { to: "/admin/workers/archived", label: "Archived Workers", icon: FaArchive },
     ],
   },
   {

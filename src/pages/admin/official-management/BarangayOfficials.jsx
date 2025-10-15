@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../../components/reusable/DataTable";
 import Button from "../../../components/reusable/Button";
-import { FaEye, FaEdit, FaToggleOn } from "react-icons/fa";
+import { FaEye, FaEdit, FaArchive } from "react-icons/fa";
 import AddOfficialModal from "../../../components/modals/AddOfficialModal";
 import EditOfficialModal from "../../../components/modals/EditOfficialModal";
-import { createOfficial, fetchOfficials, updateOfficial, updateOfficialStatus } from "../../../api/adminApi";
+import ViewOfficialModal from "../../../components/modals/ViewOfficialModal";
+import ConfirmationModal from "../../../components/modals/ConfirmationModal";
+import { createOfficial, fetchOfficials, updateOfficial, updateOfficialStatus, getOfficialById } from "../../../api/adminApi";
 import { showCustomToast } from "../../../components/Toast/CustomToast";
 
 const BarangayOfficials = () => {
   const [data, setData] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
@@ -50,15 +54,25 @@ const BarangayOfficials = () => {
     setIsModalOpen(true);
   };
 
-  const handleView = (official) => {
-    console.log("View", official);
-    // Add your view logic here
+  const handleView = async (official) => {
+    try {
+      const officialDetails = await getOfficialById(official.id);
+      setSelectedOfficial(officialDetails);
+      setShowViewModal(true);
+    } catch (error) {
+      showCustomToast('Failed to fetch official details', 'error');
+    }
   };
 
   const handleEdit = (official) => {
     console.log("Edit", official);
     setSelectedOfficial(official);
     setShowEditModal(true);
+  };
+
+  const handleArchive = (official) => {
+    setSelectedOfficial(official);
+    setShowArchiveModal(true);
   };
 
   const handleSubmitOfficial = async (officialData) => {
@@ -80,6 +94,18 @@ const BarangayOfficials = () => {
       showCustomToast("Official updated successfully", "success");
     } catch (error) {
       showCustomToast(error.message || "Failed to update official", "error");
+    }
+  };
+
+  const confirmArchive = async () => {
+    try {
+      await updateOfficialStatus(selectedOfficial.id, 'inactive');
+      await loadOfficials();
+      setShowArchiveModal(false);
+      setSelectedOfficial(null);
+      showCustomToast('Official archived successfully', 'success');
+    } catch (error) {
+      showCustomToast(error.message || 'Failed to archive official', 'error');
     }
   };
 
@@ -107,10 +133,12 @@ const BarangayOfficials = () => {
   };
 
   const getProfilePicUrl = (path) => {
-    if (!path) return null;
+    if (!path) return '/placeholder-avatar.png';
     if (path.startsWith('http')) return path;
-    const base = import.meta.env.VITE_API_BASE_URL;
-    return `${base}${path}`;
+    
+    // Use the storage URL from env
+    const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
+    return `${storageUrl}/${path}`;
   };
 
   const formatDate = (dateString) => {
@@ -273,9 +301,9 @@ const BarangayOfficials = () => {
                   onClick: handleEdit,
                 },
                 {
-                  icon: <FaToggleOn className="h-3.5 w-3.5 text-gray-400" />,
-                  label: "Toggle Status",
-                  onClick: handleUpdateStatus,
+                  icon: <FaArchive className="h-3.5 w-3.5 text-gray-400" />,
+                  label: "Archive",
+                  onClick: handleArchive,
                 },
               ]}
             />
@@ -293,6 +321,29 @@ const BarangayOfficials = () => {
         onClose={() => setShowEditModal(false)}
         onSubmit={handleUpdateOfficial}
         official={selectedOfficial}
+      />
+      {showViewModal && (
+        <ViewOfficialModal
+          isOpen={showViewModal}
+          onClose={() => {
+            setShowViewModal(false);
+            setSelectedOfficial(null);
+          }}
+          official={selectedOfficial}
+        />
+      )}
+      <ConfirmationModal
+        isOpen={showArchiveModal}
+        onClose={() => {
+          setShowArchiveModal(false);
+          setSelectedOfficial(null);
+        }}
+        onConfirm={confirmArchive}
+        title="Archive Official"
+        message={`Are you sure you want to archive ${selectedOfficial?.full_name}? This action cannot be undone.`}
+        confirmText="Archive"
+        cancelText="Cancel"
+        type="danger"
       />
     </div>
   );

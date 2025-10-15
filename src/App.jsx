@@ -20,7 +20,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 
 import OfficialManagement from "./pages/admin/official-management/BarangayOfficials";
 
-import WorkerManagement from "./pages/admin/WorkerManagement";
+import WorkerManagement from "./pages/admin/worker-management/WorkerManagement";
+import ArchivedWorkers from "./pages/admin/worker-management/ArchivedWorkers";
 import CertificateManagement from "./pages/admin/certificate-management/CertificateManagement";
 import CertificateLogs from "./pages/admin/certificate-management/CertificateLogs";
 import Blotter from "./pages/admin/Blotter";
@@ -112,6 +113,7 @@ function App() {
               {/* Worker Management */}
               <Route path="/admin/workers" element={<WorkerManagement />} />
               <Route path="/admin/workers/add" element={<WorkerManagement />} />
+              <Route path="/admin/workers/archived" element={<ArchivedWorkers />} />
               {/* Residence Management */}
               <Route
                 path="/admin/resident-management/new"

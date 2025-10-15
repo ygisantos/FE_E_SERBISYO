@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import DataTable from '../../components/reusable/DataTable';
+import DataTable from '../../../components/reusable/DataTable';
 import { FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import { UserPlus } from 'lucide-react';
-import AddStaffModal from '../../components/modals/AddStaffModal';
-import ViewStaffModal from '../../components/modals/ViewStaffModal';
-import EditStaffModal from '../../components/modals/EditStaffModal';
-import ConfirmationModal from '../../components/modals/ConfirmationModal';
-import { createAccount, fetchAllAccounts, updateAccountStatus } from '../../api/accountApi';
-import { showCustomToast } from '../../components/Toast/CustomToast';
-import { useAuth } from '../../contexts/AuthContext';  
+import AddStaffModal from '../../../components/modals/AddStaffModal';
+import ViewStaffModal from '../../../components/modals/ViewStaffModal';
+import EditStaffModal from '../../../components/modals/EditStaffModal';
+import ConfirmationModal from '../../../components/modals/ConfirmationModal';
+import { createAccount, fetchAllAccounts, updateAccountStatus } from '../../../api/accountApi';
+import { showCustomToast } from '../../../components/Toast/CustomToast';
+import { useAuth } from '../../../contexts/AuthContext';  
 
 const WorkerManagement = () => {
   const [workers, setWorkers] = useState([]);

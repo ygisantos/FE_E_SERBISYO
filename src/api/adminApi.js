@@ -71,7 +71,10 @@ export const createOfficial = async (formData) => {
     });
     return response.data;
   } catch (error) {
-    throw error.response?.data?.message || 'Failed to create official';
+    if (error.response?.data?.errors) {
+      throw { errors: error.response.data.errors };
+    }
+    throw new Error(error.response?.data?.message || 'Failed to create official');
   }
 };
 
@@ -113,4 +116,12 @@ export const updateOfficialStatus = async (id, status) => {
     throw error.response?.data?.message || 'Failed to update official status';
   }
 };
-   
+
+export const getOfficialById = async (id) => {
+  try {
+    const response = await axios.get(`/officials/get/${id}`);
+    return response.data.official;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Failed to fetch official details');
+  }
+};

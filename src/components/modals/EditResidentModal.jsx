@@ -22,6 +22,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
     house_no: resident?.house_no || '',
     zip_code: resident?.zip_code || '',
     street: resident?.street || '',
+    civil_status: resident?.civil_status || '',
     email: resident?.email || '',
     type: resident?.type || 'residence'
   });
@@ -34,6 +35,12 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
     { value: "widowed", label: "Widowed" },
     { value: "divorced", label: "Divorced" },
     { value: "separated", label: "Separated" }
+  ];
+
+  const typeOptions = [
+    { value: "residence", label: "Resident" },
+    { value: "staff", label: "Staff" },
+    { value: "admin", label: "Admin" }
   ];
 
   const handleChange = (e) => {
@@ -90,6 +97,20 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
       }
     >
       <div className="p-4 space-y-4">
+        {/* Account Type Selection */}
+        <div className="space-y-4">
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Account Type</h4>
+          <Select
+            label="User Type"
+            value={typeOptions.find(opt => opt.value === formData.type) || null}
+            onChange={(selected) => handleSelectChange(selected, 'type')}
+            options={typeOptions}
+            required
+            className="text-xs"
+            placeholder="Select User Type"
+          />
+        </div>
+
         {/* Personal Information */}
         <div className="space-y-4">
           <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Personal Information</h4>

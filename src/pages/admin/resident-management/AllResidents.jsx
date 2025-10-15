@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../../components/reusable/DataTable';
 import { fetchAllResidents } from '../../../api/adminApi';
+import { getUserById } from '../../../api/userApi';
 import { FaEye, FaEdit, FaArchive } from 'react-icons/fa';
 import { showCustomToast } from '../../../components/Toast/CustomToast';
 import ViewResidentModal from '../../../components/modals/ViewResidentModal';
@@ -56,9 +57,14 @@ const AllResidents = () => {
       });
   }, [page]);
 
-  const handleView = (resident) => {
-    setSelectedResident(resident);
-    setShowViewModal(true);
+  const handleView = async (resident) => {
+    try {
+      const userDetails = await getUserById(resident.id);
+      setSelectedResident(userDetails);
+      setShowViewModal(true);
+    } catch (error) {
+      showCustomToast('Failed to fetch resident details', 'error');
+    }
   };
 
   const handleEdit = (resident) => {
