@@ -14,18 +14,18 @@ const Footer = () => (
       </div>
       {/* Navigation */}
       <nav className="flex flex-col gap-2 text-xs sm:text-sm font-medium items-center sm:items-start">
-        <Link to="/" className="hover:text-white text-white/90 transition">Home</Link>
-        <Link to="/register" className="hover:text-white text-white/90 transition">Register</Link>
-        <Link to="/login" className="hover:text-white text-white/90 transition">Login</Link>
+        <Link to="/" className="hover:text-white text-white/90 transition-all duration-200 cursor-pointer hover:translate-x-1">Home</Link>
+        <Link to="/register" className="hover:text-white text-white/90 transition-all duration-200 cursor-pointer hover:translate-x-1">Register</Link>
+        <Link to="/login" className="hover:text-white text-white/90 transition-all duration-200 cursor-pointer hover:translate-x-1">Login</Link>
       </nav>
       {/* Social & Contact */}
       <div className="flex flex-col gap-2 items-center sm:items-start">
         <a href="https://www.facebook.com/BarangaySantolOfficial" target="_blank" rel="noopener noreferrer" 
-           className="flex items-center gap-2 hover:text-white text-white/90 transition text-xs sm:text-sm">
+           className="flex items-center gap-2 hover:text-white text-white/90 transition-all duration-200 text-xs sm:text-sm cursor-pointer hover:translate-x-1 hover:scale-105">
           <FiFacebook /> Facebook
         </a>
         <a href="mailto:barangaysantol@gmail.com" 
-           className="flex items-center gap-2 hover:text-white text-white/90 transition text-xs sm:text-sm">
+           className="flex items-center gap-2 hover:text-white text-white/90 transition-all duration-200 text-xs sm:text-sm cursor-pointer hover:translate-x-1 hover:scale-105">
           <FiMail /> Email
         </a>
         <span className="flex items-center gap-2 text-xs sm:text-sm text-white/90">

@@ -222,14 +222,14 @@ const DataTable = ({
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
-          className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all duration-200 cursor-pointer"
           aria-label="Actions"
         >
           <MoreVertical className="w-4 h-4" />
         </button>
 
         {isOpen && (
-          <div className="absolute z-50 right-0 mt-1 w-48 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100">
+          <div className="absolute z-50 right-0 mt-1 w-48 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 animate-in fade-in-0 zoom-in-95 duration-200">
             <div className="py-1">
               {filteredActions.map((action, i) => (
                 <button
@@ -240,17 +240,18 @@ const DataTable = ({
                     setIsOpen(false);
                   }}
                   className={`
-                    group flex w-full items-center px-4 py-2 text-xs transition-colors
+                    group flex w-full items-center px-4 py-2 text-xs transition-all duration-200 cursor-pointer
                     ${action.label.toLowerCase().includes('delete') || action.label.toLowerCase().includes('archive')
-                      ? 'text-red-600 hover:bg-red-50'
-                      : 'text-gray-700 hover:bg-gray-50'}
+                      ? 'text-red-600 hover:bg-red-50 hover:text-red-700'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}
+                    hover:pl-5
                   `}
                 >
                   {action.icon && React.cloneElement(action.icon, {
-                    className: `mr-3 h-4 w-4 ${
+                    className: `mr-3 h-4 w-4 transition-transform duration-200 group-hover:scale-110 ${
                       action.label.toLowerCase().includes('delete') || action.label.toLowerCase().includes('archive')
-                        ? 'text-red-500 group-hover:text-red-600'
-                        : 'text-gray-400 group-hover:text-gray-500'
+                        ? 'text-red-500'
+                        : 'text-gray-400 group-hover:text-gray-600'
                     }`
                   })}
                   {action.label}
@@ -467,7 +468,7 @@ const DataTable = ({
                 <select
                   value={comboBoxFilter.value}
                   onChange={(e) => comboBoxFilter.onChange(e.target.value)}
-                  className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 bg-white cursor-pointer transition-all duration-200"
                 >
                   {comboBoxFilter.options.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -481,7 +482,7 @@ const DataTable = ({
             {enableColumnFilters && (
               <button
                 onClick={() => setShowFilterPanel(!showFilterPanel)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-gray-200 rounded text-xs transition-colors hover:bg-gray-50 text-gray-600 font-medium"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-gray-200 rounded text-xs transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm text-gray-600 font-medium cursor-pointer hover:scale-105"
               >
                 <Filter className="h-3.5 w-3.5" />
                 Filters
@@ -582,7 +583,7 @@ const DataTable = ({
               <button
                 key={idx}
                 onClick={() => action.handler(selectedRows)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 rounded-md text-xs font-medium text-blue-700 hover:bg-blue-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 rounded-md text-xs font-medium text-blue-700 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm hover:scale-105 transition-all duration-200 cursor-pointer"
               >
                 {action.icon}
                 {action.label}
