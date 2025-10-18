@@ -3,7 +3,8 @@ import Modal from '../Modal/Modal';
 import InputField from '../Input/InputField';
 import { showCustomToast } from '../Toast/CustomToast';
 import ConfirmationModal from './ConfirmationModal';
-import { FaUpload, FaTimes } from 'react-icons/fa';
+import { FaUpload, FaTimes, FaSpinner } from 'react-icons/fa';
+import { extractPlaceholders } from '../../api/documentApi';
 
 const RequestDocumentModal = ({ 
   isOpen, 
@@ -15,23 +16,61 @@ const RequestDocumentModal = ({
   const [formData, setFormData] = useState({
     document: '',
     purpose: '',
-    requirements: []
+    requirements: [],
+    placeholders: {} // Add placeholders to form data
   });
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [showConfirmDiscard, setShowConfirmDiscard] = useState(false);
   const [pendingFormData, setPendingFormData] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [placeholders, setPlaceholders] = useState([]);
+  const [loadingPlaceholders, setLoadingPlaceholders] = useState(false);
 
   // Reset form when modal opens or document changes
   useEffect(() => {
     if (document) {
       setFormData({
         document: document.id,
-        purpose: '', // Reset purpose
-        requirements: []
+        purpose: '',
+        requirements: [],
+        placeholders: {}
       });
+      setPlaceholders([]);
+      
+      // Fetch placeholders if document has template
+      if (document.template_path) {
+        fetchPlaceholders(document.id);
+      }
     }
+    setHasChanges(false);
   }, [document, isOpen]);
+
+  const fetchPlaceholders = async (documentId) => {
+    try {
+      setLoadingPlaceholders(true);
+      const response = await extractPlaceholders(documentId);
+      
+      if (response.placeholders && response.placeholders.length > 0) {
+        setPlaceholders(response.placeholders);
+        
+        // Initialize placeholder values in form data
+        const initialPlaceholders = {};
+        response.placeholders.forEach(placeholder => {
+          initialPlaceholders[placeholder] = '';
+        });
+        
+        setFormData(prev => ({
+          ...prev,
+          placeholders: initialPlaceholders
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching placeholders:', error);
+      // Don't show error toast as placeholders are optional
+    } finally {
+      setLoadingPlaceholders(false);
+    }
+  };
 
   const handlePurposeChange = (e) => {
     setFormData(prev => ({
@@ -39,6 +78,25 @@ const RequestDocumentModal = ({
       purpose: e.target.value 
     }));
     setHasChanges(true);
+  };
+
+  const handlePlaceholderChange = (placeholder, value) => {
+    setFormData(prev => ({
+      ...prev,
+      placeholders: {
+        ...prev.placeholders,
+        [placeholder]: value
+      }
+    }));
+    setHasChanges(true);
+  };
+
+  const formatPlaceholderLabel = (placeholder) => {
+    // Convert snake_case to Title Case
+    return placeholder
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   const handleFileUpload = (requirementId, file) => {
@@ -92,6 +150,19 @@ const RequestDocumentModal = ({
       return false;
     }
 
+    // Check if all placeholders are filled (if any exist)
+    const emptyPlaceholders = placeholders.filter(
+      placeholder => !formData.placeholders[placeholder]?.trim()
+    );
+
+    if (emptyPlaceholders.length > 0) {
+      showCustomToast(
+        `Please fill in all required fields: ${emptyPlaceholders.map(formatPlaceholderLabel).join(', ')}`,
+        'error'
+      );
+      return false;
+    }
+
     return true;
   };
 
@@ -104,7 +175,12 @@ const RequestDocumentModal = ({
 
     const requestFormData = new FormData();
     requestFormData.append('document', document.id);
-    requestFormData.append('purpose', formData.purpose);  
+    requestFormData.append('purpose', formData.purpose);
+
+    // Add placeholder data as "information" object
+    if (placeholders.length > 0) {
+      requestFormData.append('information', JSON.stringify(formData.placeholders));
+    }
 
     // Add requirements
     formData.requirements.forEach((req, index) => {
@@ -142,7 +218,7 @@ const RequestDocumentModal = ({
             </button>
             <button
               onClick={handleSubmit}
-              disabled={isLoading}
+              disabled={isLoading || loadingPlaceholders}
               className="px-3 py-1.5 text-xs text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
             >
               {isLoading ? 'Submitting...' : 'Submit Request'}
@@ -174,6 +250,34 @@ const RequestDocumentModal = ({
               required
             />
           </div>
+
+          {/* Dynamic Placeholder Fields */}
+          {loadingPlaceholders && (
+            <div className="flex items-center justify-center py-4">
+              <FaSpinner className="animate-spin mr-2" />
+              <span className="text-sm text-gray-600">Loading document fields...</span>
+            </div>
+          )}
+
+          {placeholders.length > 0 && !loadingPlaceholders && (
+            <div className="space-y-3">
+              <h4 className="font-medium text-gray-900">Document Information</h4>
+              <div className="space-y-3">
+                {placeholders.map((placeholder) => (
+                  <div key={placeholder}>
+                    <InputField
+                      label={formatPlaceholderLabel(placeholder)}
+                      placeholder={`Enter ${formatPlaceholderLabel(placeholder).toLowerCase()}`}
+                      value={formData.placeholders[placeholder] || ''}
+                      onChange={(e) => handlePlaceholderChange(placeholder, e.target.value)}
+                      className="w-full"
+                      required
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Requirements */}
           <div className="space-y-3">
