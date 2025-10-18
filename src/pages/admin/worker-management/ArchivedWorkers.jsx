@@ -136,6 +136,7 @@ const ArchivedWorkers = () => {
               searchValue={search}
               onSearchChange={setSearch}
               enablePagination={true}
+              enableSelection={false}
               onPageChange={setPage}
               totalItems={total}
               currentPage={page}

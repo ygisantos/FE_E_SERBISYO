@@ -5,6 +5,7 @@ import { FaEye } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { getAllRequests } from '../../api/documentApi';
 import { showCustomToast } from '../../components/Toast/CustomToast';
+import ViewRequestModal from '../../components/modals/ViewRequestModal';
 
 const MyRequests = () => {
   const { currentUser } = useUser();
@@ -13,6 +14,12 @@ const MyRequests = () => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: 'created_at',
+    order: 'desc'
+  });
 
   const requestColumns = [
     {
@@ -61,15 +68,13 @@ const MyRequests = () => {
         setLoading(true);
         const response = await getAllRequests({
           per_page: 10,
-          page
+          page,
+          ...sortConfig, // Add sort parameters to API call
+          requestor: currentUser?.id
         });
         
-        const userRequests = response.data.filter(
-          request => request.requestor === currentUser?.id
-        );
-        
-        setRequests(userRequests);
-        setTotal(userRequests.length);
+        setRequests(response.data);
+        setTotal(response.total || response.data.length);
       } catch (error) {
         showCustomToast(error.message || 'Failed to load requests', 'error');
       } finally {
@@ -80,7 +85,19 @@ const MyRequests = () => {
     if (currentUser) {
       loadRequests();
     }
-  }, [currentUser, page]);
+  }, [currentUser, page, sortConfig]); // Add sortConfig to dependencies
+
+  const handleViewRequest = (request) => {
+    setSelectedRequest(request);
+    setShowViewModal(true);
+  };
+
+  const handleSort = ({ column, direction }) => {
+    setSortConfig({
+      sort_by: column,
+      order: direction
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -99,6 +116,7 @@ const MyRequests = () => {
             loading={loading}
             enableSearch={true}
             enablePagination={true}
+            enableSelection={false}
             totalItems={total}
             currentPage={page}
             onPageChange={setPage}
@@ -107,12 +125,24 @@ const MyRequests = () => {
               {
                 icon: <FaEye className="text-blue-600" />,
                 label: 'View Details',
-                onClick: (row) => navigate(`/resident/certificates/view/${row.id}`),
+                onClick: handleViewRequest,
               }
             ]}
+            onSort={handleSort}
+            sortConfig={sortConfig}
           />
         </div>
       </div>
+
+      {/* View Request Modal */}
+      <ViewRequestModal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setSelectedRequest(null);
+        }}
+        request={selectedRequest}
+      />
     </div>
   );
 };

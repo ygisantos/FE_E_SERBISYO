@@ -91,17 +91,21 @@ const ArchivedOfficials = () => {
       accessor: "image_path",
       render: (value, row) => {
         const hasProfilePic = !!value;
-        const initials = row.full_name ? row.full_name.charAt(0) : '';
+        const initials = row.account
+          ? `${row.account.first_name[0]}${row.account.last_name[0]}`
+          : "";
         const imgUrl = getProfilePicUrl(value);
-        
+
         return (
           <div className="w-10 h-10">
             {hasProfilePic ? (
               <img
                 src={imgUrl}
-                alt={`${row.full_name}'s profile`}
+                alt={`${row.account?.first_name}'s profile`}
                 className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white"
-                onError={e => { e.target.src = '/placeholder-avatar.png'; }}
+                onError={(e) => {
+                  e.target.src = "/placeholder-avatar.png";
+                }}
               />
             ) : (
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm border border-gray-200">
@@ -110,15 +114,19 @@ const ArchivedOfficials = () => {
             )}
           </div>
         );
-      }
+      },
     },
     {
       label: "Name",
-      accessor: "full_name",
+      accessor: "account",
       sortable: true,
-      render: (value) => (
-        <span className="text-xs text-gray-800">{value}</span>
-      )
+      render: (value) => {
+        if (!value) return <span className="text-xs text-gray-800">N/A</span>;
+        const fullName = `${value.first_name} ${
+          value.middle_name ? value.middle_name + " " : ""
+        }${value.last_name} ${value.suffix || ""}`.trim();
+        return <span className="text-xs text-gray-800">{fullName}</span>;
+      },
     },
     {
       label: "Position",
@@ -240,4 +248,3 @@ const ArchivedOfficials = () => {
 };
 
 export default ArchivedOfficials;
-  

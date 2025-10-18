@@ -3,7 +3,7 @@ import DataTable from '../../components/reusable/DataTable';
 import { FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import { FileText } from 'lucide-react';
 import { showCustomToast } from '../../components/Toast/CustomToast';
-import { createAnnouncement, getAnnouncements, deleteAnnouncement } from '../../api/announcementApi';
+import { createAnnouncement, getAnnouncements, deleteAnnouncement, getAnnouncementById } from '../../api/announcementApi';
 import CreateAnnouncementModal from '../../components/modals/CreateAnnouncementModal';
 import ViewAnnouncementModal from '../../components/modals/ViewAnnouncementModal';
 import EditAnnouncementModal from '../../components/modals/EditAnnouncementModal';
@@ -67,8 +67,7 @@ const AnnouncementManagement = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (formData) => {
     try {
       setIsLoading(true);
       const response = await createAnnouncement(formData);
@@ -76,7 +75,6 @@ const AnnouncementManagement = () => {
       if (response.success) {
         showCustomToast('Announcement created successfully', 'success');
         setIsCreateModalOpen(false);
-        setFormData({ type: '', description: '', images: [] });
         fetchAnnouncements();
       }
     } catch (error) {
@@ -87,19 +85,27 @@ const AnnouncementManagement = () => {
             showCustomToast(`${field}: ${message}`, 'error')
           );
         });
-      } else if (error.message) {
-        showCustomToast(error.message, 'error');
       } else {
-        showCustomToast('Failed to create announcement. Please try again.', 'error');
+        showCustomToast(error.message || 'Failed to create announcement', 'error');
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleEdit = (announcement) => {
-    setSelectedAnnouncement(announcement);
-    setShowEditModal(true);
+  const handleEdit = async (announcement) => {
+    try {
+      setIsLoading(true);
+      const response = await getAnnouncementById(announcement.id);
+      if (response.success) {
+        setSelectedAnnouncement(response.data);
+        setShowEditModal(true);
+      }
+    } catch (error) {
+      showCustomToast('Failed to fetch announcement details', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleUpdateSuccess = () => {
@@ -147,13 +153,8 @@ const AnnouncementManagement = () => {
       label: 'Description',
       accessor: 'description',
       sortable: false,
-      render: (value) => (
-        <div className="max-w-lg">
-          <span className="text-xs text-gray-600">
-            {value.length > 80 ? `${value.substring(0, 80)}...` : value}
-          </span>
-        </div>
-      ),
+      type: 'longText', // Using the built-in longText type
+      maxLength: 100,   // Show first 100 characters then "Read More"
     },
     {
       label: 'Images',

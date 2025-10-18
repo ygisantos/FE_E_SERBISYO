@@ -1,124 +1,80 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Pagination = ({ 
   currentPage, 
   totalItems, 
   itemsPerPage, 
   onPageChange,
-  showItemsPerPage = true,
   className = "" 
 }) => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const isFirstPage = currentPage === 1;
-  const isLastPage = currentPage === totalPages;
-
+  
   const getPageNumbers = () => {
-    let pages = [];
-    const maxVisiblePages = 5;
+    const pages = [];
+    const maxVisible = window.innerWidth < 640 ? 3 : 5; // Show fewer pages on mobile
     
-    if (totalPages <= maxVisiblePages) {
-      // Show all pages if total pages are less than max visible
-      for (let i = 1; i <= totalPages; i++) {   
-        pages.push(i);
-      }
-    } else {
-      // Complex pagination with ellipsis
-      if (currentPage <= 3) {
-        // Near start
-        for (let i = 1; i <= 4; i++) pages.push(i);
-        pages.push('...');
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        // Near end
-        pages.push(1);
-        pages.push('...');
-        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
-      } else {
-        // Middle
-        pages.push(1);
-        pages.push('...');
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
-        pages.push('...');
-        pages.push(totalPages);
-      }
+    if (totalPages <= maxVisible) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-    
-    return pages;
+
+    if (currentPage <= 2) {
+      return [1, 2, 3, '...', totalPages];
+    }
+
+    if (currentPage >= totalPages - 1) {
+      return [1, '...', totalPages - 2, totalPages - 1, totalPages];
+    }
+
+    return [
+      1,
+      '...',
+      currentPage,
+      '...',
+      totalPages
+    ];
   };
 
-  // No need to render pagination if there's only one page
   if (totalPages <= 1) return null;
 
   return (
-    <nav className={`flex justify-center gap-4 ${className}`}>
-      <div className="inline-flex items-center gap-1">
-        <button
-          onClick={() => onPageChange(1)}
-          disabled={isFirstPage}
-          className={`px-3 py-1 text-xs rounded border ${
-            isFirstPage
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          First
-        </button>
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={isFirstPage}
-          className={`px-3 py-1 text-xs rounded border ${
-            isFirstPage
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white text-gray-700  hover:bg-gray-50'
-          }`}
-        >
-          Previous
-        </button>
+    <nav className={`flex items-center justify-center gap-1 ${className}`}>
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="p-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
 
-        {getPageNumbers().map((pageNum, index) => (
-          pageNum === '...' ? (
-            <span key={`ellipsis-${index}`} className="px-3 py-1">
-              ...
-            </span>
-          ) : (
-            <button
-              key={pageNum}
-              onClick={() => onPageChange(pageNum)}
-              className={`px-3 py-1 text-xs rounded border ${
-                currentPage === pageNum
-                  ? 'bg-red-900 text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              {pageNum}
-            </button>
-          )
+      <div className="flex items-center gap-1">
+        {getPageNumbers().map((page, idx) => (
+          <React.Fragment key={idx}>
+            {page === '...' ? (
+              <span className="px-2 text-sm text-gray-500">•••</span>
+            ) : (
+              <button
+                onClick={() => onPageChange(page)}
+                className={`min-w-[2rem] h-8 text-xs rounded-md transition-colors
+                  ${currentPage === page 
+                    ? 'bg-red-900 text-white' 
+                    : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+              >
+                {page}
+              </button>
+            )}
+          </React.Fragment>
         ))}
-
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={isLastPage}
-          className={`px-3 py-1 text-xs rounded border ${
-            isLastPage
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          Next
-        </button>
-        <button
-          onClick={() => onPageChange(totalPages)}
-          disabled={isLastPage}
-          className={`px-3 py-1 text-xs rounded border ${
-            isLastPage
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-white text-gray-700 hover:bg-gray-50'
-          }`}
-        >
-          Last
-        </button>
       </div>
+
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="p-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
     </nav>
   );
 };

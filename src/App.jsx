@@ -14,6 +14,8 @@ import LoadingSpinner from "./components/Loading";
 import { useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
+import { ChatProvider } from './contexts/ChatContext';
+import ChatbotWidget from './pages/resident/ChatbotWidget';
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -42,14 +44,13 @@ import RequestManagement from "./pages/worker/RequestManagement";
 import WorkerCertificateLogs from "./pages/worker/WorkerCertificateLogs";
 
 // Resident Pages
-import ChatbotAssistant from "./pages/resident/ChatbotAssistant";
-
 import ResidentFeedback from "./pages/resident/ResidentFeedback";
 import ViewCertificateRequest from "./pages/resident/ViewCertificateRequest";
 import CertificateRequestLogs from "./pages/resident/CertificateRequestLogs";
 import AvailableCertificates from "./pages/resident/AvailableCertificates";
 import MyRequests from "./pages/resident/MyRequests";
 import MyCases from "./pages/resident/MyCases";
+import ResidentDashboard from "./pages/resident/ResidentDashboard";
 
 // All user type Pages
 import MyProfile from "./pages/Profile/MyProfile";
@@ -74,16 +75,6 @@ function App() {
   const { loading } = useLoading();
 
   return (
-    <>
-    <Router>
-        <Routes>
-          <Route
-            path="/track-certificate"
-            element={ <TrackDocument /> }
-          />
-        </Routes>
-    </Router>
-      
     <AuthProvider>
       <UserProvider>
         <Router>
@@ -165,14 +156,7 @@ function App() {
               {/* Worker Routes */}
               <Route path="/worker/dashboard" element={<WorkerDashboard />} />
               {/* Request Management */}
-              <Route
-                path="/worker/requests/pending"
-                element={<RequestManagement />}
-              />
-              <Route
-                path="/worker/requests/processed"
-                element={<RequestManagement />}
-              />
+              <Route path="/worker/requests" element={<RequestManagement />} />
               <Route
                 path="/worker/certificates/logs"
                 element={<WorkerCertificateLogs />}
@@ -190,7 +174,7 @@ function App() {
               <Route path="/worker/profile" element={<MyProfile />} />
 
               {/* Resident Routes */}
-              <Route path="/resident/chatbot" element={<ChatbotAssistant />} />
+              
               {/* Certificates */}
               <Route
                 path="/resident/certificates/available-certificates"
@@ -221,12 +205,18 @@ function App() {
               />
               
               <Route path="/resident/blotter/my-cases" element={<MyCases />} />
+              <Route path="/resident/dashboard" element={<ResidentDashboard />} />
             </Route>
           </Routes>
+          {/* Only show ChatbotWidget on resident routes */}
+          {window.location.pathname.includes('/resident') && (
+            <ChatProvider>
+              <ChatbotWidget />
+            </ChatProvider>
+          )}
         </Router>
       </UserProvider>
     </AuthProvider>
-    </>
   );
 }
 

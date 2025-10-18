@@ -70,8 +70,7 @@ const workerMenu = [
     label: "Request Management",
     icon: FaCertificate,
     subMenu: [
-      { to: "/worker/requests/pending", label: "Pending Requests", icon: FaEye },
-      { to: "/worker/requests/processed", label: "Processed Requests", icon: FaFileAlt },
+      { to: "/worker/requests", label: "View All Requests", icon: FaFileAlt },
       { to: "/worker/certificates/logs", label: "My Certificate Logs", icon: FaBook },
     ],
   },
@@ -94,12 +93,10 @@ const workerMenu = [
   { to: "/worker/profile", label: "My Profile", icon: FaUserAlt }
 ];
 
- 
-
 const menuItems = {
   admin: [...adminMenu, { to: "/login", label: "Logout", icon: FaSignOutAlt }],
   residence: [
-    { to: "/resident/chatbot", label: "Chatbot Assistant", icon: FaCommentDots },
+    { to: "/resident/dashboard", label: "Dashboard", icon: FaTachometerAlt },
     {
       label: "Certificates",
       icon: FaCertificate,

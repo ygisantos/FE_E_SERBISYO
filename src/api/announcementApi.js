@@ -51,26 +51,14 @@ export const getAnnouncementById = async (id) => {
   }
 };
 
-export const updateAnnouncement = async (id, data) => {
+export const updateAnnouncement = async (id, formData) => {
   try {
-    const formData = new FormData();
-    formData.append('id', id);
-    formData.append('type', data.type);
-    formData.append('description', data.description);
-    formData.append('_method', 'PUT');
-    
-    if (data.images?.length > 0) {
-      data.images.forEach(image => {
-        formData.append('images[]', image);
-      });
-    }
-
-    const response = await axios.post(`/announcements/update`, formData, {
+     const response = await axios.post('/announcements/update', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
   } catch (error) {
-    throw error.response?.data || 'Failed to update announcement';
+    throw error.response?.data || { message: 'Failed to update announcement' };
   }
 };
 

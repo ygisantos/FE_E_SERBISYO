@@ -6,7 +6,13 @@ import AddOfficialModal from "../../../components/modals/AddOfficialModal";
 import EditOfficialModal from "../../../components/modals/EditOfficialModal";
 import ViewOfficialModal from "../../../components/modals/ViewOfficialModal";
 import ConfirmationModal from "../../../components/modals/ConfirmationModal";
-import { createOfficial, fetchOfficials, updateOfficial, updateOfficialStatus, getOfficialById } from "../../../api/adminApi";
+import {
+  createOfficial,
+  fetchOfficials,
+  updateOfficial,
+  updateOfficialStatus,
+  getOfficialById,
+} from "../../../api/adminApi";
 import { showCustomToast } from "../../../components/Toast/CustomToast";
 import { Link } from "react-router-dom";
 
@@ -25,7 +31,7 @@ const BarangayOfficials = () => {
     order: "desc",
   });
   const [selectedOfficial, setSelectedOfficial] = useState(null);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     loadOfficials();
@@ -36,7 +42,7 @@ const BarangayOfficials = () => {
       setLoading(true);
       const response = await fetchOfficials({
         page,
-        status: 'active', // Always fetch active officials only
+        status: "active", // Always fetch active officials only
         search: search,
         ...sortConfig,
       });
@@ -60,17 +66,19 @@ const BarangayOfficials = () => {
       setSelectedOfficial(officialDetails);
       setShowViewModal(true);
     } catch (error) {
-      showCustomToast('Failed to fetch official details', 'error');
+      showCustomToast("Failed to fetch official details", "error");
     }
   };
 
   const handleEdit = async (official) => {
     try {
-
-      setSelectedOfficial(official);
-      setShowEditModal(true);
+      const officialDetails = await getOfficialById(official.id);
+      if (officialDetails) {
+        setSelectedOfficial(officialDetails);
+        setShowEditModal(true);
+      }
     } catch (error) {
-      showCustomToast('Failed to fetch official details', 'error');
+      showCustomToast("Failed to fetch official details", "error");
     }
   };
 
@@ -104,13 +112,13 @@ const BarangayOfficials = () => {
   const confirmArchive = async () => {
     try {
       // Change status to 'inactive' for API
-      await updateOfficialStatus(selectedOfficial.id, 'inactive');
+      await updateOfficialStatus(selectedOfficial.id, "inactive");
       await loadOfficials();
       setShowArchiveModal(false);
       setSelectedOfficial(null);
-      showCustomToast('Official archived successfully', 'success');
+      showCustomToast("Official archived successfully", "success");
     } catch (error) {
-      showCustomToast(error.message || 'Failed to archive official', 'error');
+      showCustomToast(error.message || "Failed to archive official", "error");
     }
   };
 
@@ -127,9 +135,9 @@ const BarangayOfficials = () => {
   };
 
   const getProfilePicUrl = (path) => {
-    if (!path) return '/placeholder-avatar.png';
-    if (path.startsWith('http')) return path;
-    
+    if (!path) return "/placeholder-avatar.png";
+    if (path.startsWith("http")) return path;
+
     // Use the storage URL from env
     const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
     return `${storageUrl}/${path}`;
@@ -142,30 +150,32 @@ const BarangayOfficials = () => {
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
-      day: "2-digit"
+      day: "2-digit",
     });
   };
 
-  // Table columns configuration
+  //Table Columns
   const columns = [
     {
       label: "Profile Picture",
       accessor: "image_path",
       render: (value, row) => {
         const hasProfilePic = !!value;
-        const initials = row.full_name
-          ? row.full_name.charAt(0)
-          : '';
+        const initials = row.account
+          ? `${row.account.first_name[0]}${row.account.last_name[0]}`
+          : "";
         const imgUrl = getProfilePicUrl(value);
-        
+
         return (
           <div className="w-10 h-10">
             {hasProfilePic ? (
               <img
                 src={imgUrl}
-                alt={`${row.full_name}'s profile`}
+                alt={`${row.account?.first_name}'s profile`}
                 className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white"
-                onError={e => { e.target.src = '/placeholder-avatar.png'; }}
+                onError={(e) => {
+                  e.target.src = "/placeholder-avatar.png";
+                }}
               />
             ) : (
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm border border-gray-200">
@@ -174,15 +184,19 @@ const BarangayOfficials = () => {
             )}
           </div>
         );
-      }
+      },
     },
     {
       label: "Name",
-      accessor: "full_name",
+      accessor: "account",
       sortable: true,
-      render: (value) => (
-        <span className="text-xs text-gray-800">{value}</span>
-      )
+      render: (value) => {
+        if (!value) return <span className="text-xs text-gray-800">N/A</span>;
+        const fullName = `${value.first_name} ${
+          value.middle_name ? value.middle_name + " " : ""
+        }${value.last_name} ${value.suffix || ""}`.trim();
+        return <span className="text-xs text-gray-800">{fullName}</span>;
+      },
     },
     {
       label: "Position",
@@ -195,9 +209,7 @@ const BarangayOfficials = () => {
       accessor: "term_start",
       sortable: true,
       render: (value) => (
-        <span className="text-sm text-gray-700">
-          {formatDate(value)}
-        </span>
+        <span className="text-sm text-gray-700">{formatDate(value)}</span>
       ),
     },
     {
@@ -205,9 +217,7 @@ const BarangayOfficials = () => {
       accessor: "term_end",
       sortable: true,
       render: (value) => (
-        <span className="text-sm text-gray-700">
-          {formatDate(value)}
-        </span>
+        <span className="text-sm text-gray-700">{formatDate(value)}</span>
       ),
     },
     {
@@ -223,7 +233,7 @@ const BarangayOfficials = () => {
           }`}
         >
           {/* Display 'archived' instead of 'inactive' */}
-          {value === 'inactive' ? 'archived' : value}
+          {value === "inactive" ? "archived" : value}
         </span>
       ),
     },
@@ -246,7 +256,6 @@ const BarangayOfficials = () => {
               Manage and oversee barangay officials
             </p>
           </div>
-         
         </div>
 
         {/* Main Content */}
@@ -273,7 +282,7 @@ const BarangayOfficials = () => {
               actionButton={{
                 label: "Add Official",
                 onClick: handleAddOfficial,
-              className: "bg-red-900 text-white hover:bg-red-800",
+                className: "bg-red-900 text-white hover:bg-red-800",
               }}
               actions={[
                 {
@@ -302,7 +311,7 @@ const BarangayOfficials = () => {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleSubmitOfficial}
       />
-      <EditOfficialModal 
+      <EditOfficialModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         onSubmit={handleUpdateOfficial}
@@ -336,5 +345,3 @@ const BarangayOfficials = () => {
 };
 
 export default BarangayOfficials;
-
-

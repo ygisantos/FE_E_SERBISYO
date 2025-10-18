@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Modal from "../Modal/Modal";
-import FormInput from '../reusable/InputField';
+import InputField from '../Input/InputField';  // Changed from FormInput
 import Select from "../reusable/Select";
 import {  FaUpload, FaImage, FaTrash } from "react-icons/fa";
 import ConfirmationModal from "./ConfirmationModal";
@@ -12,11 +12,20 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
     middle_name: "",
     last_name: "",
     suffix: "",
+    email: "",
+    contact_no: "",
     position: "",
-    image_path: "",
     term_start: "",
     term_end: "",
+    birth_place: "",
+    civil_status: "",
+    municipality: "",
+    barangay: "",
+    house_no: "",
+    zip_code: "",
+    street: "",
     status: "active",
+    image_path: null
   });
   const [originalData, setOriginalData] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
@@ -38,48 +47,29 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
   };
 
   useEffect(() => {
-    if (official) {
-      // Since we're getting direct official object from response
-      const data = official;
+    if (official && official.account) {
+      setFormData({
+        first_name: official.account.first_name || '',
+        middle_name: official.account.middle_name || '',
+        last_name: official.account.last_name || '',
+        suffix: official.account.suffix || '',
+        email: official.account.email || '',
+        contact_no: official.account.contact_no || '',
+        position: official.position || '',
+        term_start: official.term_start?.split('T')[0] || '',
+        term_end: official.term_end?.split('T')[0] || '',
+        birth_place: official.account.birth_place || '',
+        civil_status: official.account.civil_status || '',
+        municipality: official.account.municipality || '',
+        barangay: official.account.barangay || '',
+        house_no: official.account.house_no || '',
+        zip_code: official.account.zip_code || '',
+        street: official.account.street || '',
+        status: official.status || 'active'
+      });
 
-      // Parse full name
-      const nameParts = data.full_name.split(' ').filter(part => part);
-      let firstName = nameParts[0] || '';
-      let lastName = nameParts[nameParts.length - 1] || '';
-      let middleName = '';
-      let suffix = '';
-
-      // Extract middle name and suffix if name has more than 2 parts
-      if (nameParts.length > 2) {
-        const middleParts = nameParts.slice(1, -1);
-        const commonSuffixes = ['Jr', 'Sr', 'II', 'III', 'IV'];
-        const lastMiddlePart = middleParts[middleParts.length - 1];
-        
-        if (commonSuffixes.includes(lastMiddlePart)) {
-          suffix = lastMiddlePart;
-          middleName = middleParts.slice(0, -1).join(' ');
-        } else {
-          middleName = middleParts.join(' ');
-        }
-      }
-
-      const formattedData = {
-        first_name: firstName,
-        middle_name: middleName,
-        last_name: lastName,
-        suffix: suffix,
-        position: data.position,
-        term_start: data.term_start?.split('T')[0],
-        term_end: data.term_end?.split('T')[0],
-        status: data.status,
-      };
-
-      setFormData(formattedData);
-      setOriginalData(formattedData);
-
-      // Set preview image
-      if (data.image_path) {
-        const imgUrl = getProfilePicUrl(data.image_path);
+      if (official.image_path) {
+        const imgUrl = getProfilePicUrl(official.image_path);
         setPreviewImage(imgUrl);
       }
     }
@@ -139,6 +129,13 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
     { value: "Barangay Kagawad", label: "Barangay Kagawad" },
     { value: "SK Chairman", label: "SK Chairman" },
     { value: "Barangay Tanod", label: "Barangay Tanod" }
+  ];
+
+  const civilStatusOptions = [
+    { value: "Single", label: "Single" },
+    { value: "Married", label: "Married" },
+    { value: "Widowed", label: "Widowed" },
+    { value: "Divorced", label: "Divorced" }
   ];
 
   const renderImageUpload = () => (
@@ -212,7 +209,7 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
         isOpen={isOpen} 
         onClose={handleClose}
         title="Edit Official"
-        modalClass="max-w-2xl"
+        modalClass="max-w-4xl"
         footer={
           <div className="flex justify-end gap-2">
             <button
@@ -232,91 +229,85 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
           </div>
         }
       >
-        <form id="editOfficialForm" onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Left Column - Image Upload */}
-            <div className="flex items-center justify-center p-4 bg-gray-50/50 rounded-lg">
+        <form id="editOfficialForm" onSubmit={handleSubmit} className="p-6">
+          <div className="grid grid-cols-12 gap-6">
+            {/* Profile Picture Section */}
+            <div className="col-span-12 md:col-span-4">
               {renderImageUpload()}
             </div>
 
-            {/* Right Column - Form Fields */}
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <FormInput
-                  label="First Name"
-                  name="first_name"
-                  value={formData.first_name}
-                  onChange={handleInputChange}
-                  required
-                  error={errors.first_name}
-                  placeholder="First name"
-                  className="text-xs"
-                />
-                <FormInput
-                  label="Last Name"
-                  name="last_name"
-                  value={formData.last_name}
-                  onChange={handleInputChange}
-                  required
-                  error={errors.last_name}
-                  placeholder="Last name"
-                  className="text-xs"
-                />
+            {/* Form Fields Section */}
+            <div className="col-span-12 md:col-span-8 space-y-6">
+              {/* Official Information */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h3 className="text-sm font-medium text-gray-900 mb-4">Official Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <Select
+                    label="Position"
+                    value={positionOptions.find(opt => opt.value === formData.position)}
+                    onChange={(selected) => handleInputChange({
+                      target: { name: 'position', value: selected.value }
+                    })}
+                    options={positionOptions}
+                    required
+                  />
+                  <InputField
+                    label="Term Start"
+                    name="term_start"
+                    type="date"
+                    value={formData.term_start}
+                    onChange={handleInputChange}
+                    required
+                    error={errors.term_start?.[0]}
+                  />
+                  <InputField
+                    label="Term End"
+                    name="term_end"
+                    type="date"
+                    value={formData.term_end}
+                    onChange={handleInputChange}
+                    required
+                    error={errors.term_end?.[0]}
+                  />
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <FormInput
-                  label="Middle Name"
-                  name="middle_name"
-                  value={formData.middle_name}
-                  onChange={handleInputChange}
-                  placeholder="Optional"
-                  className="text-xs"
-                />
-                <FormInput
-                  label="Suffix"
-                  name="suffix"
-                  value={formData.suffix}
-                  onChange={handleInputChange}
-                  placeholder="Jr, Sr, III, etc."
-                  className="text-xs"
-                />
+              {/* Personal Information */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h3 className="text-sm font-medium text-gray-900 mb-4">Personal Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField label="First Name" name="first_name" value={formData.first_name} onChange={handleInputChange} required />
+                  <InputField label="Last Name" name="last_name" value={formData.last_name} onChange={handleInputChange} required />
+                  <InputField label="Middle Name" name="middle_name" value={formData.middle_name} onChange={handleInputChange} />
+                  <InputField label="Suffix" name="suffix" value={formData.suffix} onChange={handleInputChange} />
+                  
+                  <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} required />
+                  <InputField label="Contact No" name="contact_no" value={formData.contact_no} onChange={handleInputChange} required />
+                  
+                  <InputField label="Birth Place" name="birth_place" value={formData.birth_place} onChange={handleInputChange} required />
+                  <Select
+                    label="Civil Status"
+                    name="civil_status"
+                    value={{ value: formData.civil_status, label: formData.civil_status }}
+                    onChange={(selected) => handleInputChange({
+                      target: { name: 'civil_status', value: selected.value }
+                    })}
+                    options={civilStatusOptions}
+                    required
+                  />
+                </div>
               </div>
 
-              <Select
-                label="Position"
-                value={positionOptions.find(opt => opt.value === formData.position)}
-                onChange={(selected) => handleInputChange({
-                  target: { name: 'position', value: selected.value }
-                })}
-                options={positionOptions}
-                required
-                error={errors.position}
-                placeholder="Select position"
-                className="text-xs"
-              />
-
-              <div className="grid grid-cols-2 gap-3">
-                <FormInput
-                  label="Term Start"
-                  name="term_start"
-                  type="date"
-                  value={formData.term_start}
-                  onChange={handleInputChange}
-                  required
-                  error={errors.term_start}
-                  className="text-xs"
-                />
-                <FormInput
-                  label="Term End"
-                  name="term_end"
-                  type="date"
-                  value={formData.term_end}
-                  onChange={handleInputChange}
-                  required
-                  error={errors.term_end}
-                  className="text-xs"
-                />
+              {/* Address Information */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <h3 className="text-sm font-medium text-gray-900 mb-4">Address Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField label="House No" name="house_no" value={formData.house_no} onChange={handleInputChange} required />
+                  <InputField label="Street" name="street" value={formData.street} onChange={handleInputChange} required />
+                  <InputField label="Barangay" name="barangay" value={formData.barangay} onChange={handleInputChange} required />
+                  <InputField label="Municipality" name="municipality" value={formData.municipality} onChange={handleInputChange} required />
+                  <InputField label="ZIP Code" name="zip_code" value={formData.zip_code} onChange={handleInputChange} required />
+                </div>
               </div>
             </div>
           </div>
@@ -391,4 +382,4 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
 };
  
 export default EditOfficialModal;
-  
+
