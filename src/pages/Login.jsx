@@ -95,9 +95,16 @@ const Login = () => {
           
           setTimeout(() => {
             const role = data.account.type || "resident";
-            if (role === "admin") navigate("/admin/dashboard");
-            else if (role === "staff") navigate("/worker/dashboard");
-            else navigate("/resident/chatbot");
+            if (role === "admin") {
+              navigate("/admin/dashboard");
+            }
+            else if (role === "staff") {
+              navigate("/worker/dashboard");
+            }
+            else {
+              // For residents, navigate and force reload
+              window.location.href = "/resident/dashboard";
+            }
           }, 2000);
         }
       }

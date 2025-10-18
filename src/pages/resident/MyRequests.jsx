@@ -16,6 +16,10 @@ const MyRequests = () => {
   const [total, setTotal] = useState(0);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: 'created_at',
+    order: 'desc'
+  });
 
   const requestColumns = [
     {
@@ -64,15 +68,13 @@ const MyRequests = () => {
         setLoading(true);
         const response = await getAllRequests({
           per_page: 10,
-          page
+          page,
+          ...sortConfig, // Add sort parameters to API call
+          requestor: currentUser?.id
         });
         
-        const userRequests = response.data.filter(
-          request => request.requestor === currentUser?.id
-        );
-        
-        setRequests(userRequests);
-        setTotal(userRequests.length);
+        setRequests(response.data);
+        setTotal(response.total || response.data.length);
       } catch (error) {
         showCustomToast(error.message || 'Failed to load requests', 'error');
       } finally {
@@ -83,11 +85,18 @@ const MyRequests = () => {
     if (currentUser) {
       loadRequests();
     }
-  }, [currentUser, page]);
+  }, [currentUser, page, sortConfig]); // Add sortConfig to dependencies
 
   const handleViewRequest = (request) => {
     setSelectedRequest(request);
     setShowViewModal(true);
+  };
+
+  const handleSort = ({ column, direction }) => {
+    setSortConfig({
+      sort_by: column,
+      order: direction
+    });
   };
 
   return (
@@ -119,6 +128,8 @@ const MyRequests = () => {
                 onClick: handleViewRequest,
               }
             ]}
+            onSort={handleSort}
+            sortConfig={sortConfig}
           />
         </div>
       </div>

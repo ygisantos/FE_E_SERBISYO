@@ -1,6 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { FiSend, FiLoader, FiTrash2, FiHelpCircle, FiFileText } from 'react-icons/fi';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect, useRef } from 'react';
+import { FiSend, FiLoader } from 'react-icons/fi';
+import { useChat } from '../../contexts/ChatContext';
+import { saveChatMessages, loadChatMessages } from '../../utils/chatStorage';
+
+import { showCustomToast } from '../../components/Toast/CustomToast';
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
@@ -15,19 +18,73 @@ Panatilihin ang propesyonal at matulunging tono, at kung hindi ka sigurado sa mg
 
 MAHALAGA: Palaging sumagot sa Tagalog maliban kung ang user ay gumamit ng Ingles. Gumamit ng simple at madaling maintindihang Tagalog. Maging pormal pero friendly sa pakikipag-usap.`;
 
-const ChatbotAssistant = () => {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "Magandang araw! Ako ang inyong Chatbot Assistant ng Barangay Santol. Paano ko po kayo matutulungan ngayong araw?",
-      sender: "bot",
-      timestamp: new Date(),
-    },
-  ]);
+const formatMessage = (text) => {
+  // Format lists (numbered and bulleted)
+  text = text.replace(/^\d+\.\s/gm, (match) => `<div class="pl-4 py-0.5">${match}</div>`);
+  text = text.replace(/^[-•]\s/gm, (match) => `<div class="pl-4 py-0.5">${match}</div>`);
+
+  // Format important sections
+  text = text.replace(
+    /(MAHALAGA|PAALALA|NOTE|TANDAAN):(.*?)(\n|$)/gi,
+    '<div class="bg-red-50 p-2 rounded-lg border border-red-200 my-2"><span class="font-semibold text-red-700">$1:</span>$2</div>'
+  );
+
+  // Format section headers
+  text = text.replace(
+    /^(.*?:)(\n|$)/gm,
+    '<div class="font-semibold text-gray-900 mt-2 mb-1">$1</div>'
+  );
+
+  // Convert newlines to breaks
+  text = text.replace(/\n/g, '<br />');
+
+  return text;
+};
+
+const ChatbotAssistant = ({ isWidget = false, onClose }) => {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   
+  // Initialize with saved messages or welcome message
+  const [messages, setMessages] = useState(() => {
+    const savedMessages = loadChatMessages();
+    return savedMessages.length > 0 ? savedMessages : [{
+      id: 1,
+      text: "👋 Magandang araw! Ako ang inyong Chatbot Assistant ng Barangay Santol. Paano ko po kayo matutulungan ngayong araw?",
+      sender: "bot",
+      timestamp: new Date(),
+    }];
+  });
+
+  // Save messages whenever they change
+  useEffect(() => {
+    saveChatMessages(messages);
+  }, [messages]);
+
+  const quickLinks = [
+    {
+      label: "🗂️ Mga Available na Sertipiko",
+      value: "Ano ang mga available na certificates sa barangay?"
+    },
+    {
+      label: "📝 Blotter Assistance",
+      value: "Paano mag-file ng blotter?"
+    },
+    {
+      label: "💡 Mga Serbisyo",
+      value: "Ano ang mga serbisyong inaalok ng barangay?"
+    },
+    {
+      label: "⏰ Oras ng Opisina",
+      value: "Ano ang office hours ng barangay?"
+    },
+    {
+      label: "📞 Contact Details",
+      value: "Paano makontak ang barangay?"
+    }
+  ];
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -77,13 +134,19 @@ const ChatbotAssistant = () => {
     }
   };
 
-  const handleSendMessage = async (e) => {
+  const handleQuickLinkClick = (value) => {
+    setInput(value);
+    handleSendMessage({ preventDefault: () => {} }, value);
+  };
+
+  const handleSendMessage = async (e, quickValue = null) => {
     e.preventDefault();
-    if (!input.trim() || isTyping) return;
+    const messageToSend = quickValue || input;
+    if (!messageToSend.trim() || isTyping) return;
 
     const userMessage = {
       id: messages.length + 1,
-      text: input.trim(),
+      text: messageToSend,
       sender: "user",
       timestamp: new Date(),
     };
@@ -93,7 +156,7 @@ const ChatbotAssistant = () => {
     setIsTyping(true);
 
     try {
-      const response = await callGroqAPI(input.trim());
+      const response = await callGroqAPI(messageToSend.trim());
       
       const botMessage = {
         id: messages.length + 2,
@@ -104,193 +167,112 @@ const ChatbotAssistant = () => {
 
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
-      toast.error("Sorry, I'm having trouble connecting right now. Please try again later.");
+      showCustomToast("Sorry, I'm having trouble connecting right now. Please try again later." ,'error');
       console.error('Error getting response:', error);
     } finally {
       setIsTyping(false);
     }
   };
 
-  const clearChat = () => {
-    if (window.confirm('Sigurado po ba kayong gusto ninyong burahin ang chat history?')) {
-      setMessages([{
-        id: 1,
-        text: "Magandang araw! Ako ang inyong Chatbot Assistant ng Barangay Santol. Paano ko po kayo matutulungan ngayong araw?",
-        sender: "bot",
-        timestamp: new Date(),
-      }]);
-    }
-  };
-
-  const handleQuickAction = (action) => {
-    let message = "";
-    switch (action) {
-      case "certificates":
-        message = "Ano-ano po ang mga sertipiko na pwedeng makuha sa barangay at ano ang mga requirements?";
-        break;
-      case "faq":
-        message = "Ano po ang mga karaniwang serbisyo na inaalok ng barangay?";
-        break;
-      default:
-        return;
-    }
-    
-    const userMessage = {
-      id: messages.length + 1,
-      text: message,
-      sender: "user",
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setIsTyping(true);
-
-    callGroqAPI(message)
-      .then(response => {
-        const botMessage = {
-          id: messages.length + 2,
-          text: response,
-          sender: "bot",
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, botMessage]);
-      })
-      .catch(error => {
-        toast.error("Sorry, I'm having trouble connecting right now. Please try again later.");
-        console.error('Error getting response:', error);
-      })
-      .finally(() => {
-        setIsTyping(false);
-      });
-  };
-
-  const QuickActionBubbles = () => (
-    <div className="flex flex-col space-y-2 px-4 mb-4">
-      <div className="text-xs text-gray-500 text-center mb-2">Suggested Questions</div>
-      <div className="flex flex-wrap gap-2 justify-center">
-        <button
-          onClick={() => handleQuickAction('certificates')}
-          className="bg-white px-4 py-2 rounded-full text-xs border border-gray-200 hover:border-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/5 transition-colors text-gray-700"
+  const renderMessage = (message) => (
+    <div
+      key={message.id}
+      className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+    >
+      <div
+        className={`px-4 py-2 rounded-xl max-w-[85%] ${
+          message.sender === "user"
+            ? "bg-red-900 text-white"
+            : "bg-white border border-gray-100"
+        }`}
+      >
+        <div 
+          className="text-sm"
+          dangerouslySetInnerHTML={{ 
+            __html: message.sender === "bot" ? formatMessage(message.text) : message.text 
+          }}
+        />
+        <div 
+          className={`text-[10px] mt-1 ${
+            message.sender === "user" ? "text-white/70" : "text-gray-400"
+          }`}
         >
-          🗂️ Mga Available na Sertipiko
-        </button>
-        <button
-          onClick={() => handleQuickAction('faq')}
-          className="bg-white px-4 py-2 rounded-full text-xs border border-gray-200 hover:border-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/5 transition-colors text-gray-700"
-        >
-          ❓ Mga Madalas na Tanong
-        </button>
-        <button
-          onClick={() => handleQuickAction('blotter')}
-          className="bg-white px-4 py-2 rounded-full text-xs border border-gray-200 hover:border-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/5 transition-colors text-gray-700"
-        >
-          📝 Paano Mag-file ng Blotter
-        </button>
+          {message.timestamp.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })}
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
-      <div className="max-w-4xl mx-auto h-[calc(100vh-1rem)]">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 h-full flex flex-col">
-          {/* Header */}
-          <div className="bg-[var(--color-primary)] p-3 sm:p-4 flex justify-between items-start">
-            <div>
-              <h1 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-2">
-                Chatbot Assistant ng Barangay
-              </h1>
-              <p className="text-white/80 text-xs sm:text-sm mt-1">
-                Magtanong tungkol sa mga serbisyo at pamamaraan ng barangay
-              </p>
-            </div>
-            <button
-              onClick={clearChat}
-              className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors duration-200"
-              title="Clear chat"
-            >
-              <FiTrash2 className="text-white/80 hover:text-white w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-gray-50/50">
-            <div className="space-y-3 sm:space-y-4">
-              {messages.length === 1 && <QuickActionBubbles />}
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.sender === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`px-3 sm:px-4 py-2 sm:py-3 rounded-2xl max-w-[90%] sm:max-w-[85%] shadow-sm ${
-                      message.sender === "user"
-                        ? "bg-[var(--color-secondary)] text-white ml-8 sm:ml-12"
-                        : "bg-white text-gray-800 border border-gray-100 mr-8 sm:mr-12"
-                    }`}
+    <div className="flex flex-col h-full bg-gray-50">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="space-y-4">
+          {/* Welcome Message */}
+          {messages.length === 1 && (
+            <div className="space-y-4">
+              {/* Quick Links Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                {quickLinks.map((link, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleQuickLinkClick(link.value)}
+                    className="text-left px-4 py-3 bg-white rounded-xl border border-gray-200 hover:border-red-500 hover:bg-red-50/50 transition-colors"
                   >
-                    <div className="text-xs sm:text-sm whitespace-pre-wrap">{message.text}</div>
-                    <div 
-                      className={`text-[9px] sm:text-[10px] mt-1 ${
-                        message.sender === "user" 
-                          ? "text-white/70" 
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {message.timestamp.toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-white text-gray-800 px-4 py-3 rounded-2xl shadow-sm border border-gray-100 mr-12">
-                    <div className="flex items-center gap-2">
-                      <FiLoader className="w-4 h-4 animate-spin text-gray-400" />
-                      <span className="text-sm text-gray-500">Typing...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
+                    <span className="text-sm text-gray-900">{link.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Input */}
-          <div className="border-t bg-white p-2 sm:p-4">
-            <form onSubmit={handleSendMessage} className="flex gap-2 sm:gap-3">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Mag-type ng mensahe..."
-                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)] focus:border-transparent"
-                disabled={isTyping}
-              />
-              <button
-                type="submit"
-                disabled={isTyping || !input.trim()}
-                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-medium transition-all duration-200 ${
-                  isTyping || !input.trim()
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-[var(--color-secondary)] text-white hover:bg-[var(--color-secondary)]/90'
-                }`}
-              >
-                <span className="hidden sm:inline">Ipadala</span>
-                <FiSend className={`w-4 h-4 ${isTyping ? 'animate-pulse' : ''}`} />
-              </button>
-            </form>
-          </div>
+          {/* Chat Messages */}
+          {messages.map(renderMessage)}
+          {/* Typing Indicator */}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-white border border-gray-100 px-4 py-2 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <FiLoader className="w-4 h-4 animate-spin text-gray-400" />
+                  <span className="text-sm text-gray-500">Typing...</span>
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
+      </div>
+
+      {/* Input Area */}
+      <div className="border-t bg-white p-4">
+        <form onSubmit={handleSendMessage} className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Mag-type ng mensahe..."
+            className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            disabled={isTyping}
+          />
+          <button
+            type="submit"
+            disabled={isTyping || !input.trim()}
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200 ${
+              isTyping || !input.trim()
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-red-900 text-white hover:bg-red-800'
+            }`}
+          >
+            <span className="hidden sm:inline">Ipadala</span>
+            <FiSend className="w-4 h-4" />
+          </button>
+        </form>
       </div>
     </div>
   );
 };
 
 export default ChatbotAssistant;
- 

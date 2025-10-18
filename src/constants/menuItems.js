@@ -92,12 +92,10 @@ const workerMenu = [
   { to: "/worker/profile", label: "My Profile", icon: FaUserAlt }
 ];
 
- 
-
 const menuItems = {
   admin: [...adminMenu, { to: "/login", label: "Logout", icon: FaSignOutAlt }],
   residence: [
-    { to: "/resident/chatbot", label: "Chatbot Assistant", icon: FaCommentDots },
+    { to: "/resident/dashboard", label: "Dashboard", icon: FaTachometerAlt },
     {
       label: "Certificates",
       icon: FaCertificate,
