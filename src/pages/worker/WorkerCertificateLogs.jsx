@@ -1,123 +1,120 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/reusable/DataTable';
-import { FaEye } from 'react-icons/fa';
+import { getAllCertificateLogs } from '../../api/certificateLogApi';
+import { showCustomToast } from '../../components/Toast/CustomToast';
 
 const WorkerCertificateLogs = () => {
-  const [logs, setLogs] = useState([
-    {
-      id: 1,
-      certificateType: 'Barangay Clearance',
-      residentName: 'Juan Dela Cruz',
-      requestDate: '2024-07-25',
-      status: 'Approved',
-      actionDate: '2024-07-25',
-      remarks: 'Approved and released'  ,
-    },
-   ]);
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: 'created_at',
+    order: 'desc'
+  });
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        setLoading(true);
+        const userData = JSON.parse(localStorage.getItem('userData'));
+        
+        console.log('Fetching logs for staff:', userData?.id); // Debug log
+
+        const response = await getAllCertificateLogs({
+          page: currentPage,
+          per_page: 10,
+          staff: userData?.id,
+        });
+
+        console.log('API Response:', response); // Debug log
+
+        if (response?.data) {
+          setLogs(response.data);
+          setTotalItems(response.total || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching logs:', error);
+        showCustomToast('Failed to fetch logs', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLogs();
+  }, [currentPage]);
 
   const columns = [
     {
-      label: 'Certificate Type',
-      accessor: 'certificateType',
+      label: 'Document Request',
+      accessor: 'document_request',
       sortable: true,
       render: (value) => (
-        <span className="text-xs text-gray-800">{value}</span>
-      ),
-    },
-    {
-      label: 'Resident Name',
-      accessor: 'residentName',
-      sortable: true,
-      render: (value) => (
-        <span className="text-xs text-gray-600">{value}</span>
-      ),
-    },
-    {
-      label: 'Request Date',
-      accessor: 'requestDate',
-      sortable: true,
-      render: (value) => (
-        <span className="text-xs text-gray-600">
-          {new Date(value).toLocaleDateString()}
+        <span className="text-sm font-medium text-gray-800">
+          {value?.document?.document_name || 'N/A'}
         </span>
-      ),
+      )
+    },
+    {
+      label: 'Requestor',
+      accessor: 'document_request.account',
+      sortable: true,
+      render: (account) => (
+        <div className="text-xs">
+          <p className="font-medium text-gray-800">
+            {account ? `${account.first_name} ${account.last_name}` : 'N/A'}
+          </p>
+          <p className="text-gray-600">{account?.email || ''}</p>
+        </div>
+      )
     },
     {
       label: 'Status',
-      accessor: 'status',
+      accessor: 'document_request.status',
       sortable: true,
       type: 'badge',
       badgeColors: {
-        Approved: 'green',
-        Rejected: 'red',
-        Pending: 'yellow'
+        pending: 'yellow',
+        processing: 'blue',
+        approved: 'green',
+        rejected: 'red'
       }
     },
     {
-      label: 'Action Date',
-      accessor: 'actionDate',
+      label: 'Remark',
+      accessor: 'remark',
+      sortable: true,
+    },
+    {
+      label: 'Date',
+      accessor: 'created_at',
       sortable: true,
       render: (value) => (
         <span className="text-xs text-gray-600">
           {new Date(value).toLocaleDateString()}
         </span>
-      ),
-    },
-    {
-      label: 'Remarks',
-      accessor: 'remarks',
-      sortable: false,
-      render: (value) => (
-        <span className="text-xs text-gray-600">{value}</span>
-      ),
-    },
+      )
+    }
   ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="text-lg font-medium text-gray-800">
-            Certificate Logs
-          </h3>
-          <p className="text-xs text-gray-500 mt-1">
-            View history of processed certificates
-          </p>
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">My Certificate Logs</h3>
+          <p className="mt-1 text-sm text-gray-500">View history of certificates you have processed</p>
         </div>
 
         <div className="p-6">
           <DataTable
             columns={columns}
             data={logs}
-            enableSearch={true}
+            loading={loading}
             enablePagination={true}
+            totalItems={totalItems}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
             itemsPerPage={10}
-            searchPlaceholder="Search certificates..."
-            comboBoxFilter={{
-              label: "Status",
-              options: [
-                { value: '', label: 'All Status' },
-                { value: 'Approved', label: 'Approved' },
-                { value: 'Rejected', label: 'Rejected' },
-                { value: 'Pending', label: 'Pending' }
-              ],
-              value: '',
-              onChange: () => {}
-            }}
-            dateFilter={{
-              label: "Date Range",
-              startDate: '',
-              endDate: '',
-              onStartDateChange: () => {},
-              onEndDateChange: () => {}
-            }}
-            actions={[
-              {
-                icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
-                label: 'View Details',
-                onClick: (row) => console.log('View', row),
-              }
-            ]}
           />
         </div>
       </div>

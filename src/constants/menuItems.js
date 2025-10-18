@@ -69,8 +69,7 @@ const workerMenu = [
     label: "Request Management",
     icon: FaCertificate,
     subMenu: [
-      { to: "/worker/requests/pending", label: "Pending Requests", icon: FaEye },
-      { to: "/worker/requests/processed", label: "Processed Requests", icon: FaFileAlt },
+      { to: "/worker/requests", label: "View All Requests", icon: FaFileAlt },
       { to: "/worker/certificates/logs", label: "My Certificate Logs", icon: FaBook },
     ],
   },

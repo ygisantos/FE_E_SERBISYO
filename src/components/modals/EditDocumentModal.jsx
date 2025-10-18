@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../Modal/Modal';
-import { updateDocument } from '../../api/documentApi';
+import { updateDocument, getDocumentById } from '../../api/documentApi';
 import { showCustomToast } from '../Toast/CustomToast';
-import { FaPlus, FaTrash } from 'react-icons/fa';
-import ConfirmationModal from './ConfirmationModal';
+import { FaPlus, FaTrash} from 'react-icons/fa';
+import ConfirmationModal from './ConfirmationModal'; // Add this import
 
-const EditDocumentModal = ({ isOpen, onClose, document, onSuccess }) => {
+const EditDocumentModal = ({ isOpen, onClose, documentId, onSuccess }) => {
   const [formData, setFormData] = useState({
     document_name: '',
     description: '',
@@ -16,45 +16,93 @@ const EditDocumentModal = ({ isOpen, onClose, document, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [showDiscardConfirmation, setShowDiscardConfirmation] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (document) {
-      setFormData({
-        document_name: document.document_name || '',
-        description: document.description || '',
-        status: document.status || 'active',
-        requirements: document.requirements?.map(req => ({
+  // Add originalData state to track changes
+  const [originalData, setOriginalData] = useState(null);
+
+  const loadDocument = async () => {
+    if (!documentId) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getDocumentById(documentId);
+      const documentData = {
+        document_name: response.document_name || '',
+        description: response.description || '',
+        status: response.status || 'active',
+        requirements: response.requirements?.map(req => ({
           id: req.id,
           name: req.name,
           description: req.description
         })) || []
-      });
+      };
+      setFormData(documentData);
+      setOriginalData(documentData); // Save original data for comparison
+    } catch (err) {
+      setError(err.message || 'Failed to load document');
+      showCustomToast(err.message || 'Failed to load document', 'error');
+    } finally {
+      setLoading(false);
     }
-  }, [document]);
-
-  const hasChanges = () => {
-    return JSON.stringify({
-      document_name: document?.document_name,
-      description: document?.description,
-      status: document?.status,
-      requirements: document?.requirements
-    }) !== JSON.stringify(formData);
   };
 
-  const handleSubmit = async () => {
+  // Load document details when modal opens
+  useEffect(() => {
+    if (isOpen && documentId) {
+      loadDocument();
+    }
+  }, [isOpen, documentId]);
+
+  useEffect(() => {
+    if (documentId) {
+      setLoading(false);
+    }
+  }, [documentId]);
+
+  // Update hasChanges to compare with originalData
+  const hasChanges = () => {
+    if (!originalData) return false;
+    
+    return JSON.stringify({
+      document_name: originalData.document_name,
+      description: originalData.description,
+      status: originalData.status,
+      requirements: originalData.requirements
+    }) !== JSON.stringify({
+      document_name: formData.document_name,
+      description: formData.description,
+      status: formData.status,
+      requirements: formData.requirements
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    
+    // Validate form data
+    if (!formData.document_name || !formData.description) {
+      showCustomToast('Please fill in all required fields', 'error');
+      return;
+    }
+
     if (!hasChanges()) {
+      showCustomToast('No changes to save', 'info');
       onClose();
       return;
     }
+
     setShowSubmitConfirmation(true);
   };
 
   const handleConfirmSubmit = async () => {
     try {
       setIsLoading(true);
-      await updateDocument(document.id, formData);
+      await updateDocument(documentId, formData);
       showCustomToast('Document updated successfully', 'success');
-      onSuccess();
+      if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
       showCustomToast(error.message || 'Failed to update document', 'error');
@@ -84,6 +132,34 @@ const EditDocumentModal = ({ isOpen, onClose, document, onSuccess }) => {
       requirements: prev.requirements.filter((_, i) => i !== index)
     }));
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} title="Edit Document">
+        <div className="p-6 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-900"></div>
+        </div>
+      </Modal>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} title="Error">
+        <div className="p-6 text-center">
+          <p className="text-red-600">{error}</p>
+          <button
+            onClick={onClose}
+            className="mt-4 px-4 py-2 text-sm text-white bg-red-900 rounded-lg hover:bg-red-800"
+          >
+            Close
+          </button>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <>

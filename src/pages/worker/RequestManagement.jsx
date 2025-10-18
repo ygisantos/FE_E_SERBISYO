@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/reusable/DataTable';
-import { FaEye, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaEye, FaCheck, FaTimes, FaFilePdf, FaDownload } from 'react-icons/fa';
 import { fetchAllRequests, updateRequestStatus, getRequestById } from '../../api/requestApi';
 import { showCustomToast } from '../../components/Toast/CustomToast';
 import ViewRequestModal from '../../components/modals/ViewRequestModal';
+import { createCertificateLog } from '../../api/certificateLogApi';
+import ConfirmationModal from '../../components/modals/ConfirmationModal';
+import { useAuth } from '../../contexts/AuthContext';
+import Modal from '../../components/Modal/Modal';
 
 const RequestManagement = () => {
   const [requests, setRequests] = useState([]);
@@ -20,6 +24,13 @@ const RequestManagement = () => {
   });
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [showRemarkModal, setShowRemarkModal] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [remark, setRemark] = useState('');
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState(null);
+  const { user } = useAuth(); // Add this to get current staff info
 
   const STATUS_OPTIONS = [
     { value: '', label: 'All Status' },
@@ -47,7 +58,7 @@ const RequestManagement = () => {
         page,
         per_page: 10,
         search,
-        status: filters.status || 'pending', 
+        status: filters.status,
         sort_by: sortConfig.sort_by,
         order: sortConfig.order
       });
@@ -61,13 +72,32 @@ const RequestManagement = () => {
     }
   };
 
-  const handleStatusUpdate = async (requestId, newStatus) => {
+  const handleStatusUpdateClick = (requestId, newStatus) => {
+    setSelectedRequestId(requestId);
+    setSelectedStatus(newStatus);
+    setRemark('');
+    setShowRemarkModal(true);
+  };
+
+  const handleStatusUpdate = async () => {
     try {
       setLoading(true);
-      const response = await updateRequestStatus(requestId, newStatus);
-      showCustomToast(response.message || 'Status updated successfully', 'success');
-      loadRequests(); // Reload the requests after update
+      
+      // 1. Update request status with remark
+      const response = await updateRequestStatus(selectedRequestId, selectedStatus, remark);
+
+      // 2. Create certificate log
+      await createCertificateLog({
+        document_request: selectedRequestId,
+        staff: user.id,
+        remark: `Status changed to ${selectedStatus}. ${remark ? `Remarks: ${remark}` : ''}`
+      });
+
+      showCustomToast('Status updated successfully', 'success');
+      loadRequests();
+      setShowRemarkModal(false);
     } catch (error) {
+      console.error('Error updating status:', error);
       showCustomToast(error.message || 'Failed to update status', 'error');
     } finally {
       setLoading(false);
@@ -85,6 +115,13 @@ const RequestManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePreviewPdf = (url) => {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
+    const fullUrl = `${baseUrl}/storage/${url}`;
+    setSelectedPdf(fullUrl);
+    setShowPdfModal(true);
   };
 
   useEffect(() => {
@@ -140,7 +177,17 @@ const RequestManagement = () => {
       accessor: 'status',
       sortable: true,
       type: 'badge',
-      badgeColors: STATUS_COLORS
+      badgeColors: STATUS_COLORS,
+      render: (value) => (
+        <div className="flex flex-col gap-1">
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+            ${STATUS_COLORS[value] ? `bg-${STATUS_COLORS[value]}-100 text-${STATUS_COLORS[value]}-800` : 'bg-gray-100 text-gray-800'}`}
+          >
+            {value}
+          </span>
+         
+        </div>
+      )
     },
     {
       label: 'Date Requested',
@@ -156,97 +203,157 @@ const RequestManagement = () => {
       label: 'Requirements',
       accessor: 'uploaded_requirements',
       sortable: false,
-      render: (requirements) => (
-        <div className="space-y-1">
-          {requirements.map((req) => (
-            <div key={req.id} className="flex items-center gap-2">
-              <span className="text-xs text-gray-600">
-                {req.requirement.name}
-                <a 
-                  href={`/storage/${req.file_path}`} 
-                  target="_blank" 
-                  className="ml-2 text-blue-600 hover:underline"
-                >
-                  View
-                </a>
-              </span>
-            </div>
-          ))}
-        </div>
-      ),
+      render: (requirements, row) => {
+        // Only show requirements that belong to this specific request
+        const requestRequirements = requirements.filter(req => 
+          req.document === row.document
+        );
+
+        if (!requestRequirements || requestRequirements.length === 0) {
+          return <span className="text-xs text-gray-500">No requirements uploaded</span>;
+        }
+
+        return (
+          <div className="space-y-2">
+            {requestRequirements.map((req) => (
+              <div key={req.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                <FaFilePdf className="w-4 h-4 text-red-500" />
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-gray-700">{req.requirement?.name}</p>
+                  <button
+                    onClick={() => handlePreviewPdf(req.file_path)}
+                    className="text-xs text-red-600 hover:text-red-700 inline-flex items-center gap-1 mt-1"
+                  >
+                    <FaEye className="w-3 h-3" />
+                    View PDF
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      }
     }
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h3 className="text-lg font-medium text-gray-800">Residence Certificate Requests</h3>
-          <p className="text-xs text-gray-500 mt-1">
-            Manage and process document requests from residents
-          </p>
+    <>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-lg font-medium text-gray-800">Request Management</h3>
+            <p className="text-sm text-gray-500 mt-1">View and manage all certificate requests</p>
+          </div>
+
+          <div className="p-6">
+            <DataTable
+              columns={columns}
+              data={requests}
+              loading={loading}
+              enableSearch={true}
+              searchValue={search}
+              onSearchChange={setSearch}
+              enablePagination={true}
+              enableSelection={false}
+              onPageChange={setPage}
+              totalItems={total}
+              currentPage={page}
+              searchPlaceholder="Search requests..."
+              comboBoxFilter={{
+                label: "Status",
+                value: filters.status,
+                onChange: (value) => setFilters(prev => ({ ...prev, status: value })),
+                options: STATUS_OPTIONS
+              }}
+              actions={[
+                {
+                  icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
+                  label: 'View Details',
+                  onClick: handleViewDetails,
+                },
+                {
+                  icon: <FaCheck className="h-3.5 w-3.5 text-gray-400" />,
+                  label: 'Process',
+                  onClick: (row) => handleStatusUpdateClick(row.id, 'processing'),
+                  show: (row) => row.status === 'pending',
+                },
+                {
+                  icon: <FaCheck className="h-3.5 w-3.5 text-gray-400" />,
+                  label: 'Ready for Pickup',
+                  onClick: (row) => handleStatusUpdateClick(row.id, 'ready to pickup'),
+                  show: (row) => row.status === 'processing',
+                },
+                {
+                  icon: <FaCheck className="h-3.5 w-3.5 text-gray-400" />,
+                  label: 'Release',
+                  onClick: (row) => handleStatusUpdateClick(row.id, 'released'),
+                  show: (row) => row.status === 'ready to pickup',
+                },
+                {
+                  icon: <FaTimes className="h-3.5 w-3.5 text-gray-400" />,
+                  label: 'Reject',
+                  onClick: (row) => handleStatusUpdateClick(row.id, 'rejected'),
+                  show: (row) => ['pending', 'processing'].includes(row.status),
+                },
+              ]}
+            />
+          </div>
         </div>
 
-        <div className="p-6">
-          <DataTable
-            columns={columns}
-            data={requests}
-            loading={loading}
-            enableSearch={true}
-            searchValue={search}
-            onSearchChange={setSearch}
-            enablePagination={true}
-            onPageChange={setPage}
-            totalItems={total}
-            currentPage={page}
-            searchPlaceholder="Search requests..."
-            comboBoxFilter={{
-              label: "Status",
-              options: STATUS_OPTIONS,
-              value: filters.status,
-              onChange: (value) => setFilters(prev => ({ ...prev, status: value }))
-            }}
-            actions={[
-              {
-                icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
-                label: 'View Details',
-                onClick: handleViewDetails,
-              },
-              {
-                icon: <FaCheck className="h-3.5 w-3.5 text-gray-400" />,
-                label: 'Process',
-                onClick: (row) => handleStatusUpdate(row.id, 'processing'),
-                show: (row) => row.status === 'pending',
-              },
-              {
-                icon: <FaCheck className="h-3.5 w-3.5 text-gray-400" />,
-                label: 'Ready for Pickup',
-                onClick: (row) => handleStatusUpdate(row.id, 'ready to pickup'),
-                show: (row) => row.status === 'processing',
-              },
-              {
-                icon: <FaCheck className="h-3.5 w-3.5 text-gray-400" />,
-                label: 'Release',
-                onClick: (row) => handleStatusUpdate(row.id, 'released'),
-                show: (row) => row.status === 'ready to pickup',
-              },
-              {
-                icon: <FaTimes className="h-3.5 w-3.5 text-gray-400" />,
-                label: 'Reject',
-                onClick: (row) => handleStatusUpdate(row.id, 'rejected'),
-                show: (row) => ['pending', 'processing'].includes(row.status),
-              },
-            ]}
-          />
-        </div>
+        <ViewRequestModal
+          isOpen={viewModalOpen}
+          onClose={() => setViewModalOpen(false)}
+          request={selectedRequest}
+        />
+
+        {/* Add Remark Modal */}
+        <ConfirmationModal
+          isOpen={showRemarkModal}
+          onClose={() => setShowRemarkModal(false)}
+          onConfirm={handleStatusUpdate}
+          title="Update Request Status"
+          confirmText="Update"
+          cancelText="Cancel"
+        >
+          <div className="p-4">
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                Are you sure you want to change the status to <span className="font-medium">{selectedStatus}</span>?
+              </p>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Additional Remarks (Optional)
+              </label>
+              <textarea
+                value={remark}
+                onChange={(e) => setRemark(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                rows={3}
+                placeholder="Enter any additional remarks..."
+              />
+            </div>
+          </div>
+        </ConfirmationModal>
+
+        {/* PDF Preview Modal */}
+        <Modal
+          isOpen={showPdfModal}
+          onClose={() => setShowPdfModal(false)}
+          title="Document Preview"
+          modalClass="max-w-[95vw] w-full h-[95vh]"  
+        >
+          <div className="h-full w-full bg-gray-100">
+            <iframe
+              src={selectedPdf}
+              className="w-full h-full border-0"
+              title="PDF Preview"
+              style={{ minHeight: 'calc(95vh - 80px)' }}  
+            />
+          </div>
+        </Modal>
       </div>
-
-      <ViewRequestModal
-        isOpen={viewModalOpen}
-        onClose={() => setViewModalOpen(false)}
-        request={selectedRequest}
-      />
-    </div>
+    </>
   );
 };
 

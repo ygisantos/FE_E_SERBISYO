@@ -5,6 +5,7 @@ import { FaEye } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { getAllRequests } from '../../api/documentApi';
 import { showCustomToast } from '../../components/Toast/CustomToast';
+import ViewRequestModal from '../../components/modals/ViewRequestModal';
 
 const MyRequests = () => {
   const { currentUser } = useUser();
@@ -13,6 +14,8 @@ const MyRequests = () => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
 
   const requestColumns = [
     {
@@ -82,6 +85,11 @@ const MyRequests = () => {
     }
   }, [currentUser, page]);
 
+  const handleViewRequest = (request) => {
+    setSelectedRequest(request);
+    setShowViewModal(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
@@ -99,6 +107,7 @@ const MyRequests = () => {
             loading={loading}
             enableSearch={true}
             enablePagination={true}
+            enableSelection={false}
             totalItems={total}
             currentPage={page}
             onPageChange={setPage}
@@ -107,12 +116,22 @@ const MyRequests = () => {
               {
                 icon: <FaEye className="text-blue-600" />,
                 label: 'View Details',
-                onClick: (row) => navigate(`/resident/certificates/view/${row.id}`),
+                onClick: handleViewRequest,
               }
             ]}
           />
         </div>
       </div>
+
+      {/* View Request Modal */}
+      <ViewRequestModal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setSelectedRequest(null);
+        }}
+        request={selectedRequest}
+      />
     </div>
   );
 };

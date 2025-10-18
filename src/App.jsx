@@ -163,14 +163,7 @@ function App() {
               {/* Worker Routes */}
               <Route path="/worker/dashboard" element={<WorkerDashboard />} />
               {/* Request Management */}
-              <Route
-                path="/worker/requests/pending"
-                element={<RequestManagement />}
-              />
-              <Route
-                path="/worker/requests/processed"
-                element={<RequestManagement />}
-              />
+              <Route path="/worker/requests" element={<RequestManagement />} />
               <Route
                 path="/worker/certificates/logs"
                 element={<WorkerCertificateLogs />}
