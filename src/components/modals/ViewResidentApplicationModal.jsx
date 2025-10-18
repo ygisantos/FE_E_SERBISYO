@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Modal from '../Modal/Modal';
-import { FaUser, FaIdCard, FaTimes } from 'react-icons/fa';
+import { FaUser, FaIdCard, FaTimes, FaFileAlt, FaDownload, FaEye } from 'react-icons/fa';
 
 const ViewResidentApplicationModal = ({ isOpen, onClose, resident }) => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -76,6 +76,68 @@ const ViewResidentApplicationModal = ({ isOpen, onClose, resident }) => {
     </div>
   );
 
+  const renderFiledDocument = (document, label) => {
+    if (!document) return null;
+    
+    const handleViewDocument = () => {
+      const url = getProfilePicUrl(document);
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    };
+
+    const handleDownloadDocument = () => {
+      const url = getProfilePicUrl(document);
+      if (url) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${label}_${resident?.name || 'document'}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    };
+
+    return (
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-gray-500">{label}</p>
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0">
+                <FaFileAlt className="w-8 h-8 text-blue-500" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  {label}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Filed document
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleViewDocument}
+                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                <FaEye className="w-3 h-3 mr-1" />
+                View
+              </button>
+              <button
+                onClick={handleDownloadDocument}
+                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              >
+                <FaDownload className="w-3 h-3 mr-1" />
+                Download
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} title="Application Details" size="lg">
@@ -137,6 +199,39 @@ const ViewResidentApplicationModal = ({ isOpen, onClose, resident }) => {
               ))}
             </div>
           )}
+
+          {/* Filed Documents Section */}
+          {(resident?.filed_documents || resident?.supporting_documents || resident?.registration_document) && 
+            renderSection("Filed Documents",
+              <div className="space-y-4">
+                {resident?.registration_document && renderFiledDocument(resident.registration_document, "Registration Document")}
+                {resident?.filed_documents && renderFiledDocument(resident.filed_documents, "Filed Document")}
+                {resident?.supporting_documents && renderFiledDocument(resident.supporting_documents, "Supporting Documents")}
+                {resident?.birth_certificate && renderFiledDocument(resident.birth_certificate, "Birth Certificate")}
+                {resident?.marriage_certificate && renderFiledDocument(resident.marriage_certificate, "Marriage Certificate")}
+                {resident?.proof_of_residency && renderFiledDocument(resident.proof_of_residency, "Proof of Residency")}
+                
+                {/* Handle array of documents if they exist */}
+                {Array.isArray(resident?.documents) && resident.documents.map((doc, index) => 
+                  renderFiledDocument(doc.file_path || doc.document_path, doc.document_type || `Document ${index + 1}`)
+                )}
+                
+                {/* If no documents found, show message */}
+                {!resident?.registration_document && 
+                 !resident?.filed_documents && 
+                 !resident?.supporting_documents && 
+                 !resident?.birth_certificate && 
+                 !resident?.marriage_certificate && 
+                 !resident?.proof_of_residency && 
+                 (!resident?.documents || resident.documents.length === 0) && (
+                  <div className="text-center py-6">
+                    <FaFileAlt className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">No filed documents available</p>
+                  </div>
+                )}
+              </div>
+            )
+          }
         </div>
       </Modal>
 

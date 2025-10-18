@@ -195,14 +195,17 @@ const DataTable = ({
     setCurrentPage(1);
   }, []);
 
-  // Action menu component
+  // Action menu component with portal-like positioning
   const ActionMenu = ({ row, index, actions }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+    const buttonRef = useRef(null);
     const menuRef = useRef(null);
 
     useEffect(() => {
       const handleClickOutside = (event) => {
-        if (menuRef.current && !menuRef.current.contains(event.target)) {
+        if (menuRef.current && !menuRef.current.contains(event.target) &&
+            buttonRef.current && !buttonRef.current.contains(event.target)) {
           setIsOpen(false);
         }
       };
@@ -211,26 +214,66 @@ const DataTable = ({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    useEffect(() => {
+      if (isOpen && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Calculate position relative to viewport
+        let top = rect.bottom + 4;
+        let left = rect.right - 192; // 192px = w-48
+        
+        // Adjust if menu would go off-screen
+        if (left < 8) {
+          left = rect.left;
+        }
+        
+        if (top + 200 > viewportHeight) {
+          top = rect.top - 200;
+        }
+        
+        setMenuPosition({ top, left });
+      }
+    }, [isOpen]);
+
     const filteredActions = actions.filter(action => 
       !action.renderIf || action.renderIf(row)
     );
 
     return (
-      <div className="relative" ref={menuRef}>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsOpen(!isOpen);
-          }}
-          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all duration-200 cursor-pointer"
-          aria-label="Actions"
-        >
-          <MoreVertical className="w-4 h-4" />
-        </button>
+      <>
+        <div className="relative">
+          <button
+            ref={buttonRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(!isOpen);
+            }}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            aria-label="Actions"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+        </div>
 
         {isOpen && (
-          <div className="absolute z-50 right-0 mt-1 w-48 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 animate-in fade-in-0 zoom-in-95 duration-200">
-            <div className="py-1">
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setIsOpen(false)} 
+            />
+            
+            {/* Menu positioned absolutely to viewport */}
+            <div 
+              ref={menuRef}
+              className="fixed z-50 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
+              style={{
+                top: `${menuPosition.top}px`,
+                left: `${menuPosition.left}px`,
+              }}
+            >
               {filteredActions.map((action, i) => (
                 <button
                   key={i}
@@ -240,27 +283,36 @@ const DataTable = ({
                     setIsOpen(false);
                   }}
                   className={`
-                    group flex w-full items-center px-4 py-2 text-xs transition-all duration-200 cursor-pointer
-                    ${action.label.toLowerCase().includes('delete') || action.label.toLowerCase().includes('archive')
+                    group flex w-full items-center px-4 py-2 text-sm transition-all duration-200 cursor-pointer text-left
+                    ${action.label.toLowerCase().includes('delete') || action.label.toLowerCase().includes('archive') || action.label.toLowerCase().includes('reject')
                       ? 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}
-                    hover:pl-5
+                      : action.label.toLowerCase().includes('edit')
+                      ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700'
+                      : action.label.toLowerCase().includes('view')
+                      ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
+                      : action.label.toLowerCase().includes('approve') || action.label.toLowerCase().includes('ready') || action.label.toLowerCase().includes('release')
+                      ? 'text-green-600 hover:bg-green-50 hover:text-green-700'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'}
                   `}
                 >
                   {action.icon && React.cloneElement(action.icon, {
-                    className: `mr-3 h-4 w-4 transition-transform duration-200 group-hover:scale-110 ${
-                      action.label.toLowerCase().includes('delete') || action.label.toLowerCase().includes('archive')
+                    className: `mr-3 h-4 w-4 ${
+                      action.label.toLowerCase().includes('delete') || action.label.toLowerCase().includes('archive') || action.label.toLowerCase().includes('reject')
                         ? 'text-red-500'
-                        : 'text-gray-400 group-hover:text-gray-600'
+                        : action.label.toLowerCase().includes('edit')
+                        ? 'text-blue-500'
+                        : action.label.toLowerCase().includes('approve') || action.label.toLowerCase().includes('ready') || action.label.toLowerCase().includes('release')
+                        ? 'text-green-500'
+                        : 'text-gray-400'
                     }`
                   })}
                   {action.label}
                 </button>
               ))}
             </div>
-          </div>
+          </>
         )}
-      </div>
+      </>
     );
   };
 
@@ -359,18 +411,39 @@ const DataTable = ({
       case "badge":
         const badgeColor = column.badgeColors?.[value] || "gray";
         const colorClasses = {
-          gray: "bg-gray-100 text-gray-700",
-          green: "bg-green-50 text-green-700",
-          red: "bg-red-50 text-red-700",
-          yellow: "bg-yellow-50 text-yellow-700",
-          blue: "bg-blue-50 text-blue-700",
-          purple: "bg-purple-50 text-purple-700",
+          gray: "bg-gray-100 text-gray-800 border-gray-200",
+          green: "bg-emerald-100 text-emerald-800 border-emerald-200",
+          red: "bg-red-100 text-red-800 border-red-200",
+          yellow: "bg-amber-100 text-amber-800 border-amber-200",
+          blue: "bg-blue-100 text-blue-800 border-blue-200",
+          purple: "bg-purple-100 text-purple-800 border-purple-200",
+          active: "bg-emerald-100 text-emerald-800 border-emerald-200",
+          inactive: "bg-red-100 text-red-800 border-red-200",
+          pending: "bg-amber-100 text-amber-800 border-amber-200",
+          processing: "bg-blue-100 text-blue-800 border-blue-200",
+          approved: "bg-green-100 text-green-800 border-green-200",
+          rejected: "bg-red-100 text-red-800 border-red-200",
+          completed: "bg-emerald-100 text-emerald-800 border-emerald-200",
+          cancelled: "bg-gray-100 text-gray-800 border-gray-200",
+          filed: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          resolved: "bg-green-100 text-green-800 border-green-200",
+          scheduled: "bg-blue-100 text-blue-800 border-blue-200",
         };
+        
+        const statusIndicator = ['active', 'approved', 'completed', 'resolved'].includes(value?.toLowerCase()) 
+          ? 'bg-green-500' 
+          : ['pending', 'filed'].includes(value?.toLowerCase())
+          ? 'bg-yellow-500'
+          : ['processing', 'scheduled'].includes(value?.toLowerCase())
+          ? 'bg-blue-500'
+          : 'bg-red-500';
+          
         return (
           <span
-            className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-medium ${colorClasses[badgeColor]}`}
+            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-200 hover:scale-105 ${colorClasses[badgeColor] || colorClasses[value?.toLowerCase()] || colorClasses.gray}`}
           >
-            {value}
+            <span className={`w-2 h-2 rounded-full mr-2 ${statusIndicator} animate-pulse`} />
+            {value?.charAt(0).toUpperCase() + value?.slice(1)}
           </span>
         );
 
@@ -431,20 +504,28 @@ const DataTable = ({
     });
   }, []);
 
-  // Loading state
+  // Enhanced Loading state
   if (loading) {
     return (
       <div className={`w-full ${className}`}>
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-100 rounded mb-3"></div>
-          <div className="rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-            <div className="h-12 bg-gray-50"></div>
-            <div className="space-y-0">
+          <div className="h-12 bg-gradient-to-r from-gray-100 to-gray-200 rounded-t-lg mb-1"></div>
+          <div className="rounded-b-lg border border-gray-200 overflow-hidden shadow-sm">
+            <div className="h-14 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200"></div>
+            <div className="space-y-1">
               {[...Array(5)].map((_, i) => (
                 <div
                   key={i}
-                  className={`h-12 ${i % 2 === 0 ? "bg-gray-50" : "bg-white"}`}
-                ></div>
+                  className={`h-14 ${i % 2 === 0 ? "bg-gray-50" : "bg-white"} flex items-center px-4`}
+                >
+                  <div className="flex space-x-4 w-full">
+                    <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -463,9 +544,9 @@ const DataTable = ({
             {actionButton && (!actionButton.show || actionButton.show()) && (
               <button
                 onClick={actionButton.onClick}
-                className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md shadow-sm transition-colors ${
+                className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 hover:shadow-md hover:scale-105 ${
                   actionButton.className ||
-                  'bg-blue-600 text-white hover:bg-blue-700'
+                  'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500'
                 }`}
               >
                 {actionButton.icon && (
@@ -478,22 +559,29 @@ const DataTable = ({
             )}
             {enableSearch && (
               <div className="relative flex-grow max-w-2xl">
-                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
                 <input
                   type="text"
                   placeholder={searchPlaceholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 pr-8 py-2 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white w-full"
+                  className="
+                    block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg
+                    text-sm placeholder-gray-500 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                    transition-all duration-200
+                    hover:border-gray-400
+                    bg-white shadow-sm
+                  "
                 />
-
-                {(searchTerm || Object.values(filters).some((v) => v)) && (
+                {searchTerm && (
                   <button
                     onClick={clearAllFilters}
-                    className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-600"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                   </button>
                 )}
               </div>
@@ -522,12 +610,12 @@ const DataTable = ({
             {enableColumnFilters && (
               <button
                 onClick={() => setShowFilterPanel(!showFilterPanel)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-gray-200 rounded text-xs transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm text-gray-600 font-medium cursor-pointer hover:scale-105"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-gray-200 rounded text-xs transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm text-gray-600 font-medium cursor-pointer hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 <Filter className="h-3.5 w-3.5" />
                 Filters
                 {Object.values(filters).some((v) => v) && (
-                  <span className="bg-blue-500 text-white text-2xs rounded-full px-1 py-0 min-w-[14px] h-3.5 flex items-center justify-center">
+                  <span className="bg-blue-500 text-white text-2xs rounded-full px-1 py-0 min-w-[14px] h-3.5 flex items-center justify-center animate-pulse">
                     {Object.values(filters).filter((v) => v).length}
                   </span>
                 )}
@@ -567,7 +655,7 @@ const DataTable = ({
             {onExport && (
               <button
                 onClick={() => onExport(filteredData)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-gray-200 rounded text-xs transition-colors hover:bg-gray-50 text-gray-600 font-medium"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-gray-200 rounded text-xs transition-all duration-200 hover:bg-gray-50 hover:shadow-sm hover:scale-105 text-gray-600 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 <Download className="h-3.5 w-3.5" />
                 Export
@@ -637,21 +725,28 @@ const DataTable = ({
         className={`rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm ${tableClassName}`}
       >
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className={`bg-gray-50 ${headerClassName}`}>
+          <table className="min-w-full divide-y divide-gray-200 bg-white">
+            <thead className={`bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 ${headerClassName}`}>
               <tr>
                 {enableSelection && (
-                  <th className="pl-4 pr-3 py-3.5 text-left text-xs text-gray-500 font-medium w-10">
-                    <input
-                      type="checkbox"
-                      checked={selectedRows.length === paginatedData.length && paginatedData.length > 0}
-                      onChange={handleSelectAll}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded cursor-pointer focus:ring-blue-500"
-                    />
+                  <th className="pl-4 pr-3 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-10">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.length === paginatedData.length && paginatedData.length > 0}
+                        onChange={handleSelectAll}
+                        className="
+                          w-4 h-4 text-blue-600 border-gray-300 rounded cursor-pointer
+                          focus:ring-blue-500 focus:ring-2 focus:ring-offset-2
+                          transition-all duration-200
+                          hover:border-blue-400
+                        "
+                      />
+                    </div>
                   </th>
                 )}
                 {showRowNumbers && (
-                  <th className="px-3 py-3.5 text-left text-xs text-gray-500 font-medium uppercase tracking-wider w-10">
+                  <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-10">
                     #
                   </th>
                 )}
@@ -659,7 +754,7 @@ const DataTable = ({
                   <th
                     key={col.accessor}
                     onClick={() => handleSort(col.accessor)}
-                    className={`px-3 py-2 text-left text-xs text-gray-500 font-medium uppercase tracking-wider ${
+                    className={`px-4 py-3.5 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider ${
                       col.sortable !== false
                         ? "cursor-pointer hover:bg-gray-100 transition-colors"
                         : ""
@@ -685,7 +780,7 @@ const DataTable = ({
                   </th>
                 ))}
                 {actions.length > 0 && (
-                  <th className="px-3 py-2 text-right text-xs text-gray-500 font-medium uppercase tracking-wider w-12">
+                  <th className="px-4 py-3.5 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider w-12">
                     Actions
                   </th>
                 )}
@@ -698,23 +793,22 @@ const DataTable = ({
                     colSpan={
                       columns.length +
                       (showRowNumbers ? 1 : 0) +
+                      (enableSelection ? 1 : 0) +
                       (actions.length > 0 ? 1 : 0)
                     }
-                    className="px-4 py-8 text-center"
+                    className="px-6 py-12 text-center"
                   >
-                    <div className="flex flex-col items-center gap-4 py-12">
-                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                        <Search className="w-6 h-6 text-gray-400" />
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm font-semibold text-gray-900 mb-1">
-                          {emptyMessage}
+                        <h3 className="text-sm font-medium text-gray-900">{emptyMessage}</h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {searchTerm ? "Try adjusting your search or filters to find what you're looking for" : "Get started by adding some data."}
                         </p>
-                        {searchTerm && (
-                          <p className="text-sm text-gray-500">
-                            Try adjusting your search or filters to find what you're looking for
-                          </p>
-                        )}
                       </div>
                       {searchTerm && (
                         <button
@@ -736,47 +830,55 @@ const DataTable = ({
                         handleRowClick(row, index);
                       }
                     }}
-                    className={`transition-colors ${
-                      striped && index % 2 === 1 ? "bg-gray-50" : "bg-white"
-                    } ${onRowClick ? "cursor-pointer" : ""} ${
-                      compact ? "h-12" : "h-14"
-                    } hover:bg-gray-50 group ${
-                      selectedRows.includes(row.id) ? "bg-blue-50/50" : ""
-                    } ${rowClassName}`}
+                    className={`
+                      hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100 last:border-b-0
+                      ${striped && index % 2 === 1 ? "bg-gray-50/30" : "bg-white"}
+                      ${onRowClick ? "cursor-pointer" : ""} 
+                      ${compact ? "h-12" : "h-14"}
+                      ${selectedRows.includes(row.id) ? "bg-blue-50/50" : ""} 
+                      ${rowClassName}
+                    `}
                   >
                     {enableSelection && (
-                      <td className="pl-4 pr-3 py-3.5 text-left text-sm w-10">
-                        <input
-                          type="checkbox"
-                          checked={selectedRows.includes(row.id)}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            handleSelectRow(row.id);
-                          }}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded cursor-pointer focus:ring-blue-500"
-                        />
+                      <td className="pl-4 pr-3 py-3 text-left text-sm w-10">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={selectedRows.includes(row.id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleSelectRow(row.id);
+                            }}
+                            className="
+                              w-4 h-4 text-blue-600 border-gray-300 rounded cursor-pointer
+                              focus:ring-blue-500 focus:ring-2 focus:ring-offset-2
+                              transition-all duration-200
+                              hover:border-blue-400
+                            "
+                          />
+                        </div>
                       </td>
                     )}
                     {showRowNumbers && (
                       <td
-                        className={`px-3 py-3.5 text-xs font-medium text-gray-500 ${cellClassName}`}
+                        className={`px-4 py-3 text-sm whitespace-nowrap font-medium text-gray-500 ${cellClassName}`}
                       >
                         {enablePagination
-                          ? (currentPage - 1) * pageSize + index + 1
+                          ? (page - 1) * pageSize + index + 1
                           : index + 1}
                       </td>
                     )}
                     {columns.map((col) => (
                       <td
                         key={col.accessor}
-                        className={`px-3 py-2 text-xs ${cellClassName}`}
+                        className={`px-4 py-3 text-sm text-gray-900 whitespace-nowrap ${cellClassName}`}
                         style={{ textAlign: col.align || "left" }}
                       >
                         {renderCellContent(col, row[col.accessor], row, index)}
                       </td>
                     ))}
                     {actions.length > 0 && (
-                      <td className="px-3 py-2 text-right">
+                      <td className="px-4 py-3 text-right">
                         <ActionMenu row={row} index={index} actions={actions} />
                       </td>
                     )}
