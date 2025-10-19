@@ -8,9 +8,19 @@ const ViewRequestModal = ({ isOpen, onClose, request }) => {
 
   if (!request) return null;
 
+  const getFileUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    
+    // Use environment variable for storage URL
+    const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
+    // Remove 'requirements/' prefix if it exists
+    const cleanPath = path.replace(/^requirements\//, '');
+    return `${storageUrl}/requirements/${cleanPath}`;
+  };
+
   const handlePreviewPdf = (url) => {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    const fullUrl = `${baseUrl}/storage/${url}`;
+    const fullUrl = getFileUrl(url);
     setSelectedPdf(fullUrl);
     setShowPdfModal(true);
   };

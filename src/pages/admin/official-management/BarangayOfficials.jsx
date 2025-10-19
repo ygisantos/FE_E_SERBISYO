@@ -135,12 +135,13 @@ const BarangayOfficials = () => {
   };
 
   const getProfilePicUrl = (path) => {
-    if (!path) return "/placeholder-avatar.png";
-    if (path.startsWith("http")) return path;
-
-    // Use the storage URL from env
+    if (!path) return '/placeholder-avatar.png';
+    if (path.startsWith('http')) return path;
+    
+    // Remove /storage prefix and use storage URL
     const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
-    return `${storageUrl}/${path}`;
+    const cleanPath = path.replace(/^\/storage\//, '');
+    return `${storageUrl}/${cleanPath}`;
   };
 
   const formatDate = (dateString) => {

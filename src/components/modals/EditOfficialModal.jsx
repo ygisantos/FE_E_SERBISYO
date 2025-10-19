@@ -37,13 +37,14 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
   const fileInputRef = useRef(null);
   const initialFormData = useRef(null);
 
-  const getProfilePicUrl = (path) => {
+    const getProfilePicUrl = (path) => {
     if (!path) return '/placeholder-avatar.png';
     if (path.startsWith('http')) return path;
     
-    // Use storage URL from env
+    // Remove /storage prefix and use storage URL
     const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
-    return `${storageUrl}/${path}`;
+    const cleanPath = path.replace(/^\/storage\//, '');
+    return `${storageUrl}/${cleanPath}`;
   };
 
   useEffect(() => {

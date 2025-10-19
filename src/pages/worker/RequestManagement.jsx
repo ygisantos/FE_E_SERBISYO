@@ -118,9 +118,18 @@ const RequestManagement = () => {
     }
   };
 
+  const getFileUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    
+
+    const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
+    const cleanPath = path.replace(/^requirements\//, '');
+    return `${storageUrl}/requirements/${cleanPath}`;
+  };
+
   const handlePreviewPdf = (url) => {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    const fullUrl = `${baseUrl}/storage/${url}`;
+    const fullUrl = getFileUrl(url);
     setSelectedPdf(fullUrl);
     setShowPdfModal(true);
   };
@@ -132,9 +141,9 @@ const RequestManagement = () => {
       
       const response = await generateFilledDocument(requestId);
       
-      // Get the file URL from response
-      const baseUrl = import.meta.env.VITE_API_BASE_URL;
-      const fileUrl = `${baseUrl}${response.file_url}`;
+      // Construct the correct URL using environment variable
+      const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
+      const fileUrl = `${storageUrl}/${response.file_path}`;
       
       // Extract filename from file_path
       const filename = response.file_path.split('/').pop();
@@ -150,8 +159,8 @@ const RequestManagement = () => {
       
       showCustomToast('Document downloaded successfully', 'success');
     } catch (error) {
-      console.error('Error downloading filled document:', error);
-      showCustomToast(error.message || 'Failed to download filled document', 'error');
+      console.error('Download error:', error);
+      showCustomToast(error.message || 'Failed to download document', 'error');
     } finally {
       setLoading(false);
     }
@@ -196,9 +205,9 @@ const RequestManagement = () => {
     },
     {
       label: 'Address',
-      accessor: 'account.address', // Changed from just 'account'
+      accessor: 'account.address',  
       sortable: false,
-      render: (_, row) => ( // Using row parameter to access full account object
+      render: (_, row) => (  
         <div className="text-xs text-gray-600">
           <p>{`${row.account.house_no} ${row.account.street}`}</p>
           <p>{`${row.account.barangay}, ${row.account.municipality}`}</p>
@@ -343,6 +352,8 @@ const RequestManagement = () => {
           isOpen={viewModalOpen}
           onClose={() => setViewModalOpen(false)}
           request={selectedRequest}
+          onPreviewPdf={handlePreviewPdf}
+          getFileUrl={getFileUrl}
         />
 
         {/* Add Remark Modal */}

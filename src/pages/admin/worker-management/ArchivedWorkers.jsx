@@ -58,23 +58,54 @@ const ArchivedWorkers = () => {
     }
   };
 
+  const getProfilePicUrl = (path) => {
+    if (!path) return '/placeholder-avatar.png';
+    if (path.startsWith('http')) return path;
+    
+    const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
+    const cleanPath = path.replace(/^\/storage\//, '');
+    return `${storageUrl}/${cleanPath}`;
+  };
+
   const columns = [
+    {
+      label: "Profile Picture",
+      accessor: "profile_picture_path",
+      render: (value, row) => {
+        const hasProfilePic = !!value;
+        const initials = row.first_name && row.last_name
+          ? `${row.first_name[0]}${row.last_name[0]}`
+          : '';
+        const imgUrl = getProfilePicUrl(value);
+        
+        return (
+          <div className="w-10 h-10">
+            {hasProfilePic ? (
+              <img
+                src={imgUrl}
+                alt={`${row.first_name}'s profile`}
+                className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white"
+                onError={e => { e.target.src = '/placeholder-avatar.png'; }}
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm border border-gray-200">
+                {initials}
+              </div>
+            )}
+          </div>
+        );
+      }
+    },
     {
       label: 'Name',
       accessor: 'first_name',
       sortable: true,
-      render: (value, row) => (
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-            <span className="text-xs font-medium text-gray-600">
-              {row.first_name?.charAt(0)}
-            </span>
-          </div>
+      render: (value,row) => (
+           
           <span className="text-xs text-gray-800">
             {`${row.first_name} ${row.last_name}`}
           </span>
-        </div>
-      ),
+       ),
     },
     {
       label: 'Email',

@@ -70,9 +70,12 @@ const ArchivedOfficials = () => {
     if (!path) return '/placeholder-avatar.png';
     if (path.startsWith('http')) return path;
     
+    // Remove /storage prefix and use storage URL
     const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
-    return `${storageUrl}/${path}`;
+    const cleanPath = path.replace(/^\/storage\//, '');
+    return `${storageUrl}/${cleanPath}`;
   };
+
 
   const formatDate = (dateString) => {
     if (!dateString) return "-";
@@ -102,7 +105,7 @@ const ArchivedOfficials = () => {
               <img
                 src={imgUrl}
                 alt={`${row.account?.first_name}'s profile`}
-                className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white"
+                className="w-10 h-10 rounded-full object-cover border b4order-gray-200 bg-white"
                 onError={(e) => {
                   e.target.src = "/placeholder-avatar.png";
                 }}
