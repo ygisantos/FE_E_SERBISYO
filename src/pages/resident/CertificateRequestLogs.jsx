@@ -1,26 +1,76 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import DataTable from '../../components/reusable/DataTable';
 import { FaEye, FaDownload } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import { fetchAllRequests } from '../../api/requestApi';
+import { useUser } from '../../contexts/UserContext';
 
 const CertificateRequestLogs = () => {
   const navigate = useNavigate();
 
-  // This will be replaced with API data
-  const requestLogs = [
-    {
-      id: 1,
-      referenceNo: 'BC-2024-001',
-      certificateType: 'Barangay Clearance',
-      requestDate: '2024-01-15',
-      processedDate: '2024-01-16',
-      status: 'Completed',
-      purpose: 'Employment',
-      paymentStatus: 'Paid',
-      amount: 100,
-    },
-    // Add more sample data
-  ];
+  // API state
+  const { currentUser, loading: userLoading } = useUser();
+  const [requestLogs, setRequestLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('pending');
+  const perPage = 10;
+
+  const fetchRequests = useCallback(async () => {
+    if (!currentUser?.id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchAllRequests({
+        status,
+        requestor: currentUser.id,
+        per_page: perPage,
+        page,
+        sort_by: 'document',
+        order: 'desc',
+        search,
+      });
+      // Map API data to DataTable fields
+      const mapped = (res.data || []).map((item) => ({
+        id: item.id,
+        referenceNo: item.transaction_id,
+        certificateType: item.document_details?.document_name || '',
+        requestDate: item.created_at,
+        processedDate: item.updated_at !== item.created_at ? item.updated_at : null,
+        status: item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : '',
+        purpose: item.information?.purpose || '',
+        paymentStatus: item.payment_status ? (item.payment_status === 'paid' ? 'Paid' : 'Unpaid') : 'Unpaid',
+        amount: item.amount || '',
+      }));
+      setRequestLogs(mapped);
+      setTotal(res.total || 0);
+    } catch (err) {
+      setError(err?.toString() || 'Failed to fetch requests');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser, page, status, search]);
+
+  useEffect(() => {
+    if (!userLoading && currentUser?.id) {
+      fetchRequests();
+    }
+  }, [userLoading, currentUser, fetchRequests]);
+
+  // Handle search from DataTable
+  const handleSearch = (val) => {
+    setSearch(val);
+    setPage(1);
+  };
+
+  // Handle status filter change
+  const handleStatusChange = (e) => {
+    setStatus(e.target.value);
+    setPage(1);
+  };
 
   const columns = [
     {
@@ -98,13 +148,42 @@ const CertificateRequestLogs = () => {
             </p>
           </div>
 
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>
+          )}
+
+          <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+            <div>
+              <label htmlFor="statusFilter" className="text-sm font-medium text-gray-700 mr-2">Status:</label>
+              <select
+                id="statusFilter"
+                value={status}
+                onChange={handleStatusChange}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="released">Released</option>
+                <option value="rejected">Rejected</option>
+                <option value="approved">Approved</option>
+                <option value="processing">Processing</option>
+                <option value="ready to pickup">Ready to Pickup</option>
+              </select>
+            </div>
+          </div>
           <DataTable
             columns={columns}
             data={requestLogs}
-            enableSearch={true}
+            enableSearch={false}
             searchPlaceholder="Search by reference number, type..."
+            onSearch={handleSearch}
+            searchValue={search}
             enablePagination={true}
-            itemsPerPage={10}
+            itemsPerPage={perPage}
+            loading={loading || userLoading}
+            totalItems={total}
+            currentPage={page}
+            onPageChange={setPage}
             actions={[
               {
                 icon: <FaEye className="text-blue-600" />,

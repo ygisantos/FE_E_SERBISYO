@@ -168,6 +168,16 @@ export const getDocumentById = async (id) => {
   }
 };
 
+{/*Generate filled document from request*/}
+export const generateFilledDocument = async (requestId) => {
+  try {
+    const response = await axios.post(`/request-documents/${requestId}/generate-filled-document`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || 'Failed to generate filled document';
+  }
+};
+
 export const getDocumentTemplate = async (documentId) => {
   try {
     const response = await axios.get(`/documents/${documentId}/template/get`, {

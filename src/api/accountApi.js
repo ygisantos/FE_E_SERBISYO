@@ -159,3 +159,16 @@ export const updateAccountStatus = async (accountId, status) => {
     throw new Error(error.response?.data?.message || 'Failed to update account status');
   }
 };
+
+export const updateProfilePicture = async (accountId, formData) => {
+  try {
+    const response = await axios.post(`/accounts/${accountId}/update-profile-picture`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || 'Failed to update profile picture';
+  }
+};

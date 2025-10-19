@@ -116,20 +116,22 @@ const PendingResidents = () => {
   };
 
   const getProfilePicUrl = (path) => {
-    if (!path) return null;
+    if (!path) return '/placeholder-avatar.png';
     if (path.startsWith('http')) return path;
-    const base = import.meta.env.VITE_API_BASE_URL || window.location.origin;
-    return `${base}${path}`;
+    
+    const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
+    const cleanPath = path.replace(/^\/storage\//, '');
+    return `${storageUrl}/${cleanPath}`;
   };
 
   const columns = [
     {
-      label: "Profile Picture",
-      accessor: "profile_picture_path",
+      label: 'Profile Picture',
+      accessor: 'profile_picture_path',
       render: (value, row) => {
         const hasProfilePic = !!value;
         const initials = row.first_name && row.last_name
-          ? `${row.first_name[0]}${row.last_name[0]}`
+          ? `${row.first_name[0]}${row.last_name[0]}`.toUpperCase()
           : '';
         const imgUrl = getProfilePicUrl(value);
         
