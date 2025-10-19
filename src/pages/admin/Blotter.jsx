@@ -3,7 +3,7 @@ import DataTable from "../../components/reusable/DataTable";
 import { FileText, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { FaEye } from "react-icons/fa"; 
 import { getAllBlotters } from "../../api/blotterApi";
-import { toast } from "react-toastify";
+import { showCustomToast } from "../../components/Toast/CustomToast";
 import CreateBlotterModal from "../../components/modals/CreateBlotterModal";
 import ViewBlotterModal from "../../components/modals/ViewBlotterModal";
 import { useDebounce } from "../../hooks/useDebounce";
@@ -57,7 +57,7 @@ const Blotter = () => {
         setTotalItems(response.pagination.totalItems);
       }
     } catch (error) {
-      toast.error("Failed to fetch blotters");
+      showCustomToast("Failed to fetch blotters",'error');
     } finally {
       setLoading(false);
     }

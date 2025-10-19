@@ -5,6 +5,7 @@ import { showCustomToast } from '../Toast/CustomToast';
 import ConfirmationModal from './ConfirmationModal';
 import { FaUpload, FaTimes, FaSpinner } from 'react-icons/fa';
 import { extractPlaceholders } from '../../api/documentApi';
+import { isSystemKeyword, SYSTEM_KEYWORDS, formatDate } from '../../utils/documentKeywords';
 
 const RequestDocumentModal = ({ 
   isOpen, 
@@ -81,6 +82,8 @@ const RequestDocumentModal = ({
   };
 
   const handlePlaceholderChange = (placeholder, value) => {
+    if (isSystemKeyword(placeholder)) return; // Prevent editing system keywords
+    
     setFormData(prev => ({
       ...prev,
       placeholders: {
@@ -88,7 +91,6 @@ const RequestDocumentModal = ({
         [placeholder]: value
       }
     }));
-    setHasChanges(true);
   };
 
   const formatPlaceholderLabel = (placeholder) => {
@@ -150,9 +152,13 @@ const RequestDocumentModal = ({
       return false;
     }
 
-    // Check if all placeholders are filled (if any exist)
+    // Only check non-system placeholders
     const emptyPlaceholders = placeholders.filter(
-      placeholder => !formData.placeholders[placeholder]?.trim()
+      placeholder => {
+        // Skip validation for system keywords
+        if (isSystemKeyword(placeholder)) return false;
+        return !formData.placeholders[placeholder]?.trim();
+      }
     );
 
     if (emptyPlaceholders.length > 0) {
@@ -173,23 +179,31 @@ const RequestDocumentModal = ({
       return;
     }
 
-    const requestFormData = new FormData();
-    requestFormData.append('document', document.id);
-    requestFormData.append('purpose', formData.purpose);
+    try {
+      const requestFormData = new FormData();
+      requestFormData.append('document', document.id);
+      requestFormData.append('purpose', formData.purpose);
 
-    // Add placeholder data as "information" object
-    if (placeholders.length > 0) {
-      requestFormData.append('information', JSON.stringify(formData.placeholders));
+      // Process placeholders including system keywords
+      const processedPlaceholders = {};
+      for (const [key, value] of Object.entries(formData.placeholders)) {
+        processedPlaceholders[key] = isSystemKeyword(key) ? 
+          SYSTEM_KEYWORDS[key]() : value;
+      }
+
+      requestFormData.append('information', JSON.stringify(processedPlaceholders));
+
+      // Add requirements
+      formData.requirements.forEach((req, index) => {
+        requestFormData.append(`requirements[${index}][requirement_id]`, req.requirement_id);
+        requestFormData.append(`requirements[${index}][file]`, req.file);
+      });
+
+      setPendingFormData(requestFormData);
+      setShowConfirmSubmit(true);
+    } catch (error) {
+      showCustomToast(error?.message || 'Failed to submit request', 'error');
     }
-
-    // Add requirements
-    formData.requirements.forEach((req, index) => {
-      requestFormData.append(`requirements[${index}][requirement_id]`, req.requirement_id);
-      requestFormData.append(`requirements[${index}][file]`, req.file);
-    });
-
-    setPendingFormData(requestFormData);
-    setShowConfirmSubmit(true);
   };
 
   const confirmSubmit = async () => {
@@ -201,6 +215,20 @@ const RequestDocumentModal = ({
       showCustomToast(error.message || 'Failed to submit request', 'error');
     }
   };
+
+  useEffect(() => {
+    if (document?.template) {
+      const placeholders = {};
+      // Initialize placeholders, auto-filling system keywords
+      document.placeholders.forEach(key => {
+        placeholders[key] = isSystemKeyword(key) ? SYSTEM_KEYWORDS[key]() : '';
+      });
+      setFormData(prev => ({
+        ...prev,
+        placeholders
+      }));
+    }
+  }, [document]);
 
   return (
     <>
@@ -263,18 +291,22 @@ const RequestDocumentModal = ({
             <div className="space-y-3">
               <h4 className="font-medium text-gray-900">Document Information</h4>
               <div className="space-y-3">
-                {placeholders.map((placeholder) => (
-                  <div key={placeholder}>
-                    <InputField
-                      label={formatPlaceholderLabel(placeholder)}
-                      placeholder={`Enter ${formatPlaceholderLabel(placeholder).toLowerCase()}`}
-                      value={formData.placeholders[placeholder] || ''}
-                      onChange={(e) => handlePlaceholderChange(placeholder, e.target.value)}
-                      className="w-full"
-                      required
-                    />
-                  </div>
-                ))}
+                {placeholders.map((placeholder) => {
+                  const isSystem = isSystemKeyword(placeholder);
+                  return (
+                    <div key={placeholder}>
+                      <InputField
+                        label={formatPlaceholderLabel(placeholder)}
+                        placeholder={isSystem ? 'Auto-filled' : `Enter ${formatPlaceholderLabel(placeholder).toLowerCase()}`}
+                        value={isSystem ? SYSTEM_KEYWORDS[placeholder.toUpperCase()]() : formData.placeholders[placeholder] || ''}
+                        onChange={(e) => handlePlaceholderChange(placeholder, e.target.value)}
+                        disabled={isSystem}
+                        required={!isSystem}
+                        className={isSystem ? 'bg-gray-50 text-gray-600' : ''}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
