@@ -14,7 +14,6 @@ import {
   FaChartBar,
   FaEye,
   FaEdit,
-  FaSignOutAlt,
   FaCog
 } from "react-icons/fa";
 
@@ -60,7 +59,6 @@ const adminMenu = [
   { to: "/admin/configurations", label: "System Configuration", icon: FaCog },
   { to: "/admin/activity-logs", label: "Activity Logs", icon: FaChartBar },
   { to: "/admin/reports", label: "Reports & Analytics", icon: FaChartBar },
-  { to: "/admin/profile", label: "My Profile", icon: FaUserAlt },
 ];
 
 // Worker menu with limited permissions - no user management, no archiving
@@ -90,11 +88,10 @@ const workerMenu = [
       { to: "/worker/sumbong", label: "View Sumbong Cases", icon: FaBook },
     ],
   },
-  { to: "/worker/profile", label: "My Profile", icon: FaUserAlt }
 ];
 
 const menuItems = {
-  admin: [...adminMenu, { to: "/login", label: "Logout", icon: FaSignOutAlt }],
+  admin: adminMenu,
   residence: [
     { to: "/resident/dashboard", label: "Dashboard", icon: FaTachometerAlt },
     {
@@ -114,10 +111,8 @@ const menuItems = {
       ],
     },
     { to: "/resident/feedback", label: "Submit Feedback", icon: FaCommentDots },
-    { to: "/resident/profile", label: "My Profile", icon: FaUsers },
-    { to: "/logout", label: "Logout", icon: FaSignOutAlt },
   ],
- staff: [...workerMenu, { to: "/logout", label: "Logout", icon: FaSignOutAlt }],
+ staff: workerMenu,
 };
 
 export default menuItems;

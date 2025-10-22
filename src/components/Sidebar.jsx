@@ -119,25 +119,8 @@ const NavItem = ({
 
   // If Logout, use button and call onClick directly
   if (item.label === "Logout" || item.to === "/login" || item.to === "/logout") {
-    return (
-      <div className="relative group">
-        <button
-          className={`${baseClasses} ${stateClasses} w-full`}
-          title={isCollapsed && !isMobile ? item.label : ""}
-          onClick={onClick}
-        >
-          <IconComponent className="text-base flex-shrink-0" />
-          {(!isCollapsed || isMobile) && (
-            <span className="truncate">{item.label}</span>
-          )}
-        </button>
-        {isCollapsed && !isMobile && (
-          <div className="absolute left-full top-0 ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-            {item.label}
-          </div>
-        )}
-      </div>
-    );
+    // Logout is now handled by the navbar dropdown, so we don't render it here
+    return null;
   }
    return (
     <div className="relative group">
@@ -232,10 +215,7 @@ const UserSidebar = ({
   };
 
   const handleMenuItemClick = (item) => {
-    if (item.to === "/logout" || item.to === "/" || item.label === "Logout") {
-      handleLogout();
-      return;
-    }
+    // Navigation is handled by anchor tags and React Router
     if (isMobile && !item.subMenu && onClose) {
       onClose();
     }
@@ -309,15 +289,16 @@ const UserSidebar = ({
           {navLinks.map((item) => {
             const isActive =
               location.pathname === item.to || isSubMenuActive(item.subMenu);
-            const isLogout = item.label === "Logout" || item.to === "/login";
             return (
               <NavItem
                 key={item.label || item.to}
                 item={item}
                 isActive={isActive}
-                onClick={isLogout ? handleLogout : handleToggle}
+                onClick={handleToggle}
                 expanded={!!openMenus[item.label]}
                 isCollapsed={isCollapsed}
+                isMobile={isMobile}
+                onMenuItemClick={handleMenuItemClick}
               />
             );
           })}
