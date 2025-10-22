@@ -56,6 +56,7 @@ const CreateCertificateModal = ({ isOpen, onClose, onSuccess }) => {
     if (hasChanges) {
       setShowDiscardModal(true);
     } else {
+      resetForm();
       onClose();
     }
   };
@@ -218,6 +219,7 @@ const CreateCertificateModal = ({ isOpen, onClose, onSuccess }) => {
         onConfirm={() => {
           resetForm();
           onClose();
+          setShowDiscardModal(false);
         }}
         title="Discard Changes"
         message="Are you sure you want to discard your changes?"

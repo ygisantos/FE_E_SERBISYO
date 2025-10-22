@@ -80,12 +80,12 @@ const MyProfile = () => {
   return (
     <div className="flex-1 transition-all duration-300 ease-in-out">
       {/* Banner Section */}
-      <div className="relative h-64 -mt-8">
+      <div className="relative h-48 sm:h-56 md:h-64 -mt-8">
         <img src={Banner} alt="Barangay Hall" className="w-full h-full object-cover brightness-55" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50"></div>
       </div>
 
-      <div className="min-h-screen bg-gray-50 p-4 lg:p-8">
+      <div className="min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-8">
         <div className="max-w-7xl mx-auto">
           <ProfileHeader 
             profile={currentUser}
@@ -95,7 +95,7 @@ const MyProfile = () => {
             onEdit={() => setIsEditModalOpen(true)}
           />
           
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <PersonalInformation 
               profile={currentUser}
               onEdit={() => setIsEditModalOpen(true)}
@@ -106,19 +106,25 @@ const MyProfile = () => {
               onEdit={() => setIsEditModalOpen(true)}
             />
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium text-gray-900">Security</h2>
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-4 sm:gap-0">
+                <div className="space-y-1">
+                  <h2 className="text-lg font-medium text-gray-900">Account Security</h2>
+                  <p className="text-sm text-gray-500">
+                    Protect your account - Update your password regularly and never share it
+                  </p>
+                  
+                </div>
                 <button
                   onClick={() => setIsPasswordModalOpen(true)}
-                  className="px-3 py-1.5 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700"
+                  className="w-full sm:w-auto flex items-center justify-center px-4 py-2.5 text-sm font-medium cursor-pointer text-red-700 bg-transparent border border-red-700 hover:bg-red-50 rounded-md transition-colors duration-200 focus:outline-none"
                 >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7z" />
+                  </svg>
                   Change Password
                 </button>
               </div>
-              <p className="text-sm text-gray-600">
-                Manage your password and account security settings.
-              </p>
             </div>
           </div>
         </div>

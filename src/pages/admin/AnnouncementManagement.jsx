@@ -32,24 +32,30 @@ const AnnouncementManagement = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  useEffect(() => {
-    fetchAnnouncements();
-  }, []);
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: 'created_at',
+    order: 'desc'
+  });
 
   useEffect(() => {
     fetchAnnouncements(1);
-   }, [filters.type]);
+  }, [filters.type, sortConfig.sort_by, sortConfig.order]);
 
   const fetchAnnouncements = async (page = pagination.currentPage) => {
     try {
       setIsLoading(true);
-      const response = await getAnnouncements({
+      const params = {
         page,
         per_page: pagination.perPage,
-        type: filters.type
-      });
+        type: filters.type,
+        sort_by: sortConfig.sort_by,
+        order: sortConfig.order
+      };
+ 
+
+      const response = await getAnnouncements(params);
       
+    
       if (response.success) {
         const { current_page, last_page, total, data } = response.data;
         setAnnouncements(data);
@@ -61,6 +67,7 @@ const AnnouncementManagement = () => {
         }));
       }
     } catch (error) {
+      console.error('Fetch error:', error);
       showCustomToast('Failed to fetch announcements', 'error');
     } finally {
       setIsLoading(false);
@@ -73,8 +80,7 @@ const AnnouncementManagement = () => {
       const response = await createAnnouncement(formData);
       
       if (response.success) {
-        showCustomToast('Announcement created successfully', 'success');
-        setIsCreateModalOpen(false);
+         setIsCreateModalOpen(false);
         fetchAnnouncements();
       }
     } catch (error) {
@@ -134,12 +140,13 @@ const AnnouncementManagement = () => {
     }
   };
 
+  // Update columns to match backend sort fields
   const columns = [
     {
       label: 'Type',
       accessor: 'type',
       sortable: true,
-      type: 'badge',
+      sortField: 'type',  // Add sortField
       badgeColors: {
         information: 'blue',
         problem: 'red',
@@ -152,9 +159,9 @@ const AnnouncementManagement = () => {
     {
       label: 'Description',
       accessor: 'description',
-      sortable: false,
-      type: 'longText', // Using the built-in longText type
-      maxLength: 100,   // Show first 100 characters then "Read More"
+      sortable: true,
+      sortField: 'description',  // Add sortField
+      maxLength: 100,
     },
     {
       label: 'Images',
@@ -170,6 +177,7 @@ const AnnouncementManagement = () => {
       label: 'Created',
       accessor: 'created_at',
       sortable: true,
+      sortField: 'created_at',  // Add sortField
       render: (value) => (
         <span className="text-xs text-gray-600">
           {new Date(value).toLocaleDateString()}
@@ -181,6 +189,20 @@ const AnnouncementManagement = () => {
   const handleView = (row) => {
     setSelectedAnnouncementId(row.id);
     setShowViewModal(true);
+  };
+
+  const handleSort = ({ column, direction }) => {
+    const newConfig = {
+      sort_by: column,  // Use column directly since we've added sortField
+      order: direction.toLowerCase()
+    };
+    
+    setSortConfig(newConfig);
+    // Reset to first page when sorting changes
+    setPagination(prev => ({
+      ...prev,
+      currentPage: 1
+    }));
   };
 
   return (
@@ -203,6 +225,7 @@ const AnnouncementManagement = () => {
             loading={isLoading}
             enableSearch={true}
             enablePagination={true}
+            enableSelection={false}
             itemsPerPage={pagination.perPage}
             currentPage={pagination.currentPage}
             totalItems={pagination.total}
@@ -245,6 +268,11 @@ const AnnouncementManagement = () => {
               onClick: () => setIsCreateModalOpen(true),
               className: "bg-red-900 text-white hover:bg-red-800"
             }}
+            sortConfig={{
+              field: sortConfig.sort_by,
+              direction: sortConfig.order
+            }}
+            onSort={handleSort}
           />
         </div>
       </div>

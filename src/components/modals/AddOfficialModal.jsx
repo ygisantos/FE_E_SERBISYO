@@ -46,52 +46,102 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: null })); // Clear error on change
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    setHasChanges(true);
+  };
+
+  const handleSelectChange = (selected, fieldName) => {
+    setFormData(prev => ({ ...prev, [fieldName]: selected?.value }));
+    if (errors[fieldName]) {
+      setErrors(prev => ({ ...prev, [fieldName]: '' }));
+    }
     setHasChanges(true);
   };
 
   const validateForm = () => {
     const newErrors = {};
-    const requiredFields = [
-      { key: 'position', label: 'Position' },
-      { key: 'term_start', label: 'Term Start' },
-      { key: 'term_end', label: 'Term End' },
-      { key: 'email', label: 'Email' },
-      { key: 'first_name', label: 'First Name' },
-      { key: 'last_name', label: 'Last Name' },
-      { key: 'sex', label: 'Sex' },
-      { key: 'birthday', label: 'Birthday' },
-      { key: 'contact_no', label: 'Contact Number' },
-      { key: 'birth_place', label: 'Birth Place' },
-      { key: 'municipality', label: 'Municipality' },
-      { key: 'barangay', label: 'Barangay' },
-      { key: 'house_no', label: 'House No' },
-      { key: 'zip_code', label: 'ZIP Code' },
-      { key: 'street', label: 'Street' },
-      { key: 'civil_status', label: 'Civil Status' },
-    ];
+    let toastMessage = '';
 
-    requiredFields.forEach(({ key, label }) => {
-      if (!formData[key]) {
-        newErrors[key] = `${label} is required`;
-      }
-    });
-
-    // Validate contact number format
-    if (formData.contact_no && !/^09\d{9}$/.test(formData.contact_no)) {
-      newErrors.contact_no = 'Contact number must start with 09 and have 11 digits';
+    if (!formData.position) {
+      newErrors.position = 'Position is required';
+      toastMessage = 'Position is required';
+    }
+    if (!formData.term_start) {
+      newErrors.term_start = 'Term start is required';
+      toastMessage = toastMessage || 'Term start is required';
+    }
+    if (!formData.term_end) {
+      newErrors.term_end = 'Term end is required';
+      toastMessage = toastMessage || 'Term end is required';
+    }
+    if (!formData.first_name) {
+      newErrors.first_name = 'First name is required';
+      toastMessage = toastMessage || 'First name is required';
+    }
+    if (!formData.last_name) {
+      newErrors.last_name = 'Last name is required';
+      toastMessage = toastMessage || 'Last name is required';
+    }
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+      toastMessage = toastMessage || 'Email is required';
+    }
+    if (!formData.contact_no) {
+      newErrors.contact_no = 'Contact number is required';
+      toastMessage = toastMessage || 'Contact number is required';
+    }
+    if (!formData.birthday) {
+      newErrors.birthday = 'Birthday is required';
+      toastMessage = toastMessage || 'Birthday is required';
+    }
+    if (!formData.birth_place) {
+      newErrors.birth_place = 'Birth place is required';
+      toastMessage = toastMessage || 'Birth place is required';
+    }
+    if (!formData.civil_status) {
+      newErrors.civil_status = 'Civil status is required';
+      toastMessage = toastMessage || 'Civil status is required';
+    }
+    if (!formData.municipality) {
+      newErrors.municipality = 'Municipality is required';
+      toastMessage = toastMessage || 'Municipality is required';
+    }
+    if (!formData.barangay) {
+      newErrors.barangay = 'Barangay is required';
+      toastMessage = toastMessage || 'Barangay is required';
+    }
+    if (!formData.house_no) {
+      newErrors.house_no = 'House number is required';
+      toastMessage = toastMessage || 'House number is required';
+    }
+    if (!formData.street) {
+      newErrors.street = 'Street is required';
+      toastMessage = toastMessage || 'Street is required';
+    }
+    if (!formData.zip_code) {
+      newErrors.zip_code = 'ZIP code is required';
+      toastMessage = toastMessage || 'ZIP code is required';
     }
 
-    // Validate email format
+    // Format validations
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Invalid email format';
+      toastMessage = toastMessage || 'Invalid email format';
+    }
+    if (formData.contact_no && !/^09\d{9}$/.test(formData.contact_no)) {
+      newErrors.contact_no = 'Must start with 09 and have 11 digits';
+      toastMessage = toastMessage || 'Must start with 09 and have 11 digits';
     }
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
-      const errorMessages = Object.values(newErrors).join('\n');
-      showCustomToast(errorMessages, 'error');
+      showCustomToast(toastMessage, 'error');
       return false;
     }
     return true;
@@ -111,7 +161,8 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateForm()) {
+    const isValid = validateForm();
+    if (isValid) {
       setShowSubmitModal(true);
     }
   };
@@ -197,6 +248,7 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
     if (hasChanges) {
       setShowDiscardModal(true);
     } else {
+      resetForm();
       onClose();
     }
   };
@@ -212,6 +264,7 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
           <div className="flex justify-end gap-2">
             <button
               onClick={handleCancel}
+              type="button"
               className="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
             >
               Cancel
@@ -220,29 +273,32 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
               type="submit"
               form="addOfficialForm"
               className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700"
+              onClick={handleSubmit} // Add direct click handler
             >
               Create Official
             </button>
           </div>
         }
       >
-        <form id="addOfficialForm" onSubmit={handleSubmit} className="p-6">
+        <form 
+          id="addOfficialForm" 
+          onSubmit={handleSubmit}
+          className="p-6"
+        >
           <div className="grid grid-cols-12 gap-6">
             <div className="col-span-12 space-y-6">
               {/* Official Information */}
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <h3 className="text-sm font-medium text-gray-900 mb-4">Official Information</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Select
                     label="Position"
                     value={positionOptions.find(opt => opt.value === formData.position)}
-                    onChange={(selected) => handleChange({
-                      target: { name: 'position', value: selected.value }
-                    })}
+                    onChange={(selected) => handleSelectChange(selected, 'position')}
                     options={positionOptions}
                     required
-                    className="col-span-2"
                     error={errors.position}
+                    className={`col-span-1 md:col-span-2 ${errors.position ? 'border-red-500 ring-red-500' : ''}`}
                   />
                   <InputField
                     label="Term Start"
@@ -268,15 +324,15 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
               {/* Personal Information */}
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <h3 className="text-sm font-medium text-gray-900 mb-4">Personal Information</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputField
                     label="First Name"
                     name="first_name"
                     value={formData.first_name}
                     onChange={handleChange}
                     required
-                     error={errors.first_name}
-                    className={errors.first_name ? 'border-red-500' : ''}
+                    error={errors.first_name}
+                    className="text-xs"
                   />
                   <InputField
                     label="Last Name"
@@ -284,8 +340,8 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     value={formData.last_name}
                     onChange={handleChange}
                     required
-                     error={errors.last_name}
-                    className={errors.last_name ? 'border-red-500' : ''}
+                    error={errors.last_name}
+                    className="text-xs"
                   />
                   <InputField
                     label="Middle Name"
@@ -307,7 +363,7 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     onChange={handleChange}
                     required
                     error={errors.email}
-                    className={errors.email ? 'border-red-500' : ''}
+                    className="text-xs"
                   />
                   <InputField
                     label="Contact Number"
@@ -316,7 +372,7 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     onChange={handleChange}
                     required
                     error={errors.contact_no}
-                    className={errors.contact_no ? 'border-red-500' : ''}
+                    className="text-xs"
                   />
                   <InputField
                     label="Birthday"
@@ -325,6 +381,8 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     value={formData.birthday}
                     onChange={handleChange}
                     required
+                    error={errors.birthday}
+                    className="text-xs"
                   />
                   <InputField
                     label="Birth Place"
@@ -339,9 +397,7 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     label="Civil Status"
                     name="civil_status"
                     value={{ value: formData.civil_status, label: formData.civil_status }}
-                    onChange={(selected) => handleChange({
-                      target: { name: 'civil_status', value: selected.value }
-                    })}
+                    onChange={(selected) => handleSelectChange(selected, 'civil_status')}
                     options={[
                       { value: 'single', label: 'Single' },
                       { value: 'married', label: 'Married' },
@@ -349,8 +405,8 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                       { value: 'separated', label: 'Separated' }
                     ]}
                     required
-                     error={errors.civil_status}
-                    className={errors.civil_status? 'border-red-500' : ''}
+                    error={errors.civil_status}
+                    className={`${errors.civil_status? 'border-red-500 ring-red-500' : ''}`}
                   />
                 </div>
               </div>
@@ -358,15 +414,15 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
               {/* Address Information */}
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <h3 className="text-sm font-medium text-gray-900 mb-4">Address Information</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputField
                     label="Municipality"
                     name="municipality"
                     value={formData.municipality}
                     onChange={handleChange}
                     required
-                     error={errors.municipality}
-                    className={errors.municipality ? 'border-red-500' : ''}
+                    error={errors.municipality}
+                    className={`${errors.municipality ? 'border-red-500 ring-red-500' : ''}`}
                   />
                   <InputField
                     label="Barangay"
@@ -374,8 +430,8 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     value={formData.barangay}
                     onChange={handleChange}
                     required
-                     error={errors.barangay}
-                    className={errors.barangay ? 'border-red-500' : ''}
+                    error={errors.barangay}
+                    className={`${errors.barangay ? 'border-red-500 ring-red-500' : ''}`}
                   />
                   <InputField
                     label="House No."
@@ -383,8 +439,8 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     value={formData.house_no}
                     onChange={handleChange}
                     required
-                     error={errors.house_no}
-                    className={errors.house_no ? 'border-red-500' : ''}
+                    error={errors.house_no}
+                    className={`${errors.house_no ? 'border-red-500 ring-red-500' : ''}`}
                   />
                   <InputField
                     label="Street"
@@ -392,8 +448,8 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     value={formData.street}
                     onChange={handleChange}
                     required
-                     error={errors.street }
-                    className={errors.street ? 'border-red-500' : ''}
+                    error={errors.street }
+                    className={`${errors.street ? 'border-red-500 ring-red-500' : ''}`}
                   />
                   <InputField
                     label="ZIP Code"
@@ -401,8 +457,8 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     value={formData.zip_code}
                     onChange={handleChange}
                     required
-                     error={errors.zip_code}
-                    className={errors.zip_code ? 'border-red-500' : ''}
+                    error={errors.zip_code}
+                    className={`${errors.zip_code ? 'border-red-500 ring-red-500' : ''}`}
                   />
                 </div>
               </div>
@@ -429,6 +485,7 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
         onConfirm={() => {
           resetForm();
           onClose();
+          setShowDiscardModal(false);
         }}
         title="Discard Changes"
         message="Are you sure you want to discard your changes?"

@@ -155,8 +155,8 @@ const ViewBlotterModal = ({ isOpen, onClose, data }) => {
                 {new Date(data?.date_created).toLocaleDateString()}
               </p>
               <div className="mt-8">
-                <p className="font-bold">{data?.received_by}</p>
-                <p className="font-bold">Punong Barangay</p>
+                <p className="font-bold">HON. MEL J. VENTURA</p>
+                <p className="font-medium">Punong Barangay</p>
               </div>
             </div>
           </div>

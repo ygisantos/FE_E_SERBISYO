@@ -66,10 +66,30 @@ function ScrollToTop() {
   return null;
 }
 
-function ProtectedRoute({ children }) {
+const ProtectedRoute = ({ children, allowedRoles }) => {
   const token = localStorage.getItem("token");
-  return token ? children : <Navigate to="/login" replace />;
-}
+  const userData = JSON.parse(localStorage.getItem("userData"));
+  
+  if (!token || !userData) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!allowedRoles.includes(userData.type)) {
+    // Redirect to appropriate dashboard based on user role
+    switch (userData.type) {
+      case 'admin':
+        return <Navigate to="/admin/dashboard" replace />;
+      case 'staff':
+        return <Navigate to="/worker/dashboard" replace />;
+      case 'residence':
+        return <Navigate to="/resident/dashboard" replace />;
+      default:
+        return <Navigate to="/login" replace />;
+    }
+  }
+
+  return children;
+};
 
 function App() {
   const { loading } = useLoading();
@@ -82,133 +102,143 @@ function App() {
           <ScrollToTop />
 
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/track-document" element={<TrackDocument />} />
 
-            <Route
-              element={
-                <ProtectedRoute>
-                  <Layout />
+            {/* Admin Routes */}
+            <Route element={<Layout />}>
+              <Route path="/admin/*" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Routes>
+                    <Route path="dashboard" element={<AdminDashboard />} />
+                    <Route path="official-management/*" element={<OfficialManagement />} />
+                    <Route
+                      path="official-management/archived"
+                      element={<ArchivedOfficials />}
+                    />
+
+                    
+                    {/* Worker Management */}
+                    <Route path="workers" element={<WorkerManagement />} />
+                    <Route path="workers/add" element={<WorkerManagement />} />
+                    <Route path="workers/archived" element={<ArchivedWorkers />} />
+                    {/* Residence Management */}
+                    <Route
+                      path="resident-management/new"
+                      element={<AddResident />}
+                    />
+                    <Route
+                      path="resident-management/all-resident"
+                      element={<AllResidents />}
+                    />
+
+                    <Route
+                      path="resident-management/pending"
+                      element={<PendingResidents />}
+                    />
+                    <Route
+                      path="resident-management/rejected"
+                      element={<RejectedResidents />}
+                    />
+                    {/* Certificate Management */}
+                    <Route
+                      path="certificates"
+                      element={<CertificateManagement />}
+                    />
+                    <Route
+                      path="certificates/add"
+                      element={<CertificateManagement />}
+                    />
+                    <Route
+                      path="certificates/logs"
+                      element={<CertificateLogs />}
+                    />
+                    <Route path="sumbong" element={<Blotter />} />
+                    <Route
+                      path="announcements"
+                      element={<AnnouncementManagement />}
+                    />
+                    <Route path="feedback" element={<FeedbackManagement />} />
+                    <Route path="configurations" element={<ConfigurationManagement />} />
+                    <Route path="activity-logs" element={<ActivityLogs />} />
+                    <Route path="reports" element={<Reports />} />
+                    <Route path="profile" element={<MyProfile />} />
+                  </Routes>
                 </ProtectedRoute>
-              }
-            >
-              {/* Admin Routes */}
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              {/* Official Management */}
-              <Route
-                path="/admin/official-management/officials"
-                element={<OfficialManagement />}
-              />
-              <Route
-                path="/admin/official-management/archived"
-                element={<ArchivedOfficials />}
-              />
+              } />
 
-              
-              {/* Worker Management */}
-              <Route path="/admin/workers" element={<WorkerManagement />} />
-              <Route path="/admin/workers/add" element={<WorkerManagement />} />
-              <Route path="/admin/workers/archived" element={<ArchivedWorkers />} />
-              {/* Residence Management */}
-              <Route
-                path="/admin/resident-management/new"
-                element={<AddResident />}
-              />
-              <Route
-                path="/admin/resident-management/all-resident"
-                element={<AllResidents />}
-              />
-
-              <Route
-                path="/admin/resident-management/pending"
-                element={<PendingResidents />}
-              />
-              <Route
-                path="/admin/resident-management/rejected"
-                element={<RejectedResidents />}
-              />
-              {/* Certificate Management */}
-              <Route
-                path="/admin/certificates"
-                element={<CertificateManagement />}
-              />
-              <Route
-                path="/admin/certificates/add"
-                element={<CertificateManagement />}
-              />
-              <Route
-                path="/admin/certificates/logs"
-                element={<CertificateLogs />}
-              />
-              <Route path="/admin/blotter" element={<Blotter />} />
-              <Route
-                path="/admin/announcements"
-                element={<AnnouncementManagement />}
-              />
-              <Route path="/admin/feedback" element={<FeedbackManagement />} />
-              <Route path="/admin/configurations" element={<ConfigurationManagement />} />
-              <Route path="/admin/activity-logs" element={<ActivityLogs />} />
-              <Route path="/admin/reports" element={<Reports />} />
-              <Route path="/admin/profile" element={<MyProfile />} />
-
-              {/* Worker Routes */}
-              <Route path="/worker/dashboard" element={<WorkerDashboard />} />
-              {/* Request Management */}
-              <Route path="/worker/requests" element={<RequestManagement />} />
-              <Route
-                path="/worker/certificates/logs"
-                element={<WorkerCertificateLogs />}
-              />
-              {/* Residence Management */}
-              <Route path="/worker/resident-management/new" element={<AddResident />} />
-              <Route path="/worker/resident-management/pending" element={<PendingResidents />} />
-             <Route
-                path="/worker/resident-management/all-resident"
-                element={<AllResidents />}
-              />
-              {/* Blotter Management */}
-              <Route path="/worker/blotter/new" element={<Blotter />} />
-              <Route path="/worker/blotter" element={<Blotter />} />
-              <Route path="/worker/profile" element={<MyProfile />} />
+              {/* Worker/Staff Routes */}
+              <Route path="/worker/*" element={
+                <ProtectedRoute allowedRoles={['staff']}>
+                  <Routes>
+                    <Route path="dashboard" element={<WorkerDashboard />} />
+                    {/* Request Management */}
+                    <Route path="requests" element={<RequestManagement />} />
+                    <Route
+                      path="certificates/logs"
+                      element={<WorkerCertificateLogs />}
+                    />
+                    {/* Residence Management */}
+                    <Route path="resident-management/new" element={<AddResident />} />
+                    <Route path="resident-management/pending" element={<PendingResidents />} />
+                   <Route
+                      path="resident-management/all-resident"
+                      element={<AllResidents />}
+                    />
+                    {/* Blotter Management */}
+                    <Route path="sumbong/new" element={<Blotter />} />
+                    <Route path="sumbong" element={<Blotter />} />
+                    <Route path="profile" element={<MyProfile />} />
+                  </Routes>
+                </ProtectedRoute>
+              } />
 
               {/* Resident Routes */}
-              
-              {/* Certificates */}
-              <Route
-                path="/resident/certificates/available-certificates"
-                element={<AvailableCertificates />}
-              />
-              <Route
-                path="/resident/certificates/my-requests"
-                element={<MyRequests />}
-              />
-              <Route
-                path="/resident/certificates/view/:requestId"
-                element={<ViewCertificateRequest />}
-              />
-              {/* <Route
-                path="/resident/certificates"
-                element={<ResidentCertificates />}
-              /> */}
-              {/* <Route
-                path="/resident/certificates/request"
-                element={<ResidentCertificates />}
-              /> */}
-              
-              <Route path="/resident/feedback" element={<ResidentFeedback />} />
-              <Route path="/resident/profile" element={<MyProfile />} />
-              <Route
-                path="/resident/certificates/logs"
-                element={<CertificateRequestLogs />}
-              />
-              
-              <Route path="/resident/blotter/my-cases" element={<MyCases />} />
-              <Route path="/resident/dashboard" element={<ResidentDashboard />} />
+              <Route path="/resident/*" element={
+                <ProtectedRoute allowedRoles={['residence']}>
+                  <Routes>
+                    <Route path="dashboard" element={<ResidentDashboard />} />
+                    
+                    {/* Certificates */}
+                    <Route
+                      path="certificates/available-certificates"
+                      element={<AvailableCertificates />}
+                    />
+                    <Route
+                      path="certificates/my-requests"
+                      element={<MyRequests />}
+                    />
+                    <Route
+                      path="certificates/view/:requestId"
+                      element={<ViewCertificateRequest />}
+                    />
+                    {/* <Route
+                      path="/resident/certificates"
+                      element={<ResidentCertificates />}
+                    /> */}
+                    {/* <Route
+                      path="/resident/certificates/request"
+                      element={<ResidentCertificates />}
+                    /> */}
+                    
+                    <Route path="feedback" element={<ResidentFeedback />} />
+                    <Route path="profile" element={<MyProfile />} />
+                    <Route
+                      path="certificates/logs"
+                      element={<CertificateRequestLogs />}
+                    />
+                    
+                    <Route path="sumbong/my-cases" element={<MyCases />} />
+                  </Routes>
+                </ProtectedRoute>
+              } />
             </Route>
           </Routes>
-          {/* Only show ChatbotWidget on resident routes */}
+
+          {/* ChatbotWidget - Only show for residents */}
           {window.location.pathname.includes('/resident') && (
             <ChatProvider>
               <ChatbotWidget />

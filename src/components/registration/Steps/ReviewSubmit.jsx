@@ -1,6 +1,31 @@
-import React from 'react';
-
+import React, { useState, useEffect } from 'react';
+import Modal from '../../Modal/Modal';
+import TermsModal from '../../modals/TermsModal';
+import { X } from 'lucide-react';  
 const ReviewSubmit = ({ form, handleProfilePictureChange, profilePreview }) => {
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
+  const toggleTerms = (checked) => {
+    setTermsAccepted(checked);
+    // notify other components (NavigationButtons listens for this)
+    window.dispatchEvent(new CustomEvent('terms:changed', { detail: { accepted: checked } }));
+  };
+
+  // Add useEffect to handle scroll lock
+  useEffect(() => {
+    if (showTermsModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup function to restore scroll when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showTermsModal]);
+
   return (
     <div className="space-y-8">
       <div className="text-center mb-8">
@@ -81,6 +106,33 @@ const ReviewSubmit = ({ form, handleProfilePictureChange, profilePreview }) => {
         </div>
       </div>
 
+      {/* Terms & Conditions */}
+      <div className="bg-white rounded-xl p-6 border border-gray-200">
+        <div className="flex items-start gap-3">
+          <input
+            id="terms"
+            name="terms"
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={(e) => toggleTerms(e.target.checked)}
+            className="h-4 w-4 text-red-600 border-gray-300 rounded"
+          />
+          <label htmlFor="terms" className="text-sm text-gray-700">
+            I agree to the{" "}
+            <button
+              type="button"
+              onClick={() => setShowTermsModal(true)}
+              className="text-red-900 hover:underline font-medium"
+            >
+              Terms & Conditions
+            </button>
+          </label>
+        </div>
+        {!termsAccepted && (
+          <p className="text-xs text-red-600 mt-2">You must accept the terms and conditions to submit your registration.</p>
+        )}
+      </div>
+
       {/* Important Notice */}
       <div className="p-6 bg-blue-50 border border-blue-200 rounded-xl">
         <div className="flex items-start">
@@ -102,6 +154,14 @@ const ReviewSubmit = ({ form, handleProfilePictureChange, profilePreview }) => {
           </div>
         </div>
       </div>
+
+      {/* Replace existing Terms Modal with new component */}
+      <TermsModal 
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={toggleTerms}
+        isAccepted={termsAccepted}
+      />
     </div>
   );
 };

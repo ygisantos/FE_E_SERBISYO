@@ -50,6 +50,29 @@ const ProofOfIdentity = ({ handleFileChange, previews, stepErrors }) => {
       <div className="text-center mb-6 sm:mb-8">
         <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Proof of Identity</h3>
         <p className="text-gray-600 text-xs sm:text-sm mt-2">Please provide clear photos of your valid ID and a selfie</p>
+        
+        {/* Added Requirements Notice */}
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg text-left">
+          <h4 className="text-sm font-semibold text-blue-800 mb-2">Important Requirements:</h4>
+          <ul className="text-xs text-blue-700 space-y-1.5">
+            <li className="flex items-start gap-2">
+              <span className="min-w-[4px] h-4 w-1 bg-blue-400 rounded-full mt-0.5" />
+              <span>Only valid government-issued IDs with <strong>complete residential address</strong> will be accepted</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="min-w-[4px] h-4 w-1 bg-blue-400 rounded-full mt-0.5" />
+              <span>ID must be <strong>current and not expired</strong></span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="min-w-[4px] h-4 w-1 bg-blue-400 rounded-full mt-0.5" />
+              <span>Address on ID must match the provided residential address</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="min-w-[4px] h-4 w-1 bg-blue-400 rounded-full mt-0.5" />
+              <span>Photos must be clear, readable, and show all corners of the ID</span>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div className="space-y-4 sm:space-y-8">

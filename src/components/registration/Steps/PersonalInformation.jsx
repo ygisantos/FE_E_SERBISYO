@@ -57,8 +57,8 @@ const PersonalInformation = ({ form, handleChange, stepErrors }) => {
           value={sexOptions.find(option => option.value === form.sex) || null}
           onChange={(selected) => handleSelectChange(selected, 'sex')}
           options={sexOptions}
-          placeholder="Select Sex"
-          label="Sex"
+          placeholder="Select Gender"
+          label="Gender"
           error={stepErrors?.sex}
           required
         />

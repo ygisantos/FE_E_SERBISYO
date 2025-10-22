@@ -3,6 +3,7 @@ import Modal from '../Modal/Modal';
 import { FaImage, FaTimes } from 'react-icons/fa';
 import ConfirmationModal from './ConfirmationModal';
 import Select from '../reusable/Select';
+import { showCustomToast } from '../Toast/CustomToast';
 
 const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit, isLoading }) => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit, isLoading }) => {
   const [showDiscardModal, setShowDiscardModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
 
   // character limit state
@@ -37,6 +39,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit, isLoading }) => {
     setPreviewUrl(null);
     setHasChanges(false);
     setCharCount(0); 
+    setErrors({});
   };
 
   const typeOptions = [
@@ -116,28 +119,76 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit, isLoading }) => {
     }
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+    let toastMessage = '';
+    
+    if (!formData.type) {
+      newErrors.type = 'Type is required';
+      toastMessage = 'Type is required';
+    }
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required';
+      toastMessage = toastMessage || 'Description is required';
+    }
+
+    setErrors(newErrors);
+    if (toastMessage) {
+      showCustomToast(toastMessage, 'error');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      setShowConfirmModal(true);
+    }
+  };
+
+  const handleSubmitAttempt = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      setShowConfirmModal(true);
+    }
+  };
+
   const handleConfirmSubmit = async () => {
     try {
-      if (!formData.type || !formData.description) {
-        showCustomToast('Please fill in all required fields', 'error');
-        return;
-      }
+      // Create object first to verify data
+      const submitData = {
+        type: formData.type,
+        description: formData.description,
+      };
+
+    
+      // Create FormData
+      const formDataToSend = new FormData();
       
-      await onSubmit(formData);
+      // Append each field
+      Object.keys(submitData).forEach(key => {
+        formDataToSend.append(key, submitData[key]);
+      });
+
+      // Add image if exists
+      if (formData.images[0]) {
+        formDataToSend.append('image', formData.images[0]);
+      }
+
+      const result = await onSubmit(submitData); 
+
+      
+      showCustomToast('Announcement created successfully', 'success');
       resetForm();
       setShowConfirmModal(false);
       onClose();
     } catch (error) {
-      console.error('Submit error:', error);
-      showCustomToast(error.message || 'Failed to create announcement', 'error');
+       showCustomToast(
+        error.response?.data?.errors?.type?.[0] || 'Failed to create announcement', 
+        'error'
+      );
     }
-  };
-
-  const handleSubmit = (e) => {
-    if (e && typeof e.preventDefault === 'function') {
-      e.preventDefault();
-    }
-    setShowConfirmModal(true);
   };
 
   return (
@@ -147,7 +198,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit, isLoading }) => {
         onClose={handleClose}
         title="Create New Announcement"
       >
-        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+        <form className="space-y-6 p-6">
           {/* Type Selection */}
           <Select
             label="Type"
@@ -159,6 +210,8 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit, isLoading }) => {
             options={typeOptions}
             required
             placeholder="Select announcement type..."
+            error={errors.type}
+            className={`text-sm ${errors.type ? 'border-red-500 ring-1 ring-red-500' : ''}`}
           />
 
           {/* Description Field with Character Counter */}
@@ -177,8 +230,9 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit, isLoading }) => {
               onChange={handleInputChange}
               required
               placeholder="Enter announcement details..."
-              className={`mt-1 block w-full rounded-md px-4 py-2 border-gray-300 shadow-sm 
-                focus:border-red-500 focus:ring-red-500 text-sm
+              className={`mt-1 block w-full rounded-md border px-4 py-2 text-sm
+                ${errors.description ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'}
+                focus:border-red-500 focus:ring-red-500
                 ${charCount >= MAX_CHARS ? 'border-red-300' : ''}`}
               rows={6}
               onKeyDown={(e) => {
@@ -187,6 +241,9 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit, isLoading }) => {
                 }
               }}
             />
+            {errors.description && (
+              <p className="text-xs text-red-500 mt-1">{errors.description}</p>
+            )}
             {charCount >= MAX_CHARS && (
               <p className="text-xs text-red-500 mt-1">
                 Character limit reached
@@ -250,7 +307,8 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit, isLoading }) => {
               Cancel
             </button>
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmitAttempt}
               disabled={isLoading}
               className="px-4 py-2 text-sm font-medium text-white bg-red-900 rounded-md hover:bg-red-800 disabled:opacity-50"
             >

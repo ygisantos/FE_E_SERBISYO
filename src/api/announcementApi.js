@@ -21,11 +21,19 @@ export const createAnnouncement = async (data) => {
   }
 };
 
-export const getAnnouncements = async ({ page = 1, per_page = 10, type = '' } = {}) => {
+export const getAnnouncements = async ({ 
+  page = 1, 
+  per_page = 10, 
+  type = '',
+  sort_by = 'created_at',
+  order = 'desc'
+} = {}) => {
   try {
     const params = new URLSearchParams();
     params.append('page', page);
     params.append('per_page', per_page);
+    params.append('sort_by', sort_by);
+    params.append('order', order);
 
     if (type && type.trim() !== '') {
       params.append('type', type);

@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import Modal from "../../../components/Modal/Modal";
 import { fetchPendingResidents } from "../../../api/adminApi";
-import { acceptAccount, rejectAccount } from "../../../api/ApproveRejectApi";
+import { getUserById } from "../../../api/userApi";
 import { showCustomToast } from "../../../components/Toast/CustomToast";
 import DataTable from "../../../components/reusable/DataTable";
-import { FaEye, FaCheck, FaTimes } from "react-icons/fa";
+import { FaEye } from "react-icons/fa";
 import ViewResidentApplicationModal from '../../../components/modals/ViewResidentApplicationModal';
 
 const PendingResidents = () => {
@@ -17,12 +16,8 @@ const PendingResidents = () => {
     sort_by: 'created_at',
     order: 'desc'
   });
-  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-  const [selectedResident, setSelectedResident] = useState(null);
-  const [rejectReason, setRejectReason] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedResident, setSelectedResident] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -52,23 +47,14 @@ const PendingResidents = () => {
     });
   };
 
-  const handleApproveClick = (resident) => {
-    setSelectedResident(resident);
-    setIsApproveModalOpen(true);
-  };
-
-  const handleApproveConfirm = async () => {
-    setIsProcessing(true);
+  const handleViewDetails = async (resident) => {
     try {
-      await acceptAccount(selectedResident.id);
-      showCustomToast("Account has been accepted successfully!", "success");
-      setIsApproveModalOpen(false);
-      // Refresh the residents list
-      await refreshResidentsList();
+      // Get complete user details
+      const userDetails = await getUserById(resident.id);
+      setSelectedResident(userDetails);
+      setIsViewModalOpen(true);
     } catch (error) {
-      showCustomToast(error.message || "Failed to accept account", "error");
-    } finally {
-      setIsProcessing(false);
+      showCustomToast("Failed to fetch resident details", "error");
     }
   };
 
@@ -80,39 +66,6 @@ const PendingResidents = () => {
     }));
     setResidents(updatedResidents);
     setTotal(response.total || 0);
-  };
-
-  const handleRejectClick = (resident) => {
-    setSelectedResident(resident);
-    setIsRejectModalOpen(true);
-  };
-
-  const handleRejectSubmit = async () => {
-    if (!rejectReason.trim()) {
-      showCustomToast("Please provide a reason for rejection", "error");
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      await rejectAccount(selectedResident.id, rejectReason);
-      showCustomToast("Account rejected successfully", "success");
-      setIsRejectModalOpen(false);
-      setRejectReason('');
-      // Refresh the residents list
-      fetchPendingResidents(page, sortConfig).then((response) => {
-        const updatedResidents = (response.data || []).map((r) => ({
-          ...r,
-          name: `${r.first_name} ${r.last_name}`,
-        }));
-        setResidents(updatedResidents);
-        setTotal(response.total || 0);
-      });
-    } catch (error) {
-      showCustomToast(error.message || "Failed to reject account", "error");
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   const getProfilePicUrl = (path) => {
@@ -252,22 +205,7 @@ const PendingResidents = () => {
                 {
                   icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
                   label: "View Details",
-                  onClick: (row) => {
-                    setSelectedResident(row);
-                    setIsViewModalOpen(true);
-                  }
-                },
-                {
-                  icon: <FaCheck className="h-3.5 w-3.5 text-gray-400" />,
-                  label: "Approve",
-                  onClick: handleApproveClick,
-                  disabled: isProcessing
-                },
-                {
-                  icon: <FaTimes className="h-3.5 w-3.5 text-gray-400" />,
-                  label: "Reject",
-                  onClick: handleRejectClick,
-                  disabled: isProcessing
+                  onClick: handleViewDetails
                 }
               ]}
             />
@@ -275,81 +213,19 @@ const PendingResidents = () => {
         </div>
       </div>
 
-      {/* Modals */}
       <ViewResidentApplicationModal
         isOpen={isViewModalOpen}
-        onClose={() => setIsViewModalOpen(false)}
-        resident={selectedResident}
-      />
-
-      <Modal
-        isOpen={isApproveModalOpen}
-        onClose={() => setIsApproveModalOpen(false)}
-        title="Approve Application"
-        footer={
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={() => setIsApproveModalOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
-              disabled={isProcessing}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleApproveConfirm}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg"
-              disabled={isProcessing}
-            >
-              {isProcessing ? 'Processing...' : 'Approve'}
-            </button>
-          </div>
-        }
-      >
-        <p className="text-sm text-gray-600">
-          Are you sure you want to approve this application?
-        </p>
-      </Modal>
-
-      <Modal
-        isOpen={isRejectModalOpen}
         onClose={() => {
-          setIsRejectModalOpen(false);
-          setRejectReason('');
+          setIsViewModalOpen(false);
+          setSelectedResident(null);
         }}
-        title="Reject Application"
-        footer={
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={() => {
-                setIsRejectModalOpen(false);
-                setRejectReason('');
-              }}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
-              disabled={isProcessing}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleRejectSubmit}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg"
-              disabled={isProcessing}
-            >
-              {isProcessing ? 'Processing...' : 'Reject'}
-            </button>
-          </div>
-        }
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">Please provide a reason for rejection:</p>
-          <textarea
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-red-500"
-            rows={3}
-            placeholder="Enter reason..."
-          />
-        </div>
-      </Modal>
+        resident={selectedResident}
+        onSuccess={() => {
+          setIsViewModalOpen(false);
+          refreshResidentsList();
+        }}
+        showActions={true}
+      />
     </div>
   );
 };

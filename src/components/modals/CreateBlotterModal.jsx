@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import Modal from "../Modal/Modal";
 import { createBlotter } from "../../api/blotterApi";
 import { toast } from "react-toastify";
-import municipalSeal from "../../assets/logo/santol_logo.png";
+import { Upload, X } from 'lucide-react';
 
-// Form initial state
 const initialFormState = {
   complainant_name: "",
   respondent_name: "",
@@ -16,7 +15,8 @@ const initialFormState = {
   received_by: "Barangay Secretary",
   case_type: "",
   status: "filed",
-  created_by: null,  
+  created_by: null,
+  proofs: [] // Add proofs array for attachments
 };
 
 const caseTypes = [
@@ -33,6 +33,16 @@ const caseTypes = [
 const CreateBlotterModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState(initialFormState);
   const [additionalRespondent, setAdditionalRespondent] = useState("");
+  const [files, setFiles] = useState([]);
+
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    setFiles(prev => [...prev, ...selectedFiles]);
+  };
+
+  const removeFile = (index) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleAddRespondent = () => {
     if (additionalRespondent.trim()) {
@@ -53,297 +63,206 @@ const CreateBlotterModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleSubmit = async () => {
     try {
-      const response = await createBlotter(formData);
-      toast.success("Blotter created successfully");
+      const formDataToSend = new FormData();
+
+      // Append basic fields
+      Object.keys(formData).forEach(key => {
+        if (key !== 'proofs' && key !== 'additional_respondent') {
+          formDataToSend.append(key, formData[key]);
+        }
+      });
+
+      // Append additional respondents as JSON
+      formDataToSend.append('additional_respondent', JSON.stringify(formData.additional_respondent));
+
+      // Append proof files
+      files.forEach(file => {
+        formDataToSend.append('proofs[]', file);
+      });
+
+      const response = await createBlotter(formDataToSend);
+      toast.success("Sumbong created successfully");
       setFormData(initialFormState);
+      setFiles([]);
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
-      toast.error(error.message || "Failed to create blotter");
+      toast.error(error.message || "Failed to create sumbong");
     }
-  };
-
-  // Format date to Filipino format
-  const formatDateFilipino = (dateString) => {
-    const months = [
-      "Enero",
-      "Pebrero",
-      "Marso",
-      "Abril",
-      "Mayo",
-      "Hunyo",
-      "Hulyo",
-      "Agosto",
-      "Setyembre",
-      "Oktubre",
-      "Nobyembre",
-      "Disyembre",
-    ];
-    const date = new Date(dateString);
-    return `${date.getDate()} ng ${months[date.getMonth()]}, ${date.getFullYear()}`;
   };
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title=""
-      size="xl"
+      title="Magsumbong"
+      modalClass="max-w-3xl"
       footer={
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
           >
-            Kanselahin
+            Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-900 border border-transparent rounded-md hover:bg-red-800"
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
           >
-            I-submit
+            Submit
           </button>
         </div>
       }
     >
-      <div className="space-y-8 print:space-y-6">
-        {/* Print Controls - Hidden when printing */}
-        <div className="print:hidden flex justify-end">
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded hover:bg-gray-700"
-          >
-            <span>I-print</span>
-          </button>
+      <div className="p-6 space-y-6">
+        {/* Case Information */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-gray-900">Case Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Complainant Name</label>
+              <input
+                type="text"
+                value={formData.complainant_name}
+                onChange={(e) => setFormData({ ...formData, complainant_name: e.target.value })}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Case Type</label>
+              <select
+                value={formData.case_type}
+                onChange={(e) => setFormData({ ...formData, case_type: e.target.value })}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                required
+              >
+                <option value="">Select Case Type</option>
+                {caseTypes.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
-        {/* Form Content */}
-        <div className="relative bg-white print:shadow-none">
-          {/* Watermark */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none print:hidden">
-            <div className="transform rotate-45 text-gray-200 text-9xl font-bold opacity-20">
-              DRAFT
-            </div>
+        {/* Respondent Information */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-gray-900">Respondent Information</h3>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Main Respondent</label>
+            <input
+              type="text"
+              value={formData.respondent_name}
+              onChange={(e) => setFormData({ ...formData, respondent_name: e.target.value })}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              required
+            />
           </div>
 
-          {/* Header */}
-          <div className="relative text-center font-serif">
-            {/* Municipal Seal */}
-            <div className="absolute left-0 top-0 w-24 h-24">
-              <img
-                src={municipalSeal}
-                alt="Municipal Seal"
-                className="w-full h-full object-contain"
+          {/* Additional Respondents Section */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Additional Respondents</label>
+            {formData.additional_respondent.map((name, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <span className="flex-1 text-sm text-gray-600">{name}</span>
+                <button
+                  onClick={() => handleRemoveRespondent(index)}
+                  className="p-1 text-gray-400 hover:text-red-500"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={additionalRespondent}
+                onChange={(e) => setAdditionalRespondent(e.target.value)}
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                placeholder="Add another respondent"
               />
-            </div>
-
-            {/* Heading Text */}
-            <div className="space-y-1">
-              <p className="text-sm">REPUBLIKA NG PILIPINAS</p>
-              <p className="text-sm">LALAWIGAN NG BULACAN</p>
-              <p className="text-sm">BAYAN NG BALAGTAS</p>
-              <p className="text-sm font-bold">BARANGAY SANTOL</p>
-            </div>
-
-            {/* Legacy Text */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 origin-right -rotate-90 text-gray-400 text-sm tracking-widest">
-              KEEPING THE LEGACY
-            </div>
-
-            {/* Form Title */}
-            <div className="mt-8 space-y-4">
-              <p className="font-bold">TANGGAPAN NG LUPONG TAGAPAMAYAPA</p>
-              <div className="flex justify-between items-center">
-                <p className="text-sm">Form 7</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">Usaping Barangay Blg.</span>
-                  <input
-                    type="text"
-                    value={formData.blotter_number}
-                    onChange={(e) =>
-                      setFormData({ ...formData, blotter_number: e.target.value })
-                    }
-                    className="border-b border-gray-400 w-32 focus:outline-none focus:border-gray-600 text-center"
-                  />
-                </div>
-              </div>
+              <button
+                onClick={handleAddRespondent}
+                className="px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-700"
+              >
+                Add
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Rest of the form content */}
-          <div className="p-8 space-y-6">
-            {/* Complainant and Respondent Section */}
-            <div className="grid grid-cols-2 gap-8">
-              {/* Left side - Complainant */}
-              <div className="space-y-4">
-                <div>
-                  <input
-                    type="text"
-                    value={formData.complainant_name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, complainant_name: e.target.value })
-                    }
-                    className="w-full border-b border-gray-400 focus:outline-none focus:border-red-500"
-                    placeholder="Complainant's Name"
-                    required
-                  />
-                  <p className="text-center font-bold mt-1">Nagsusumbong</p>
-                </div>
-                <p className="text-center">- laban -</p>
+        {/* Complaint Details */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-gray-900">Complaint Details</h3>
+          <textarea
+            value={formData.complaint_details}
+            onChange={(e) => setFormData({ ...formData, complaint_details: e.target.value })}
+            rows={4}
+            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            placeholder="Describe the complaint in detail..."
+            required
+          />
+        </div>
+
+        {/* Relief Sought */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-gray-900">Relief Sought</h3>
+          <textarea
+            value={formData.relief_sought}
+            onChange={(e) => setFormData({ ...formData, relief_sought: e.target.value })}
+            rows={3}
+            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+            placeholder="What resolution are you seeking?"
+            required
+          />
+        </div>
+
+        {/* File Attachments */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-gray-900">Proof Attachments (Optional)</h3>
+          <div className="flex items-center justify-center w-full">
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <Upload className="w-8 h-8 mb-3 text-gray-400" />
+                <p className="mb-2 text-sm text-gray-500">
+                  <span className="font-semibold">Click to upload</span> or drag and drop
+                </p>
+                <p className="text-xs text-gray-500">Image files only (Max. 5MB each)</p>
               </div>
+              <input
+                type="file"
+                className="hidden"
+                multiple
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+            </label>
+          </div>
 
-              {/* Right side - Respondent and Case Type */}
-              <div className="space-y-4">
-                <div>
-                  <input
-                    type="text"
-                    value={formData.respondent_name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, respondent_name: e.target.value })
-                    }
-                    className="w-full border-b border-gray-400 focus:outline-none focus:border-red-500"
-                    placeholder="Respondent's Name"
-                    required
-                  />
-                  <p className="text-center font-bold mt-1">Ipinagsusumbong</p>
-                </div>
-                <p className="text-center">- para -</p>
-
-                {/* Additional Respondents */}
-                <div>
-                  <p className="text-sm font-medium">Additional Respondents:</p>
-                  {formData.additional_respondent.map((name, index) => (
-                    <div key={index} className="flex items-center gap-2 mt-2">
-                      <span className="text-sm">{name}</span>
-                      <button
-                        onClick={() => handleRemoveRespondent(index)}
-                        className="text-red-500"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                  <div className="flex gap-2 mt-2">
-                    <input
-                      type="text"
-                      value={additionalRespondent}
-                      onChange={(e) => setAdditionalRespondent(e.target.value)}
-                      className="flex-1 border-b border-gray-400"
-                      placeholder="Add respondent"
-                    />
-                    <button
-                      onClick={handleAddRespondent}
-                      className="text-blue-600"
-                    >
-                      Add
-                    </button>
+          {/* File Preview */}
+          {files.length > 0 && (
+            <div className="grid grid-cols-2 gap-4">
+              {files.map((file, index) => (
+                <div key={index} className="relative flex items-center p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {file.name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
                   </div>
-                </div>
-
-                {/* Case Type Selection */}
-                <div className="space-y-2">
-                  <select
-                    value={formData.case_type}
-                    onChange={(e) =>
-                      setFormData({ ...formData, case_type: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-red-500"
-                    required
+                  <button
+                    onClick={() => removeFile(index)}
+                    className="p-1 ml-2 text-gray-400 hover:text-red-500"
                   >
-                    <option value="">Select Case Type</option>
-                    {caseTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-
-                  {formData.case_type === "Other" && (
-                    <input
-                      type="text"
-                      placeholder="Specify other case type"
-                      value={formData.other_case_type || ""}
-                      onChange={(e) =>
-                        setFormData({ ...formData, other_case_type: e.target.value })
-                      }
-                      className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-red-500"
-                      required
-                    />
-                  )}
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-              </div>
+              ))}
             </div>
-
-            {/* Complaint Details */}
-            <div className="space-y-4">
-              <p className="font-bold">SUMBONG</p>
-              <p className="text-sm">
-                Ako/Kami ay nagsusumbong laban sa mga binabanggit sa itaas dahil
-                sa paglabag sa akin/aming karapatan at kapakanan ayon sa mga
-                sumusunod na paaran:
-              </p>
-              <textarea
-                rows={5}
-                value={formData.complaint_details}
-                onChange={(e) =>
-                  setFormData({ ...formData, complaint_details: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-red-500"
-                required
-              />
-            </div>
-
-            {/* Relief Sought */}
-            <div className="space-y-4">
-              <p className="text-sm">
-                Dahil dito, ako/kami ay magalang na humihiling na inyong
-                ipagkaloob sa akin/amin ang nararapat ayon sa batas o katwiran
-                katulad ng mga sumusunod:
-              </p>
-              <textarea
-                rows={3}
-                value={formData.relief_sought}
-                onChange={(e) =>
-                  setFormData({ ...formData, relief_sought: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-red-500"
-                required
-              />
-            </div>
-
-            {/* Filing Details */}
-            <div className="grid grid-cols-2 gap-8">
-              <div>
-                <p>Ginawa ngayong ika-</p>
-                <input
-                  type="date"
-                  value={formData.date_filed}
-                  onChange={(e) =>
-                    setFormData({ ...formData, date_filed: e.target.value })
-                  }
-                  className="border-b border-gray-400 focus:outline-none focus:border-red-500"
-                  required
-                />
-              </div>
-              <div className="text-center">
-                <div className="mt-8 border-t border-gray-400 pt-1">
-                  <p className="font-bold">Nagsusumbong</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Receiving Details */}
-            <div className="text-center">
-              <p>
-                Inihain at tinanggap ngayong ika-
-                {new Date().toLocaleDateString()}
-              </p>
-              <div className="mt-8">
-                <p className="font-bold">{formData.received_by}</p>
-                <p className="font-bold">Punong Barangay</p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </Modal>

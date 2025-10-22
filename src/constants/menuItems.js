@@ -54,7 +54,7 @@ const adminMenu = [
        { to: "/admin/certificates/logs", label: "Certificate Logs", icon: FaBook },
     ],
   },
-  { to: "/admin/blotter", label: "View Blotter Cases", icon: FaBook },
+   { to: "/admin/sumbong", label: "View Sumbong Cases", icon: FaBook },
   { to: "/admin/announcements", label: "Announcement Management", icon: FaCommentDots },
   { to: "/admin/feedback", label: "Feedback Reports", icon: FaCommentDots },
   { to: "/admin/configurations", label: "System Configuration", icon: FaCog },
@@ -84,10 +84,10 @@ const workerMenu = [
     ],
   },
   {
-    label: "Blotter Management",
+    label: "Sumbong Management",
     icon: FaBook,
     subMenu: [
-      { to: "/worker/blotter", label: "View Blotter Cases", icon: FaBook },
+      { to: "/worker/sumbong", label: "View Sumbong Cases", icon: FaBook },
     ],
   },
   { to: "/worker/profile", label: "My Profile", icon: FaUserAlt }
@@ -107,10 +107,10 @@ const menuItems = {
       ],
     },
     {
-      label: "Blotter",
+      label: "Sumbong",
       icon: FaBook,
       subMenu: [
-        { to: "/resident/blotter/my-cases", label: "My Cases", icon: FaBook },
+        { to: "/resident/sumbong/my-cases", label: "My Cases", icon: FaBook },
       ],
     },
     { to: "/resident/feedback", label: "Submit Feedback", icon: FaCommentDots },

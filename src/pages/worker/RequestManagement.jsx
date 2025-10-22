@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/reusable/DataTable';
-import { FaEye, FaCheck, FaTimes, FaFilePdf, FaDownload, FaFileWord } from 'react-icons/fa';
+import { FaEye, FaFilePdf, FaDownload, FaFileWord } from 'react-icons/fa';
 import { fetchAllRequests, updateRequestStatus, getRequestById } from '../../api/requestApi';
 import { generateFilledDocument } from '../../api/documentApi';
 import { showCustomToast } from '../../components/Toast/CustomToast';
@@ -9,6 +9,7 @@ import { createCertificateLog } from '../../api/certificateLogApi';
 import ConfirmationModal from '../../components/modals/ConfirmationModal';
 import { useAuth } from '../../contexts/AuthContext';
 import Modal from '../../components/Modal/Modal';
+import { ChevronDown } from 'lucide-react';
 
 const RequestManagement = () => {
   const [requests, setRequests] = useState([]);
@@ -31,6 +32,7 @@ const RequestManagement = () => {
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState(null);
+  const [expandedRequirements, setExpandedRequirements] = useState(null);
   const { user } = useAuth(); // Add this to get current staff info
 
   const STATUS_OPTIONS = [
@@ -47,26 +49,34 @@ const RequestManagement = () => {
     pending: 'yellow',
     processing: 'blue',
     approved: 'emerald',
-    'ready to pickup': 'indigo',
+    'ready to pickup': 'purple',
     released: 'green',
     rejected: 'red'
   };
 
-  const loadRequests = async () => {
+  const loadRequests = async (params = {}) => {
     try {
       setLoading(true);
       const response = await fetchAllRequests({
-        page,
-        per_page: 10,
-        search,
-        status: filters.status,
-        sort_by: sortConfig.sort_by,
-        order: sortConfig.order
+        page: params.page || page,
+        per_page: params.per_page || 10,
+        search: params.search || search,
+        status: params.status, // Don't provide default here
+        sort_by: params.sort_by || sortConfig.sort_by,
+        order: params.order || sortConfig.order
       });
       
-      setRequests(response.data);
-      setTotal(response.total);
+      if (response?.data) {
+        setRequests(response.data);
+        setTotal(response.total || 0);
+      } else {
+        setRequests([]);
+        setTotal(0);
+      }
     } catch (error) {
+      console.error('Load requests error:', error);
+      setRequests([]);
+      setTotal(0);
       showCustomToast(error.message || 'Failed to load requests', 'error');
     } finally {
       setLoading(false);
@@ -80,28 +90,25 @@ const RequestManagement = () => {
     setShowRemarkModal(true);
   };
 
-  const handleStatusUpdate = async () => {
+  const handleStatusUpdate = async (requestId, newStatus) => {
     try {
-      setLoading(true);
-      
-      // 1. Update request status with remark
-      const response = await updateRequestStatus(selectedRequestId, selectedStatus, remark);
+      // Update request status
+      await updateRequestStatus(requestId, newStatus);
 
-      // 2. Create certificate log
+      // Create certificate log
       await createCertificateLog({
-        document_request: selectedRequestId,
+        document_request: requestId,
         staff: user.id,
-        remark: `Status changed to ${selectedStatus}. ${remark ? `Remarks: ${remark}` : ''}`
+        remark: `Status changed to ${newStatus}`
       });
 
-      showCustomToast('Status updated successfully', 'success');
-      loadRequests();
-      setShowRemarkModal(false);
+      // After status update, refresh the specific request
+      const updatedRequest = await getRequestById(requestId);
+      setSelectedRequest(updatedRequest); // Update modal data
+      loadRequests(); // Refresh the table
+
     } catch (error) {
-      console.error('Error updating status:', error);
       showCustomToast(error.message || 'Failed to update status', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -118,6 +125,7 @@ const RequestManagement = () => {
     }
   };
 
+  // Keep the getFileUrl function
   const getFileUrl = (path) => {
     if (!path) return null;
     if (path.startsWith('http')) return path;
@@ -166,16 +174,72 @@ const RequestManagement = () => {
     }
   };
 
+
+  const sortFieldMap = {
+    'transaction_id': 'transaction_id',
+    'document_details': 'document',  
+    'created_at': 'created_at'
+  };
+
   useEffect(() => {
     loadRequests();
-  }, [page, search, sortConfig, filters]);
+  }, [page, search, sortConfig.sort_by, sortConfig.order]); // Remove filters.status
 
-  // Enhanced columns with more details
+  const handleStatusFilter = (value) => {
+    // When setting to 'All Status' (empty value), reset to default pagination
+    const newParams = {
+      page: 1,
+      per_page: 10,
+      search,
+      sort_by: sortConfig.sort_by,
+      order: sortConfig.order
+    };
+
+    // Only add status if it's not empty (not "All Status")
+    if (value) {
+      newParams.status = value;
+    }
+
+    setFilters(prev => ({ ...prev, status: value }));
+    loadRequests(newParams);
+  };
+
+  const handleSearch = (value) => {
+    setSearch(value);
+    loadRequests({
+      search: value,
+      status: filters.status,
+      sort_by: sortConfig.sort_by,
+      order: sortConfig.order,
+      page: 1 // Reset to first page when searching
+    });
+  };
+
+  const handleSort = ({ column, direction }) => {
+    const backendField = sortFieldMap[column] || column;
+    setSortConfig({
+      sort_by: backendField,
+      order: direction.toLowerCase()
+    });
+    loadRequests({
+      sort_by: backendField,
+      order: direction.toLowerCase(),
+      search,
+      status: filters.status,
+      page
+    });
+  };
+
+  const toggleRequirements = (rowId) => {
+    setExpandedRequirements(expandedRequirements === rowId ? null : rowId);
+  };
+
   const columns = [
     {
       label: 'Transaction ID',
       accessor: 'transaction_id',
       sortable: true,
+      sortField: 'transaction_id',
       render: (value) => (
         <span className="text-sm font-medium text-gray-800">{value}</span>
       ),
@@ -184,6 +248,7 @@ const RequestManagement = () => {
       label: 'Document Name',
       accessor: 'document_details',
       sortable: true,
+      sortField: 'document',
       render: (docDetails) => (
         <span className="text-sm font-medium text-gray-800">
           {docDetails?.document_name || 'N/A'}
@@ -218,23 +283,25 @@ const RequestManagement = () => {
       label: 'Status',
       accessor: 'status',
       sortable: true,
-      type: 'badge',
-      badgeColors: STATUS_COLORS,
       render: (value) => (
-        <div className="flex flex-col gap-1">
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-            ${STATUS_COLORS[value] ? `bg-${STATUS_COLORS[value]}-100 text-${STATUS_COLORS[value]}-800` : 'bg-gray-100 text-gray-800'}`}
-          >
-            {value}
-          </span>
-         
-        </div>
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap
+          ${value === 'pending' ? 'bg-yellow-50 text-yellow-700' :
+          value === 'processing' ? 'bg-blue-50 text-blue-700' :
+          value === 'approved' ? 'bg-emerald-50 text-emerald-700' :
+          value === 'ready to pickup' ? 'bg-purple-50 text-purple-700' :
+          value === 'released' ? 'bg-green-50 text-green-700' :
+          value === 'rejected' ? 'bg-red-50 text-red-700' :
+          'bg-gray-50 text-gray-700'}`}
+        >
+          {value.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+        </span>
       )
     },
     {
       label: 'Date Requested',
       accessor: 'created_at',
       sortable: true,
+      sortField: 'created_at',
       render: (value) => (
         <span className="text-xs text-gray-600">
           {new Date(value).toLocaleDateString()}
@@ -246,32 +313,55 @@ const RequestManagement = () => {
       accessor: 'uploaded_requirements',
       sortable: false,
       render: (requirements, row) => {
-        // Only show requirements that belong to this specific request
         const requestRequirements = requirements.filter(req => 
           req.document === row.document
         );
 
         if (!requestRequirements || requestRequirements.length === 0) {
-          return <span className="text-xs text-gray-500">No requirements uploaded</span>;
+          return <span className="text-xs text-gray-500">No requirements</span>;
         }
 
         return (
           <div className="space-y-2">
-            {requestRequirements.map((req) => (
-              <div key={req.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                <FaFilePdf className="w-4 h-4 text-red-500" />
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-gray-700">{req.requirement?.name}</p>
-                  <button
-                    onClick={() => handlePreviewPdf(req.file_path)}
-                    className="text-xs text-red-600 hover:text-red-700 inline-flex items-center gap-1 mt-1"
+            <div 
+              className="flex items-center justify-between cursor-pointer p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={() => toggleRequirements(row.id)}
+            >
+              <span className="text-xs font-medium text-gray-700">
+                {requestRequirements.length} {requestRequirements.length === 1 ? 'Requirement' : 'Requirements'}
+              </span>
+              <ChevronDown 
+                className={`w-4 h-4 text-gray-400 transition-transform ${
+                  expandedRequirements === row.id ? 'rotate-180' : ''
+                }`}
+              />
+            </div>
+            
+            {expandedRequirements === row.id && (
+              <div className="mt-2 space-y-2 pl-2">
+                {requestRequirements.map((req) => (
+                  <div 
+                    key={req.id} 
+                    className="flex items-center justify-between p-2 bg-white rounded border border-gray-100 hover:border-gray-200 transition-colors"
                   >
-                    <FaEye className="w-3 h-3" />
-                    View PDF
-                  </button>
-                </div>
+                    <div className="flex items-center gap-2">
+                      <FaFilePdf className="w-3.5 h-3.5 text-red-500" />
+                      <span className="text-xs text-gray-600">{req.requirement?.name}</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePreviewPdf(req.file_path);
+                      }}
+                      className="text-xs text-gray-500 hover:text-red-600 flex items-center gap-1"
+                    >
+                      <FaEye className="w-3 h-3" />
+                      <span>View</span>
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         );
       }
@@ -294,7 +384,7 @@ const RequestManagement = () => {
               loading={loading}
               enableSearch={true}
               searchValue={search}
-              onSearchChange={setSearch}
+              onSearchChange={handleSearch}
               enablePagination={true}
               enableSelection={false}
               onPageChange={setPage}
@@ -304,7 +394,7 @@ const RequestManagement = () => {
               comboBoxFilter={{
                 label: "Status",
                 value: filters.status,
-                onChange: (value) => setFilters(prev => ({ ...prev, status: value })),
+                onChange: handleStatusFilter,
                 options: STATUS_OPTIONS
               }}
               actions={[
@@ -318,32 +408,13 @@ const RequestManagement = () => {
                   label: 'Download Filled Document',
                   onClick: (row) => handleDownloadFilledDocument(row.id),
                   show: (row) => row.document_details?.template_path && ['processing', 'ready to pickup', 'released'].includes(row.status),
-                },
-                {
-                  icon: <FaCheck className="h-3.5 w-3.5 text-gray-400" />,
-                  label: 'Process',
-                  onClick: (row) => handleStatusUpdateClick(row.id, 'processing'),
-                  show: (row) => row.status === 'pending',
-                },
-                {
-                  icon: <FaCheck className="h-3.5 w-3.5 text-gray-400" />,
-                  label: 'Ready for Pickup',
-                  onClick: (row) => handleStatusUpdateClick(row.id, 'ready to pickup'),
-                  show: (row) => row.status === 'processing',
-                },
-                {
-                  icon: <FaCheck className="h-3.5 w-3.5 text-gray-400" />,
-                  label: 'Release',
-                  onClick: (row) => handleStatusUpdateClick(row.id, 'released'),
-                  show: (row) => row.status === 'ready to pickup',
-                },
-                {
-                  icon: <FaTimes className="h-3.5 w-3.5 text-gray-400" />,
-                  label: 'Reject',
-                  onClick: (row) => handleStatusUpdateClick(row.id, 'rejected'),
-                  show: (row) => ['pending', 'processing'].includes(row.status),
-                },
+                }
               ]}
+              onSort={handleSort}
+              sortConfig={{
+                field: sortConfig.sort_by,
+                direction: sortConfig.order
+              }}
             />
           </div>
         </div>
@@ -352,8 +423,14 @@ const RequestManagement = () => {
           isOpen={viewModalOpen}
           onClose={() => setViewModalOpen(false)}
           request={selectedRequest}
-          onPreviewPdf={handlePreviewPdf}
-          getFileUrl={getFileUrl}
+          isStaff={true}
+          onUpdateStatus={handleStatusUpdate}
+          onStatusUpdate={async (requestId) => {
+            // Refresh request data after status update
+            const updatedRequest = await getRequestById(requestId);
+            setSelectedRequest(updatedRequest);
+          }}
+          getFileUrl={getFileUrl}  
         />
 
         {/* Add Remark Modal */}
@@ -363,30 +440,7 @@ const RequestManagement = () => {
           onConfirm={handleStatusUpdate}
           title="Update Request Status"
           confirmText="Update"
-          cancelText="Cancel"
-        >
-          <div className="p-4">
-            <div className="mb-4">
-              <p className="text-sm text-gray-600">
-                Are you sure you want to change the status to <span className="font-medium">{selectedStatus}</span>?
-              </p>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Additional Remarks (Optional)
-              </label>
-              <textarea
-                value={remark}
-                onChange={(e) => setRemark(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                rows={3}
-                placeholder="Enter any additional remarks..."
-              />
-            </div>
-          </div>
-        </ConfirmationModal>
-
-        {/* PDF Preview Modal */}
+        />
         <Modal
           isOpen={showPdfModal}
           onClose={() => setShowPdfModal(false)}

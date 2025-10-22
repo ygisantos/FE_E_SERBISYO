@@ -7,6 +7,7 @@ import { showCustomToast } from "../../components/Toast/CustomToast";
 import CreateBlotterModal from "../../components/modals/CreateBlotterModal";
 import ViewBlotterModal from "../../components/modals/ViewBlotterModal";
 import { useDebounce } from "../../hooks/useDebounce";
+import { formatDate, isDateInRange } from '../../utils/dateUtils';
 
 const Blotter = () => {
   const [data, setData] = useState([]);
@@ -34,30 +35,39 @@ const Blotter = () => {
   const statusOptions = [
     { value: "", label: "All Status" },
     { value: "filed", label: "Filed" },
-    { value: "scheduled", label: "Scheduled" },
-    { value: "resolved", label: "Resolved" },
-    { value: "cancelled", label: "Cancelled" },
-  ];
+    { value: "ongoing", label: "Ongoing" },
+    { value: "settled", label: "Settled" },
+   ];
 
-  // Fetch blotters
+  // Fetch blotters without date range params
   const fetchBlotters = async () => {
     try {
       setLoading(true);
       const response = await getAllBlotters({
         page: currentPage,
         status: filters.status,
-        from_date: filters.from_date,
-        to_date: filters.to_date,
         ...sortConfig,
         search: search
       });
 
       if (response.success) {
-        setData(response.data);
-        setTotalItems(response.pagination.totalItems);
+        // Filter data by date range
+        let filteredData = response.data;
+        if (filters.from_date || filters.to_date) {
+          filteredData = response.data.filter(item => 
+            isDateInRange(
+              item.date_filed,
+              filters.from_date,
+              filters.to_date
+            )
+          );
+        }
+
+        setData(filteredData);
+        setTotalItems(filteredData.length);
       }
     } catch (error) {
-      showCustomToast("Failed to fetch blotters",'error');
+      showCustomToast("Failed to fetch sumbong cases", "error");
     } finally {
       setLoading(false);
     }
@@ -121,7 +131,7 @@ const Blotter = () => {
       label: "Filing Date",
       accessor: "date_filed",
       sortable: true,
-      render: (value) => new Date(value).toLocaleDateString(),
+      render: (value) => formatDate(value)
     },
     {
       label: "Status",
@@ -152,10 +162,10 @@ const Blotter = () => {
       <div className="bg-white rounded-lg border border-gray-100">
         <div className="px-6 py-4 border-b border-gray-100">
           <h3 className="text-lg font-medium text-gray-800">
-            Blotter Case List
+            Sumbong Case List
           </h3>
           <p className="text-sm text-gray-500 mt-1">
-            View and manage reported cases
+            View and manage reported sumbong cases
           </p>
         </div>
         <div className="p-6">
@@ -171,7 +181,7 @@ const Blotter = () => {
             totalItems={totalItems}
             currentPage={currentPage}
             onPageChange={setCurrentPage}
-            searchPlaceholder="Search blotter cases..."
+            searchPlaceholder="Search sumbong cases..."
             enableSelection={false}
             comboBoxFilter={{
               label: "Status",
@@ -215,4 +225,3 @@ const Blotter = () => {
  
 
 export default Blotter;
- 

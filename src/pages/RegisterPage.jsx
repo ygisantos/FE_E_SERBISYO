@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import santolBg from "../assets/background/santol_hall.jpg";  
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Register from "../components/Register"; 
@@ -96,21 +97,19 @@ const RegisterPage = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setErrors({});
 
     // Validate form before submission
     const validation = validateForm(form);
     if (!validation.isValid) {
-
       const formattedErrors = {};
       Object.entries(validation.errors).forEach(([field, message]) => {
         formattedErrors[field] = [message];
       });
       setErrors(formattedErrors);
       showCustomToast("Please fix the form errors before submitting.", "error");
-      return;
+      return false;
     }
 
     try {
@@ -123,18 +122,14 @@ const RegisterPage = () => {
 
       const res = await register(formData);
       setSuccess(res);
-      showCustomToast("Registration successful! Redirecting to login...", "success");
-      
-      // Redirect to login page after successful registration
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000); // 2 second delay to show the success message
+      showCustomToast("Registration successful! Redirecting to Homepage...", "success");
+      return true; // Return true on success
       
     } catch (err) {
       setErrors(err);
-      // Show first error message in toast
       const firstError = Object.values(err)[0]?.[0] || "Registration failed. Please check the form.";
       showCustomToast(firstError, "error");
+      return false;  
     }
   };
 
@@ -144,7 +139,7 @@ const RegisterPage = () => {
       <div 
         className="fixed inset-0 z-0"
         style={{
-          backgroundImage: `linear-gradient(rgba(30,30,30,0.5),rgba(30,30,30,0.5)), url('/src/assets/background/santol_hall.jpg')`,
+          backgroundImage: `linear-gradient(rgba(30,30,30,0.5),rgba(30,30,30,0.5)), url(${santolBg})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundAttachment: "fixed"

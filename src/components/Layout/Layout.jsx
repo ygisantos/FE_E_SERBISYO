@@ -107,6 +107,24 @@ const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg =
     };
   }, []);
 
+   useEffect(() => {
+    if (isMobile && sidebarOpen) {
+      // Prevent scrolling on both body and main content
+      document.body.classList.add('overflow-hidden');
+      document.documentElement.classList.add('overflow-hidden');
+    } else {
+      // Re-enable scrolling
+      document.body.classList.remove('overflow-hidden');
+      document.documentElement.classList.remove('overflow-hidden');
+    }
+
+    return () => {
+      // Cleanup
+      document.body.classList.remove('overflow-hidden');
+      document.documentElement.classList.remove('overflow-hidden');
+    };
+  }, [isMobile, sidebarOpen]);
+
   return (
     <UserContext.Provider value={{ role }}>
       <LoadingProvider>
@@ -122,7 +140,7 @@ const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg =
           type="warning"
         />
         
-        <div className="min-h-screen flex flex-col bg-white">
+        <div className={`min-h-screen flex flex-col bg-white ${isMobile && sidebarOpen ? 'overflow-hidden' : ''}`}>
           <Navbar
             logo={logoImg}
             title={title}
@@ -132,7 +150,7 @@ const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg =
             isMobile={isMobile} // Pass isMobile prop
           />
 
-          <div className="flex flex-grow pt-16 relative">
+          <div className={`flex flex-grow pt-16 relative ${isMobile && sidebarOpen ? 'overflow-hidden fixed inset-0' : ''}`}>
             {/* Sidebar */}
             {showSidebar && (
               <>
@@ -170,14 +188,12 @@ const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg =
             )}
 
             {/* Main Content */}
-            <main
-              className={`
-              flex-grow overflow-y-auto transition-all duration-300
-              ${showSidebar && !isMobile ? "ml-0" : ""}
-              ${isMobile ? "w-full" : ""}
-              relative
-            `}
-            >
+            <main className={`
+              flex-grow transition-all duration-300
+              ${showSidebar && !isMobile ? 'ml-0' : ''}
+              ${isMobile ? 'w-full' : ''}
+              ${isMobile && sidebarOpen ? 'overflow-hidden' : 'overflow-auto'}
+            `}>
               <div
                 className="p-4 sm:p-6"
                 style={{
@@ -203,4 +219,3 @@ const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg =
 };
 
 export default Layout;
-  

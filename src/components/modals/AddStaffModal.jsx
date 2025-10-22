@@ -35,9 +35,9 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Just clear the red border
+    // Clear the error message instead of just setting to false
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: false }));
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -65,61 +65,65 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    let errorMessage = '';
+    let toastMessage = '';
     
     // Required field validation
     if (!formData.email) {
-      newErrors.email = true;
-      errorMessage = 'Email is required';
+      newErrors.email = 'Email is required';
+      toastMessage = 'Email is required';
     }
     if (!formData.first_name) {
-      newErrors.first_name = true;
-      errorMessage = errorMessage || 'First name is required';
+      newErrors.first_name = 'First name is required';
+      toastMessage = toastMessage || 'First name is required';
     }
     if (!formData.last_name) {
-      newErrors.last_name = true;
-      errorMessage = errorMessage || 'Last name is required';
+      newErrors.last_name = 'Last name is required';
+      toastMessage = toastMessage || 'Last name is required';
     }
     if (!formData.sex) {
-      newErrors.sex = true;
-      errorMessage = errorMessage || 'Sex is required';
+      newErrors.sex = 'Sex is required';
+      toastMessage = toastMessage || 'Sex is required';
     }
     if (!formData.civil_status) {
-      newErrors.civil_status = true;
-      errorMessage = errorMessage || 'Civil status is required';
+      newErrors.civil_status = 'Civil status is required';
+      toastMessage = toastMessage || 'Civil status is required';
     }
     if (!formData.birthday) {
-      newErrors.birthday = true;
-      errorMessage = errorMessage || 'Birthday is required';
+      newErrors.birthday = 'Birthday is required';
+      toastMessage = toastMessage || 'Birthday is required';
     }
     if (!formData.contact_no) {
-      newErrors.contact_no = true;
-      errorMessage = errorMessage || 'Contact number is required';
+      newErrors.contact_no = 'Contact number is required';
+      toastMessage = toastMessage || 'Contact number is required';
     }
     if (!formData.house_no) {
-      newErrors.house_no = true;
-      errorMessage = errorMessage || 'House number is required';
+      newErrors.house_no = 'House number is required';
+      toastMessage = toastMessage || 'House number is required';
     }
     if (!formData.street) {
-      newErrors.street = true;
-      errorMessage = errorMessage || 'Street is required';
+      newErrors.street = 'Street is required';
+      toastMessage = toastMessage || 'Street is required';
+    }
+    if (!formData.birth_place) {
+      newErrors.birth_place = 'Birth place is required';
+      toastMessage = toastMessage || 'Birth place is required';
     }
 
     // Email format validation
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = true;
-      errorMessage = 'Invalid email format';
+      newErrors.email = 'Invalid email format';
+      toastMessage = 'Invalid email format';
     }
 
     // Contact number format validation
     if (formData.contact_no && !/^09\d{9}$/.test(formData.contact_no)) {
-      newErrors.contact_no = true;
-      errorMessage = 'Contact number must start with 09 and be 11 digits';
+      newErrors.contact_no = 'Contact number must start with 09 and be 11 digits';
+      toastMessage = 'Contact number must start with 09 and be 11 digits';
     }
 
     setErrors(newErrors);
-    if (errorMessage) {
-      showCustomToast(errorMessage, 'error');
+    if (toastMessage) {
+      showCustomToast(toastMessage, 'error');
       return false;
     }
     return true;
@@ -138,6 +142,7 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
     if (hasChanges) {
       setShowConfirmClose(true);
     } else {
+      resetForm();
       onClose();
     }
   };
@@ -186,7 +191,7 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
               onClick={handleSubmitAttempt}
               className="px-3 py-1.5 text-xs text-white bg-red-600 rounded-lg hover:bg-red-700"
             >
-              Save Staff
+              Create Staff
             </button>
           </div>
         }
@@ -210,7 +215,7 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
             {/* Basic Information */}
             <div className="space-y-3">
               <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Basic Information</h4>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <InputField
                   label="Email"
                   name="email"
@@ -219,7 +224,7 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
                   onChange={handleChange}
                   error={errors.email} 
                   required
-                  className="col-span-2"
+                  className="col-span-1 md:col-span-2"
                 />
                 <InputField
                   label="First Name"
@@ -243,7 +248,7 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
             {/* Personal Details */}
             <div className="space-y-3">
               <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Personal Details</h4>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Select
                   label="Sex"
                   value={sexOptions.find(opt => opt.value === formData.sex)}
@@ -277,13 +282,21 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
                   error={errors.contact_no}
                   required
                 />
+                <InputField
+                  label="Birth Place"
+                  name="birth_place"
+                  value={formData.birth_place}
+                  onChange={handleChange}
+                  error={errors.birth_place}
+                  required
+                 />
               </div>
             </div>
 
             {/* Address */}
             <div className="space-y-3">
               <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Address</h4>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <InputField
                   label="House No."
                   name="house_no"

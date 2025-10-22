@@ -213,6 +213,7 @@ const ConfigurationManagement = () => {
 
         <div className="p-6">
           <DataTable
+          size='small'
             columns={columns}
             data={configurations}
             loading={loading}

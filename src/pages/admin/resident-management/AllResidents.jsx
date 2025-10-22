@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import DataTable from '../../../components/reusable/DataTable';
-import { fetchAllResidents } from '../../../api/adminApi';
-import { getUserById } from '../../../api/userApi';
-import { FaEye, FaEdit, FaArchive } from 'react-icons/fa';
-import { showCustomToast } from '../../../components/Toast/CustomToast';
-import ViewResidentModal from '../../../components/modals/ViewResidentModal';
-import EditResidentModal from '../../../components/modals/EditResidentModal';
-import ConfirmationModal from '../../../components/modals/ConfirmationModal';
+import React, { useState, useEffect } from "react";
+import DataTable from "../../../components/reusable/DataTable";
+import { fetchAllResidents } from "../../../api/adminApi";
+import { getUserById } from "../../../api/userApi";
+import { FaEye, FaEdit, FaArchive } from "react-icons/fa";
+import { showCustomToast } from "../../../components/Toast/CustomToast";
+import ViewResidentModal from "../../../components/modals/ViewResidentModal";
+import EditResidentModal from "../../../components/modals/EditResidentModal";
+import ConfirmationModal from "../../../components/modals/ConfirmationModal";
 
 const AllResidents = () => {
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const itemsPerPage = 10;
@@ -22,22 +22,21 @@ const AllResidents = () => {
   const [residentToArchive, setResidentToArchive] = useState(null);
 
   const getProfilePicUrl = (path) => {
-    if (!path) return '/placeholder-avatar.png';
-    if (path.startsWith('http')) return path;
-    
+    if (!path) return "/placeholder-avatar.png";
+    if (path.startsWith("http")) return path;
+
     // Remove /storage prefix and use storage URL
     const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
-    const cleanPath = path.replace(/^\/storage\//, '');
+    const cleanPath = path.replace(/^\/storage\//, "");
     return `${storageUrl}/${cleanPath}`;
   };
 
   const confirmArchive = async () => {
     try {
-
-      showCustomToast('Resident archived successfully', 'success');
+      showCustomToast("Resident archived successfully", "success");
       fetchAllResidents(page, itemsPerPage);
     } catch (error) {
-      showCustomToast('Failed to archive resident', 'error');
+      showCustomToast("Failed to archive resident", "error");
     }
   };
 
@@ -54,8 +53,8 @@ const AllResidents = () => {
         setLoading(false);
       })
       .catch(() => {
-        setError('Failed to fetch residents.');
-        showCustomToast('Failed to fetch residents', 'error');
+        setError("Failed to fetch residents.");
+        showCustomToast("Failed to fetch residents", "error");
         setLoading(false);
       });
   }, [page]);
@@ -66,7 +65,7 @@ const AllResidents = () => {
       setSelectedResident(userDetails);
       setShowViewModal(true);
     } catch (error) {
-      showCustomToast('Failed to fetch resident details', 'error');
+      showCustomToast("Failed to fetch resident details", "error");
     }
   };
 
@@ -82,15 +81,16 @@ const AllResidents = () => {
 
   const columns = [
     {
-      label: 'Profile Picture',
-      accessor: 'profile_picture_path',
+      label: "Profile Picture",
+      accessor: "profile_picture_path",
       render: (value, row) => {
         const hasProfilePic = !!value;
-        const initials = row.first_name && row.last_name
-          ? `${row.first_name[0]}${row.last_name[0]}`.toUpperCase()
-          : '';
+        const initials =
+          row.first_name && row.last_name
+            ? `${row.first_name[0]}${row.last_name[0]}`.toUpperCase()
+            : "";
         const imgUrl = getProfilePicUrl(value);
-        
+
         return (
           <div className="w-10 h-10">
             {hasProfilePic ? (
@@ -98,7 +98,9 @@ const AllResidents = () => {
                 src={imgUrl}
                 alt={`${row.first_name}'s profile`}
                 className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white"
-                onError={e => { e.target.src = '/placeholder-avatar.png'; }}
+                onError={(e) => {
+                  e.target.src = "/placeholder-avatar.png";
+                }}
               />
             ) : (
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm border border-gray-200">
@@ -107,35 +109,32 @@ const AllResidents = () => {
             )}
           </div>
         );
-      }
-    },
-    {
-      label: 'Name',
-      accessor: 'name',
-      render: (value) => (
-        <span className="text-xs text-gray-800">{value}</span>
-      )
-    },
-    { label: 'Email', accessor: 'email' },
-    { label: 'Contact No.', accessor: 'contact_no' },
-    { label: 'House No.', accessor: 'house_no' },
-    { label: 'Street', accessor: 'street' },
-    { label: 'Municipality', accessor: 'municipality' },
-    { label: 'Barangay', accessor: 'barangay' },
-    {
-      label: 'Status',
-      accessor: 'status',
-      type: 'badge',
-      badgeColors: { 
-        active: 'green',
-        inactive: 'gray',
-        pending: 'yellow',
-        rejected: 'red'
       },
-    }
+    },
+    {
+      label: "Name",
+      accessor: "name",
+      render: (value) => <span className="text-xs text-gray-800">{value}</span>,
+    },
+    { label: "Email", accessor: "email" },
+    { label: "Contact No.", accessor: "contact_no" },
+    { label: "House No.", accessor: "house_no" },
+    { label: "Street", accessor: "street" },
+    { label: "Municipality", accessor: "municipality" },
+    { label: "Barangay", accessor: "barangay" },
+    {
+      label: "Status",
+      accessor: "status",
+      type: "badge",
+      badgeColors: {
+        active: "green",
+        inactive: "gray",
+        pending: "yellow",
+        rejected: "red",
+      },
+    },
   ];
 
- 
   return (
     <div className="min-h-screen bg-gray-50/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -157,6 +156,7 @@ const AllResidents = () => {
         <div className="bg-white rounded-lg shadow-sm">
           <div className="px-6 py-4">
             <DataTable
+              size="small"
               columns={columns}
               data={residents}
               loading={loading}

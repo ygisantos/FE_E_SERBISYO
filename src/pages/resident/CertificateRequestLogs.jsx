@@ -1,99 +1,46 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import DataTable from '../../components/reusable/DataTable';
-import { FaEye, FaDownload } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import { fetchAllRequests } from '../../api/requestApi';
+import { FaEye } from 'react-icons/fa';
+import { getAllRequests } from '../../api/documentApi';
 import { useUser } from '../../contexts/UserContext';
+import ViewRequestModal from '../../components/modals/ViewRequestModal';
+import { showCustomToast } from '../../components/Toast/CustomToast';
 
 const CertificateRequestLogs = () => {
-  const navigate = useNavigate();
-
-  // API state
-  const { currentUser, loading: userLoading } = useUser();
-  const [requestLogs, setRequestLogs] = useState([]);
+  const { currentUser } = useUser();
+  const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('pending');
-  const perPage = 10;
-
-  const fetchRequests = useCallback(async () => {
-    if (!currentUser?.id) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetchAllRequests({
-        status,
-        requestor: currentUser.id,
-        per_page: perPage,
-        page,
-        sort_by: 'document',
-        order: 'desc',
-        search,
-      });
-      // Map API data to DataTable fields
-      const mapped = (res.data || []).map((item) => ({
-        id: item.id,
-        referenceNo: item.transaction_id,
-        certificateType: item.document_details?.document_name || '',
-        requestDate: item.created_at,
-        processedDate: item.updated_at !== item.created_at ? item.updated_at : null,
-        status: item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : '',
-        purpose: item.information?.purpose || '',
-        paymentStatus: item.payment_status ? (item.payment_status === 'paid' ? 'Paid' : 'Unpaid') : 'Unpaid',
-        amount: item.amount || '',
-      }));
-      setRequestLogs(mapped);
-      setTotal(res.total || 0);
-    } catch (err) {
-      setError(err?.toString() || 'Failed to fetch requests');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentUser, page, status, search]);
-
-  useEffect(() => {
-    if (!userLoading && currentUser?.id) {
-      fetchRequests();
-    }
-  }, [userLoading, currentUser, fetchRequests]);
-
-  // Handle search from DataTable
-  const handleSearch = (val) => {
-    setSearch(val);
-    setPage(1);
-  };
-
-  // Handle status filter change
-  const handleStatusChange = (e) => {
-    setStatus(e.target.value);
-    setPage(1);
-  };
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: 'created_at',
+    order: 'desc',
+  });
+  const [status, setStatus] = useState('');
 
   const columns = [
     {
-      label: 'Reference No.',
-      accessor: 'referenceNo',
+      label: 'Transaction ID',
+      accessor: 'transaction_id',
       sortable: true,
     },
     {
-      label: 'Certificate',
-      accessor: 'certificateType',
+      label: 'Document Name',
+      accessor: 'document_details',
       sortable: true,
+      render: (docDetails) => (
+        <span className="text-sm font-medium text-gray-800">
+          {docDetails?.document_name || 'N/A'}
+        </span>
+      ),
     },
     {
       label: 'Request Date',
-      accessor: 'requestDate',
+      accessor: 'created_at',
       sortable: true,
       render: (value) => new Date(value).toLocaleDateString(),
-    },
-    {
-      label: 'Processed Date',
-      accessor: 'processedDate',
-      sortable: true,
-      render: (value) => value ? new Date(value).toLocaleDateString() : '-',
     },
     {
       label: 'Status',
@@ -102,38 +49,109 @@ const CertificateRequestLogs = () => {
       render: (value) => (
         <span
           className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-            value === 'Pending'
+            value === 'pending'
               ? 'bg-yellow-50 text-yellow-700'
-              : value === 'Processing'
+              : value === 'processing'
               ? 'bg-blue-50 text-blue-700'
-              : value === 'Completed'
+              : value === 'approved'
               ? 'bg-green-50 text-green-700'
-              : value === 'Rejected'
-              ? 'bg-red-50 text-red-700'
-              : 'bg-gray-50 text-gray-700'
+              : value === 'ready to pickup'
+              ? 'bg-indigo-50 text-indigo-700'
+              : value === 'released'
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'bg-red-50 text-red-700'
           }`}
         >
-          {value}
+          {value.charAt(0).toUpperCase() + value.slice(1)}
         </span>
       ),
     },
+  ];
+
+  useEffect(() => {
+    const loadRequests = async () => {
+      try {
+        setLoading(true);
+        const response = await getAllRequests({
+          per_page: 10,
+          page,
+          ...sortConfig,
+          requestor: currentUser?.id,
+          status: status || undefined,
+        });
+
+        setRequests(response.data);
+        setTotal(response.total || response.data.length);
+      } catch (error) {
+        showCustomToast(error.message || 'Failed to load requests', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (currentUser) {
+      loadRequests();
+    }
+  }, [currentUser, page, sortConfig, status]);
+
+  const handleViewRequest = (request) => {
+    setSelectedRequest(request);
+    setShowViewModal(true);
+  };
+
+  const handleSort = ({ column, direction }) => {
+    setSortConfig({
+      sort_by: column,
+      order: direction,
+    });
+  };
+
+  const handleStatusChange = (e) => {
+    setStatus(e.target.value);
+    setPage(1);
+  };
+
+  const statusOptions = [
+    { value: '', label: 'All Status' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'processing', label: 'Processing' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'ready to pickup', label: 'Ready to Pickup' },
+    { value: 'released', label: 'Released' },
+    { value: 'rejected', label: 'Rejected' },
+  ];
+
+  // Status legend configuration
+  const statusLegend = [
     {
-      label: 'Purpose',
-      accessor: 'purpose',
-      sortable: true,
+      color: 'yellow',
+      label: 'Pending',
+      description: 'Your request is being reviewed',
     },
     {
-      label: 'Payment',
-      accessor: 'paymentStatus',
-      sortable: true,
-      render: (value, row) => (
-        <div className="flex flex-col">
-          <span className={`text-sm ${value === 'Paid' ? 'text-green-600' : 'text-red-600'}`}>
-            {value}
-          </span>
-          <span className="text-xs text-gray-500">₱{row.amount}</span>
-        </div>
-      ),
+      color: 'blue',
+      label: 'Processing',
+      description: 'Certificate is being prepared',
+    },
+    {
+      color: 'green',
+      label: 'Approved',
+      description: 'Request has been approved',
+    },
+    {
+      color: 'indigo',
+      label: 'Ready to Pickup',
+      description: 'Certificate is ready for pickup',
+    },
+    {
+      color: 'emerald',
+      label: 'Released',
+      description: 'Certificate has been released',
+    },
+    {
+      color: 'red',
+      label: 'Rejected',
+      description: 'Request was not approved',
     },
   ];
 
@@ -141,88 +159,79 @@ const CertificateRequestLogs = () => {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-lg shadow p-6">
+          {/* Status Legend */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Certificate Request History</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Certificate Request History
+            </h1>
             <p className="mt-2 text-sm text-gray-600">
-              Track and manage all your certificate requests
+              Track your certificate requests
             </p>
-          </div>
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>
-          )}
-
-          <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
-            <div>
-              <label htmlFor="statusFilter" className="text-sm font-medium text-gray-700 mr-2">Status:</label>
-              <select
-                id="statusFilter"
-                value={status}
-                onChange={handleStatusChange}
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
-              >
-                <option value="">All</option>
-                <option value="pending">Pending</option>
-                <option value="released">Released</option>
-                <option value="rejected">Rejected</option>
-                <option value="approved">Approved</option>
-                <option value="processing">Processing</option>
-                <option value="ready to pickup">Ready to Pickup</option>
-              </select>
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                Request Status Guide:
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {statusLegend.map(({ color, label, description }) => (
+                  <div key={label} className="flex items-start gap-2">
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full mt-1 bg-${color}-500 flex-shrink-0`}
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">
+                        {label}
+                      </p>
+                      <p className="text-xs text-gray-500">{description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+
           <DataTable
+            size='small'
             columns={columns}
-            data={requestLogs}
+            data={requests}
+            loading={loading}
             enableSearch={false}
-            searchPlaceholder="Search by reference number, type..."
-            onSearch={handleSearch}
-            searchValue={search}
             enablePagination={true}
-            itemsPerPage={perPage}
-            loading={loading || userLoading}
+            enableSelection={false}
             totalItems={total}
             currentPage={page}
             onPageChange={setPage}
+            itemsPerPage={10}
+            comboBoxFilter={{
+              label: 'Status',
+              value: status,
+              onChange: (value) => {
+                setStatus(value);
+                setPage(1);
+              },
+              options: statusOptions,
+            }}
             actions={[
               {
-                icon: <FaEye className="text-blue-600" />,
+                icon: <FaEye className="h-3.5 w-3.5 text-blue-600" />,
                 label: 'View Details',
-                onClick: (row) => navigate(`/resident/certificates/view/${row.id}`),
-              },
-              {
-                icon: <FaDownload className="text-green-600" />,
-                label: 'Download',
-                onClick: (row) => console.log('Download', row),
-                show: (row) => row.status === 'Completed',
+                onClick: handleViewRequest,
               },
             ]}
+            onSort={handleSort}
+            sortConfig={sortConfig}
           />
-
-          {/* Status Legend */}
-          <div className="mt-6 border-t pt-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Status Legend:</h3>
-            <div className="flex flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
-                <span className="text-sm text-gray-600">Pending - Request is being reviewed</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                <span className="text-sm text-gray-600">Processing - Document is being prepared</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                <span className="text-sm text-gray-600">Completed - Ready for pickup/download</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                <span className="text-sm text-gray-600">Rejected - Request was denied</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
+
+      <ViewRequestModal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setSelectedRequest(null);
+        }}
+        request={selectedRequest}
+      />
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { showCustomToast } from '../Toast/CustomToast';
 import ConfirmationModal from './ConfirmationModal';
 import { FaUpload, FaTimes, FaSpinner } from 'react-icons/fa';
 import { extractPlaceholders } from '../../api/documentApi';
-import { isSystemKeyword, SYSTEM_KEYWORDS, formatDate } from '../../utils/documentKeywords';
+import { isSystemKeyword, SYSTEM_KEYWORDS } from '../../utils/documentKeywords';
 
 const RequestDocumentModal = ({ 
   isOpen, 
@@ -230,6 +230,52 @@ const RequestDocumentModal = ({
     }
   }, [document]);
 
+  const renderPlaceholderInput = (placeholder) => {
+    // Handle checkbox placeholders
+    if (placeholder.startsWith('CHECK_')) {
+      return (
+        <div key={placeholder} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+          <input
+            type="checkbox"
+            id={placeholder}
+            checked={formData.placeholders[placeholder] === 'true'}
+            onChange={(e) => handlePlaceholderChange(placeholder, e)}
+            className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+          />
+          <label htmlFor={placeholder} className="text-sm text-gray-700">
+            {formatPlaceholderLabel(placeholder.replace('CHECK_', ''))}
+          </label>
+        </div>
+      );
+    }
+
+    // If it's a system keyword (like DATE_TODAY)
+    if (isSystemKeyword(placeholder)) {
+      return (
+        <InputField
+          key={placeholder}
+          label={formatPlaceholderLabel(placeholder)}
+          value={SYSTEM_KEYWORDS[placeholder]()}
+          disabled={true}
+          className="w-full bg-gray-50"
+          readOnly
+        />
+      );
+    }
+
+    // Regular input fields
+    return (
+      <InputField
+        key={placeholder}
+        label={formatPlaceholderLabel(placeholder)}
+        value={formData.placeholders[placeholder] || ''}
+        onChange={(e) => handlePlaceholderChange(placeholder, e.target.value)}
+        className="w-full"
+        required
+      />
+    );
+  };
+
   return (
     <>
       <Modal
@@ -291,22 +337,7 @@ const RequestDocumentModal = ({
             <div className="space-y-3">
               <h4 className="font-medium text-gray-900">Document Information</h4>
               <div className="space-y-3">
-                {placeholders.map((placeholder) => {
-                  const isSystem = isSystemKeyword(placeholder);
-                  return (
-                    <div key={placeholder}>
-                      <InputField
-                        label={formatPlaceholderLabel(placeholder)}
-                        placeholder={isSystem ? 'Auto-filled' : `Enter ${formatPlaceholderLabel(placeholder).toLowerCase()}`}
-                        value={isSystem ? SYSTEM_KEYWORDS[placeholder.toUpperCase()]() : formData.placeholders[placeholder] || ''}
-                        onChange={(e) => handlePlaceholderChange(placeholder, e.target.value)}
-                        disabled={isSystem}
-                        required={!isSystem}
-                        className={isSystem ? 'bg-gray-50 text-gray-600' : ''}
-                      />
-                    </div>
-                  );
-                })}
+                {placeholders.map(placeholder => renderPlaceholderInput(placeholder))}
               </div>
             </div>
           )}

@@ -4,8 +4,7 @@ import InputField from '../Input/InputField';  // Changed from FormInput
 import Select from "../reusable/Select";
 import {  FaUpload, FaImage, FaTrash } from "react-icons/fa";
 import ConfirmationModal from "./ConfirmationModal";
-
-
+import { showCustomToast } from "../Toast/CustomToast";
 const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
   const [formData, setFormData] = useState({
     first_name: "",
@@ -118,11 +117,6 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
     resetAndClose();
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setShowSaveModal(true);
-  };
-
   const positionOptions = [
     { value: "Barangay Captain", label: "Barangay Captain" },
     { value: "Barangay Secretary", label: "Barangay Secretary" },
@@ -204,6 +198,64 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
     </div>
   );
 
+  const validateForm = () => {
+    const newErrors = {};
+    let toastMessage = '';
+
+    if (!formData.position) {
+      newErrors.position = 'Position is required';
+      toastMessage = 'Position is required';
+    }
+    if (!formData.term_start) {
+      newErrors.term_start = 'Term start is required';
+      toastMessage = toastMessage || 'Term start is required';
+    }
+    if (!formData.term_end) {
+      newErrors.term_end = 'Term end is required';
+      toastMessage = toastMessage || 'Term end is required';
+    }
+    if (!formData.first_name) {
+      newErrors.first_name = 'First name is required';
+      toastMessage = toastMessage || 'First name is required';
+    }
+    if (!formData.last_name) {
+      newErrors.last_name = 'Last name is required';
+      toastMessage = toastMessage || 'Last name is required';
+    }
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+      toastMessage = toastMessage || 'Email is required';
+    }
+    if (!formData.contact_no) {
+      newErrors.contact_no = 'Contact number is required';
+      toastMessage = toastMessage || 'Contact number is required';
+    }
+
+    // Format validations
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
+      toastMessage = toastMessage || 'Invalid email format';
+    }
+    if (formData.contact_no && !/^09\d{9}$/.test(formData.contact_no)) {
+      newErrors.contact_no = 'Must start with 09 and have 11 digits';
+      toastMessage = toastMessage || 'Must start with 09 and have 11 digits';
+    }
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      showCustomToast(toastMessage, 'error');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      setShowSaveModal(true);
+    }
+  };
+
   return (
     <>
       <Modal 
@@ -251,6 +303,8 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
                     })}
                     options={positionOptions}
                     required
+                    error={errors.position}
+                    className="text-xs"
                   />
                   <InputField
                     label="Term Start"
@@ -260,6 +314,7 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
                     onChange={handleInputChange}
                     required
                     error={errors.term_start?.[0]}
+                    className="text-xs"
                   />
                   <InputField
                     label="Term End"
@@ -269,6 +324,7 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
                     onChange={handleInputChange}
                     required
                     error={errors.term_end?.[0]}
+                    className="text-xs"
                   />
                 </div>
               </div>
@@ -277,15 +333,15 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <h3 className="text-sm font-medium text-gray-900 mb-4">Personal Information</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <InputField label="First Name" name="first_name" value={formData.first_name} onChange={handleInputChange} required />
-                  <InputField label="Last Name" name="last_name" value={formData.last_name} onChange={handleInputChange} required />
-                  <InputField label="Middle Name" name="middle_name" value={formData.middle_name} onChange={handleInputChange} />
-                  <InputField label="Suffix" name="suffix" value={formData.suffix} onChange={handleInputChange} />
+                  <InputField label="First Name" name="first_name" value={formData.first_name} onChange={handleInputChange} required error={errors.first_name} className="text-xs" />
+                  <InputField label="Last Name" name="last_name" value={formData.last_name} onChange={handleInputChange} required error={errors.last_name} className="text-xs" />
+                  <InputField label="Middle Name" name="middle_name" value={formData.middle_name} onChange={handleInputChange} className="text-xs" />
+                  <InputField label="Suffix" name="suffix" value={formData.suffix} onChange={handleInputChange} className="text-xs" />
                   
-                  <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} required />
-                  <InputField label="Contact No" name="contact_no" value={formData.contact_no} onChange={handleInputChange} required />
+                  <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} required error={errors.email} className="text-xs" />
+                  <InputField label="Contact No" name="contact_no" value={formData.contact_no} onChange={handleInputChange} required error={errors.contact_no} className="text-xs" />
                   
-                  <InputField label="Birth Place" name="birth_place" value={formData.birth_place} onChange={handleInputChange} required />
+                  <InputField label="Birth Place" name="birth_place" value={formData.birth_place} onChange={handleInputChange} required className="text-xs" />
                   <Select
                     label="Civil Status"
                     name="civil_status"
@@ -295,6 +351,7 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
                     })}
                     options={civilStatusOptions}
                     required
+                    className="text-xs"
                   />
                 </div>
               </div>
@@ -303,11 +360,11 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <h3 className="text-sm font-medium text-gray-900 mb-4">Address Information</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <InputField label="House No" name="house_no" value={formData.house_no} onChange={handleInputChange} required />
-                  <InputField label="Street" name="street" value={formData.street} onChange={handleInputChange} required />
-                  <InputField label="Barangay" name="barangay" value={formData.barangay} onChange={handleInputChange} required />
-                  <InputField label="Municipality" name="municipality" value={formData.municipality} onChange={handleInputChange} required />
-                  <InputField label="ZIP Code" name="zip_code" value={formData.zip_code} onChange={handleInputChange} required />
+                  <InputField label="House No" name="house_no" value={formData.house_no} onChange={handleInputChange} required className="text-xs" />
+                  <InputField label="Street" name="street" value={formData.street} onChange={handleInputChange} required className="text-xs" />
+                  <InputField label="Barangay" name="barangay" value={formData.barangay} onChange={handleInputChange} required className="text-xs" />
+                  <InputField label="Municipality" name="municipality" value={formData.municipality} onChange={handleInputChange} required className="text-xs" />
+                  <InputField label="ZIP Code" name="zip_code" value={formData.zip_code} onChange={handleInputChange} required className="text-xs" />
                 </div>
               </div>
             </div>

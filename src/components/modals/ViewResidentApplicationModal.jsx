@@ -1,11 +1,26 @@
 import React, { useState } from 'react';
 import Modal from '../Modal/Modal';
+import { acceptAccount, rejectAccount } from '../../api/ApproveRejectApi';
+import { showCustomToast } from '../../components/Toast/CustomToast';
 import { FaUser, FaIdCard, FaTimes, FaFileAlt, FaDownload, FaEye } from 'react-icons/fa';
+import ConfirmationModal from './ConfirmationModal';
 
-const ViewResidentApplicationModal = ({ isOpen, onClose, resident }) => {
+const ViewResidentApplicationModal = ({ 
+  isOpen, 
+  onClose, 
+  resident, 
+  onSuccess,
+  showActions = false 
+}) => {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectInput, setShowRejectInput] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmationType, setConfirmationType] = useState('');
+  const [showCancelRejectModal, setShowCancelRejectModal] = useState(false);
 
-   const getProfilePicUrl = (path) => {
+  const getProfilePicUrl = (path) => {
     if (!path) return '/placeholder-avatar.png';
     if (path.startsWith('http')) return path;
     
@@ -14,7 +29,6 @@ const ViewResidentApplicationModal = ({ isOpen, onClose, resident }) => {
     const cleanPath = path.replace(/^\/storage\//, '');
     return `${storageUrl}/${cleanPath}`;
   };
-
 
   const formattedDate = (dateString) => {
     if (!dateString) return "-";
@@ -142,10 +156,156 @@ const ViewResidentApplicationModal = ({ isOpen, onClose, resident }) => {
     );
   };
 
+  const handleApprove = async () => {
+    try {
+      setIsProcessing(true);
+      await acceptAccount(resident.id);
+      showCustomToast("Account has been accepted successfully!", "success");
+      onSuccess?.();
+      resetStates();
+    } catch (error) {
+      showCustomToast(error.message || "Failed to accept account", "error");
+    } finally {
+      setIsProcessing(false);
+      setShowConfirmModal(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      showCustomToast("Please provide a reason for rejection", "error");
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      await rejectAccount(resident.id, rejectReason);
+      showCustomToast("Account rejected successfully", "success");
+      onSuccess?.();
+      resetStates();
+    } catch (error) {
+      showCustomToast(error.message || "Failed to reject account", "error");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // reset function
+  const resetStates = () => {
+    setSelectedImage(null);
+    setIsProcessing(false);
+    setRejectReason('');
+    setShowRejectInput(false);
+    setShowConfirmModal(false);
+    setConfirmationType('');
+    setShowCancelRejectModal(false);
+  };
+
+  // onClose handler
+  const handleClose = () => {
+    setSelectedImage(null);
+    setIsProcessing(false);
+    setRejectReason('');
+    setShowRejectInput(false);
+    setShowConfirmModal(false);
+    setConfirmationType('');
+    onClose();
+  };
+
+  // handleActionClick function
+  const handleActionClick = (type) => {
+    setConfirmationType(type);
+    setShowConfirmModal(true);
+  };
+
+  // handle cancel reject confirmation
+  const renderFooter = () => {
+    if (!showActions) {
+      return (
+        <div className="flex justify-end">
+          <button
+            onClick={handleClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Close
+          </button>
+        </div>
+      );
+    }
+
+    if (showRejectInput) {
+      return (
+        <div className="space-y-4">
+          <textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Enter reason for rejection..."
+            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-red-500"
+            rows={3}
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setShowCancelRejectModal(true)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              disabled={isProcessing}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleActionClick('reject')}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              disabled={isProcessing || !rejectReason.trim()}
+            >
+              {isProcessing ? 'Processing...' : 'Confirm Reject'}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex justify-end items-center gap-3">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+        >
+          Close
+        </button>
+        <button
+          onClick={() => setShowRejectInput(true)}
+          className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100"
+          disabled={isProcessing}
+        >
+          Reject
+        </button>
+        <button
+          onClick={() => handleActionClick('approve')}
+          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+          disabled={isProcessing}
+        >
+          {isProcessing ? 'Processing...' : 'Approve'}
+        </button>
+      </div>
+    );
+  };
+
+  // cancelRejection handler
+  const handleCancelRejection = () => {
+    setRejectReason('');
+    setShowRejectInput(false);
+    setShowCancelRejectModal(false);
+  };
+
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title="Application Details" size="lg">
-        <div className="h-full">  {/* Remove max-h and overflow classes */}
+      <Modal 
+        isOpen={isOpen} 
+        onClose={handleClose} 
+        title="Application Details" 
+        size="lg"
+        footer={renderFooter()}
+      >
+        <div className="h-full">   
           {/* Profile Section */}
           <div className="flex items-center gap-4 pb-4 mb-4 border-b border-gray-100">
             <div className="w-16 h-16 flex-shrink-0">
@@ -239,6 +399,21 @@ const ViewResidentApplicationModal = ({ isOpen, onClose, resident }) => {
         </div>
       </Modal>
 
+      {/* Add Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmationType === 'approve' ? handleApprove : handleReject}
+        title={`Confirm ${confirmationType === 'approve' ? 'Approval' : 'Rejection'}`}
+        message={
+          confirmationType === 'approve' 
+            ? "Are you sure you want to approve this resident application?"
+            : "Are you sure you want to reject this application with the provided reason?"
+        }
+        confirmText={confirmationType === 'approve' ? 'Approve' : 'Reject'}
+        type={confirmationType === 'approve' ? 'success' : 'danger'}
+      />
+
       {/* Fullscreen Image Preview */}
       {selectedImage && (
         <ImagePreviewModal 
@@ -246,6 +421,18 @@ const ViewResidentApplicationModal = ({ isOpen, onClose, resident }) => {
           onClose={() => setSelectedImage(null)} 
         />
       )}
+
+      {/* Cancel Reject Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showCancelRejectModal}
+        onClose={() => setShowCancelRejectModal(false)}
+        onConfirm={handleCancelRejection}
+        title="Cancel Rejection"
+        message="Are you sure you want to cancel the rejection? Your entered reason will be discarded."
+        confirmText="Yes, Cancel"
+        cancelText="No, Keep Editing"
+        type="warning"
+      />
     </>
   );
 };

@@ -10,11 +10,16 @@ import CustomToastContainer, {
   showCustomToast,
 } from "../components/Toast/CustomToast";
 import { login } from "../api/loginApi";
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import TermsModal from '../components/modals/TermsModal';
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [navOpen, setNavOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
 
@@ -57,6 +62,11 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!termsAccepted) {
+      showCustomToast("Please accept the Terms & Conditions to login", "error");
+      setShowTermsModal(true);
+      return;
+    }
     if (!form.email || !form.password) {
       showCustomToast("Please enter both email and password.", "error");
       return;
@@ -104,9 +114,17 @@ const Login = () => {
     }
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleAcceptTerms = () => {
+    setTermsAccepted(true);
+    setShowTermsModal(false);
+  };
+
   return (
-    <div
-      className="min-h-screen flex flex-col bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300"
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300"
       style={{
         backgroundImage: `linear-gradient(rgba(30,30,30,0.5),rgba(30,30,30,0.5)), url(${santolBg})`,
         backgroundSize: "cover",
@@ -121,6 +139,7 @@ const Login = () => {
           <span className="text-[var(--color-primary)] mb-6 font-bold text-2xl tracking-wide">
             Login
           </span>
+          
           <form className="w-full flex flex-col gap-6" onSubmit={handleSubmit}>
             <FormInput
               name="email"
@@ -130,51 +149,88 @@ const Login = () => {
               placeholder="Enter your email address"
               label="Email Address"
             />
-            <FormInput
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              type="password"
-              placeholder="Enter your password"
-              label="Password"
-            />
-            {/* <div className="flex justify-end w-full -mt-4 mb-2">
-              <span
-                className="text-sm text-[var(--color-secondary)] hover:underline focus:outline-none transition cursor-pointer"
-                onClick={() => navigate("/forgot-password")}
-                tabIndex={0}
-                role="button"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    navigate("/forgot-password");
-                  }
-                }}
+            
+            <div className="relative">
+              <FormInput
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                label="Password"
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600 focus:outline-none"
               >
-                Forgot password?
-              </span>
-            </div> */}
+                {showPassword ? (
+                  <EyeOffIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+
+            {/* Terms & Conditions */}
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+              />
+              <label htmlFor="terms" className="text-sm text-gray-700">
+                I agree to the{" "}
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="text-red-900 hover:underline font-medium"
+                >
+                  Terms & Conditions
+                </button>
+              </label>
+            </div>
+
+            {/* Login Button */}
             <Button type="submit" loading={loading} loadingText="Logging in...">
               Login
             </Button>
-          </form>
 
-          {/* Add Create Account Link */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">Don't have an account?</p>
+            {/* Divider */}
+            <div className="relative mt-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
+              </div>
+            </div>
+
+            {/* Create Account Link */}
             <button
+              type="button"
               onClick={() => navigate("/register")}
-              className="mt-2 text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors text-sm font-medium"
+              className="w-full py-2.5 text-sm font-medium text-red-900 hover:text-red-800 transition-colors"
             >
               Create Account
             </button>
-          </div>
+          </form>
         </div>
       </div>
+
+      {/* Terms Modal */}
+      <TermsModal 
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={handleAcceptTerms}
+        isAccepted={termsAccepted}
+      />
     </div>
   );
 };
 
- 
 export default Login;
 
 

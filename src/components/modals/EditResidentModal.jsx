@@ -28,6 +28,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const civilStatusOptions = [
     { value: "single", label: "Single" },
@@ -49,6 +50,9 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
       ...prev,
       [name]: value
     }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleSelectChange = (selected, fieldName) => {
@@ -58,7 +62,49 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
     }));
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+    let toastMessage = '';
+    
+    // Required field validation
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+      toastMessage = 'Email is required';
+    }
+    if (!formData.first_name) {
+      newErrors.first_name = 'First name is required';
+      toastMessage = toastMessage || 'First name is required';
+    }
+    if (!formData.last_name) {
+      newErrors.last_name = 'Last name is required';
+      toastMessage = toastMessage || 'Last name is required';
+    }
+    if (!formData.contact_no) {
+      newErrors.contact_no = 'Contact number is required';
+      toastMessage = toastMessage || 'Contact number is required';
+    }
+
+    // Format validations
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
+      toastMessage = toastMessage || 'Invalid email format';
+    }
+    if (formData.contact_no && !/^09\d{9}$/.test(formData.contact_no)) {
+      newErrors.contact_no = 'Contact number must start with 09 and be 11 digits';
+      toastMessage = toastMessage || 'Contact number must start with 09 and be 11 digits';
+    }
+
+    setErrors(newErrors);
+    if (toastMessage) {
+      showCustomToast(toastMessage, 'error');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async () => {
+    if (!validateForm()) return;
+    
     try {
       setLoading(true);
       const response = await updateAccountInformation(resident.id, formData);
@@ -107,7 +153,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
             options={typeOptions}
             required
             className="text-xs"
-            placeholder="Select User Type"
+            error={errors.type}
           />
         </div>
 
@@ -122,6 +168,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               onChange={handleChange}
               required
               className="text-xs"
+              error={errors.first_name}
             />
             <InputField
               label="Middle Name"
@@ -137,6 +184,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               onChange={handleChange}
               required
               className="text-xs"
+              error={errors.last_name}
             />
           </div>
 
@@ -148,7 +196,8 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               value={formData.birthday}
               onChange={handleChange}
               required
-              className="text-xs"
+              className={`text-xs ${errors.birthday ? 'border-red-500' : ''}`}
+              error={errors.birthday}
             />
             <Select
               label="Civil Status"
@@ -156,8 +205,9 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               onChange={(selected) => handleSelectChange(selected, 'civil_status')}
               options={civilStatusOptions}
               required
-              className="text-xs"
+              className={`text-xs ${errors.civil_status ? 'border-red-500 ring-1 ring-red-500' : ''}`}
               placeholder="Select Status"
+              error={errors.civil_status}
             />
           </div>
         </div>
@@ -174,6 +224,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               onChange={handleChange}
               required
               className="text-xs"
+              error={errors.contact_no}
             />
             <InputField
               label="Email"
@@ -183,6 +234,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               onChange={handleChange}
               required
               className="text-xs"
+              error={errors.email}
             />
           </div>
         </div>
@@ -197,7 +249,8 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               value={formData.house_no}
               onChange={handleChange}
               required
-              className="text-xs"
+              className={`text-xs ${errors.house_no ? 'border-red-500' : ''}`}
+              error={errors.house_no}
             />
             <InputField
               label="Street"
@@ -205,7 +258,8 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               value={formData.street}
               onChange={handleChange}
               required
-              className="text-xs"
+              className={`text-xs ${errors.street ? 'border-red-500' : ''}`}
+              error={errors.street}
             />
           </div>
         </div>

@@ -9,6 +9,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 import Pagination from "./Pagination";
+import DateRangeFilter from './DateRangeFilter';
 
 const DataTable = ({
   columns = [],
@@ -42,19 +43,51 @@ const DataTable = ({
   totalItems,
   currentPage,
   dateFilter = null, // { label, startDate, endDate, onStartDateChange, onEndDateChange }
+  onSearchChange,
+  searchValue,
+  size = 'default', // Add new size prop with default value
 }) => {
+  // Add size classes mapping before any rendering logic
+  const sizeClasses = {
+    small: {
+      row: "h-10",
+      cell: "px-3 py-2 text-xs",
+      header: "px-3 py-2 text-xs",
+      search: "py-1.5 text-xs",
+      button: "px-3 py-1.5 text-xs",
+    },
+    default: {
+      row: "h-12",
+      cell: "px-4 py-3 text-sm",
+      header: "px-4 py-3.5 text-xs",
+      search: "py-2.5 text-sm",
+      button: "px-4 py-2 text-sm",
+    },
+    large: {
+      row: "h-14",
+      cell: "px-6 py-4 text-base",
+      header: "px-6 py-4 text-sm",
+      search: "py-3 text-base",
+      button: "px-6 py-2.5 text-base",
+    },
+  };
+
+  const currentSize = sizeClasses[size] || sizeClasses.default;
+
+  // All hooks must be at the top level
   const [selectedRows, setSelectedRows] = useState([]);
-  // State management
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc");
   const [searchTerm, setSearchTerm] = useState("");
-  // Controlled pagination for API-based pagination
-  const isControlledPagination = enablePagination && typeof totalItems === 'number' && typeof currentPage === 'number';
   const [internalPage, setInternalPage] = useState(1);
   const [pageSize] = useState(itemsPerPage);
-  const page = isControlledPagination ? currentPage : internalPage;
   const [filters, setFilters] = useState({});
   const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const searchTimeout = useRef(null);
+
+  // Define isControlledPagination and page after state declarations
+  const isControlledPagination = enablePagination && typeof totalItems === 'number' && typeof currentPage === 'number';
+  const page = isControlledPagination ? currentPage : internalPage;
 
   // Process data based on sorting, filtering, and search
   const filteredData = useMemo(() => {
@@ -127,12 +160,16 @@ const DataTable = ({
 
   // Apply pagination
   const paginatedData = useMemo(() => {
+    // If totalItems is provided, we're using API pagination
+    if (typeof totalItems === 'number') {
+      return data; // Use data directly from API
+    }
+
+    // Otherwise, handle client-side pagination
     if (!enablePagination) return filteredData;
-    // If using API pagination, just use the data as is
-    if (isControlledPagination) return data;
     const startIndex = (page - 1) * pageSize;
     return filteredData.slice(startIndex, startIndex + pageSize);
-  }, [filteredData, data, page, pageSize, enablePagination, isControlledPagination]);
+  }, [data, filteredData, page, pageSize, enablePagination, totalItems]);
 
   const totalPages = useMemo(() => {
     if (isControlledPagination) return Math.ceil(totalItems / pageSize);
@@ -504,7 +541,65 @@ const DataTable = ({
     });
   }, []);
 
-  // Enhanced Loading state
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
+      }
+    };
+  }, []);
+
+  // Update the handleSearchChange function
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    // Clear previous timeout
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+
+    // Set new timeout for search callback
+    searchTimeout.current = setTimeout(() => {
+      if (onSearchChange) {
+        onSearchChange(value);
+      }
+    }, 500);
+  };
+
+  // Update renderSearchInput with controlled value from local state
+  const renderSearchInput = () => (
+    <div className="relative flex-grow max-w-2xl">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <Search className="h-4 w-4 text-gray-400" />
+      </div>
+      <input
+        type="text"
+        placeholder={searchPlaceholder}
+        value={searchTerm} // Use local state instead of searchValue
+        onChange={handleSearchChange}
+        className={`block w-full pl-10 pr-12 border border-gray-200 rounded-lg
+          placeholder-gray-500 
+          focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
+          transition-all duration-200 bg-gray-50 hover:bg-white
+          ${currentSize.search}`}
+      />
+      {searchTerm && (
+        <button
+          onClick={() => {
+            setSearchTerm('');
+            if (onSearchChange) onSearchChange('');
+          }}
+          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+        >
+          <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+        </button>
+      )}
+    </div>
+  );
+
+  // Render loading state as part of the main return
   if (loading) {
     return (
       <div className={`w-full ${className}`}>
@@ -535,7 +630,7 @@ const DataTable = ({
   }
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className="w-full">
       {/* Table controls */}
       <div className="mb-3 space-y-2">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -557,37 +652,11 @@ const DataTable = ({
                 {actionButton.label}
               </button>
             )}
-            {enableSearch && (
-              <div className="relative flex-grow max-w-2xl">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder={searchPlaceholder}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="
-                    block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg
-                    text-sm placeholder-gray-500 
-                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                    transition-all duration-200
-                    hover:border-gray-400
-                    bg-white shadow-sm
-                  "
-                />
-                {searchTerm && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  >
-                    <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                  </button>
-                )}
-              </div>
-            )}
+            {enableSearch && renderSearchInput()}
+          </div>
 
-               {/* ComboBox Filter (optional) */}
+          {/* Second row: Filters */}
+          <div className="flex flex-col gap-2 w-full lg:w-auto">
             {comboBoxFilter && (
               <div className="flex items-center gap-1">
                 <label className="text-xs text-gray-600 font-medium">
@@ -606,7 +675,15 @@ const DataTable = ({
                 </select>
               </div>
             )}
-
+            {dateFilter && (
+              <DateRangeFilter
+                startDate={dateFilter.startDate}
+                endDate={dateFilter.endDate}
+                onStartDateChange={dateFilter.onStartDateChange}
+                onEndDateChange={dateFilter.onEndDateChange}
+                label={dateFilter.label}
+              />
+            )}
             {enableColumnFilters && (
               <button
                 onClick={() => setShowFilterPanel(!showFilterPanel)}
@@ -619,46 +696,6 @@ const DataTable = ({
                     {Object.values(filters).filter((v) => v).length}
                   </span>
                 )}
-              </button>
-            )}
-
-            {/* Update Date Range Filter */}
-            {dateFilter && (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-                <label className="text-xs text-gray-600 font-medium whitespace-nowrap">
-                  {dateFilter.label}:
-                </label>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:flex-none">
-                    <input
-                      type="date"
-                      value={dateFilter.startDate}
-                      onChange={(e) => dateFilter.onStartDateChange(e.target.value)}
-                      className="w-full sm:w-auto border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 bg-white"
-                    />
-                  </div>
-                  <span className="text-xs text-gray-500 px-1">to</span>
-                  <div className="relative flex-1 sm:flex-none">
-                    <input
-                      type="date"
-                      value={dateFilter.endDate}
-                      onChange={(e) => dateFilter.onEndDateChange(e.target.value)}
-                      className="w-full sm:w-auto border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 bg-white"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {onExport && (
-              <button
-                onClick={() => onExport(filteredData)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-gray-200 rounded text-xs transition-all duration-200 hover:bg-gray-50 hover:shadow-sm hover:scale-105 text-gray-600 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Export
               </button>
             )}
           </div>
@@ -807,17 +844,9 @@ const DataTable = ({
                       <div className="text-center">
                         <h3 className="text-sm font-medium text-gray-900">{emptyMessage}</h3>
                         <p className="mt-1 text-sm text-gray-500">
-                          {searchTerm ? "Try adjusting your search or filters to find what you're looking for" : "Get started by adding some data."}
+                          {searchTerm ? "Try adjusting your search or filters" : "Get started by adding some data."}
                         </p>
                       </div>
-                      {searchTerm && (
-                        <button
-                          onClick={clearAllFilters}
-                          className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                          Clear all filters
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -834,7 +863,7 @@ const DataTable = ({
                       hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100 last:border-b-0
                       ${striped && index % 2 === 1 ? "bg-gray-50/30" : "bg-white"}
                       ${onRowClick ? "cursor-pointer" : ""} 
-                      ${compact ? "h-12" : "h-14"}
+                      ${currentSize.row}
                       ${selectedRows.includes(row.id) ? "bg-blue-50/50" : ""} 
                       ${rowClassName}
                     `}
@@ -871,7 +900,7 @@ const DataTable = ({
                     {columns.map((col) => (
                       <td
                         key={col.accessor}
-                        className={`px-4 py-3 text-sm text-gray-900 whitespace-nowrap ${cellClassName}`}
+                        className={`${currentSize.cell} text-gray-900 whitespace-nowrap ${cellClassName}`}
                         style={{ textAlign: col.align || "left" }}
                       >
                         {renderCellContent(col, row[col.accessor], row, index)}

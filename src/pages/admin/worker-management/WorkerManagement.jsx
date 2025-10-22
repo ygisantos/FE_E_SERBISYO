@@ -100,9 +100,8 @@ const WorkerManagement = () => {
   const handleAddStaff = async (staffData) => {
     try {
       const response = await createAccount(staffData);
-      showCustomToast('Staff account created successfully', 'success');
       setShowAddModal(false);
-      loadWorkers(); // Refresh staff list here
+      loadWorkers(); // Refresh staff list
     } catch (error) {
       showCustomToast(error.message || 'Failed to create staff account', 'error');
     }
