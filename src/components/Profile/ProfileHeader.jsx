@@ -118,7 +118,7 @@ const ProfileHeader = ({ profile, onProfileUpdate = () => {}, onEdit }) => {
 
   return (
     <>
-      <div className="flex flex-col items-center -mt-16 mb-8 relative z-10">
+      <div className="flex flex-col items-center mt-16 mb-8 relative z-10">
         {/* Profile Picture Section */}
         <div className="relative group">
           <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 ring-4 ring-white shadow-lg">

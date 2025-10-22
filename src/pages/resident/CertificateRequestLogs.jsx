@@ -80,10 +80,16 @@ const CertificateRequestLogs = () => {
           status: status || undefined,
         });
 
-        setRequests(response.data);
-        setTotal(response.total || response.data.length);
+        // Ensure we're working with an array of data
+        const requestsData = response?.data?.data || [];
+        setRequests(requestsData);
+        setTotal(response?.data?.total || 0);
+        
       } catch (error) {
+        console.error('Load error:', error);
         showCustomToast(error.message || 'Failed to load requests', 'error');
+        setRequests([]); // Set empty array on error
+        setTotal(0);
       } finally {
         setLoading(false);
       }

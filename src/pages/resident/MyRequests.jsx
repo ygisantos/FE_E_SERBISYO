@@ -185,15 +185,6 @@ const MyRequests = () => {
     const loadRequests = async () => {
       try {
         setLoading(true);
-        console.log("Fetching with params:", {
-          per_page: 10,
-          page,
-          requestor: currentUser?.id,
-          status,
-          sort_by: sortConfig.sort_by,
-          order: sortConfig.order,
-        });
-
         const response = await getAllRequests({
           per_page: 10,
           page,
@@ -203,15 +194,29 @@ const MyRequests = () => {
           order: sortConfig.order,
         });
 
-        console.log("API Response:", response);
+        // Make sure we're dealing with arrays
+        const requestsData = response?.data?.data || [];
+        setRequests(requestsData);
+        setTotal(response?.data?.total || 0);
 
-        if (response?.data) {
-          setRequests(response.data);
-          setTotal(response.total || response.data.length);
-        } else {
-          setRequests([]);
-          setTotal(0);
-        }
+        // Update status cards with proper array handling
+        const statusCounts = {
+          pending: requestsData.filter((req) => req.status === "pending").length,
+          processing: requestsData.filter(
+            (req) => req.status === "processing"
+          ).length,
+          approved: requestsData.filter((req) => req.status === "approved").length,
+          ready: requestsData.filter(
+            (req) => req.status === "ready to pickup"
+          ).length,
+          released: requestsData.filter((req) => req.status === "released").length,
+          rejected: requestsData.filter((req) => req.status === "rejected").length,
+        };
+
+        // Update status cards state
+        statusCards.forEach((card) => {
+          card.value = statusCounts[card.status] || 0;
+        });
       } catch (error) {
         console.error("Load requests error:", error);
         showCustomToast(error.message || "Failed to load requests", "error");

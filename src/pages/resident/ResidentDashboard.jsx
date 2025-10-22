@@ -19,26 +19,46 @@ const ResidentDashboard = () => {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
+        setLoading(true);
         const response = await getAllRequests();
-        const userRequests = response.data.filter(req => req.requestor === currentUser?.id);
         
-        setStats({
-          totalRequests: userRequests.length,
-          pendingRequests: userRequests.filter(req => ['pending', 'processing'].includes(req.status)).length,
-          completedRequests: userRequests.filter(req => req.status === 'released').length,
-          activeCases: userRequests.filter(req => req.status === 'active').length
-        });
+         if (response.success) {
+          // Get requests array from paginated response
+          const requests = response.data.data || [];
+          
+          // Calculate stats
+          setStats({
+            totalRequests: response.data.total || 0,
+            pendingRequests: requests.filter(req => req.status === 'pending').length,
+            completedRequests: requests.filter(req => req.status === 'released').length,
+            activeCases: requests.filter(req => req.status === 'processing').length
+          });
 
-        // Get 5 most recent requests
-        setRecentRequests(userRequests.slice(0, 5));
+          // Get 5 most recent requests
+          const sortedRequests = requests
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(0, 5);
+
+          setRecentRequests(sortedRequests);
+        }
       } catch (error) {
         console.error('Error loading dashboard data:', error);
+        showCustomToast("Failed to load dashboard data", "error");
+        setStats({
+          totalRequests: 0,
+          pendingRequests: 0,
+          completedRequests: 0,
+          activeCases: 0
+        });
+        setRecentRequests([]);
       } finally {
         setLoading(false);
       }
     };
 
-    loadDashboardData();
+    if (currentUser?.id) {
+      loadDashboardData();
+    }
   }, [currentUser]);
 
   const dashboardStats = [

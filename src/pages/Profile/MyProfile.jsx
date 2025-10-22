@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Banner from '../../assets/background/santol_hall.jpg';
 import ProfileHeader from '../../components/Profile/ProfileHeader';
 import PersonalInformation from '../../components/Profile/PersonalInformation';
 import AddressInformation from '../../components/Profile/AddressInformation';
@@ -79,12 +78,6 @@ const MyProfile = () => {
 
   return (
     <div className="flex-1 transition-all duration-300 ease-in-out">
-      {/* Banner Section */}
-      <div className="relative h-48 sm:h-56 md:h-64 -mt-8">
-        <img src={Banner} alt="Barangay Hall" className="w-full h-full object-cover brightness-55" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50"></div>
-      </div>
-
       <div className="min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-8">
         <div className="max-w-7xl mx-auto">
           <ProfileHeader 

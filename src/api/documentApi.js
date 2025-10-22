@@ -106,20 +106,23 @@ export const getAllDocuments = async (params = {}) => {
 {/*Get all document request by residence*/}
 export const getAllRequests = async (params = {}) => {
   try {
-    const queryParams = {
-      status: params.status,
-      requestor: params.requestor,
-      document: params.document,
-      per_page: params.per_page || 10,
-      sort_by: params.sort_by || 'created_at',
-      order: params.order || 'desc',
-      page: params.page || 1
-    };
+    const response = await axios.get('/request-documents', {
+      params: {
+        requestor: params.requestor,
+        status: params.status,
+        per_page: params.per_page || 10,
+        page: params.page || 1,
+        sort_by: params.sort_by || 'created_at',
+        order: params.order || 'desc'
+      }
+    });
 
-    const response = await axios.get('/request-documents', { params: queryParams });
-    return response.data;
+    return {
+      success: true,
+      data: response.data // Return the complete paginated response
+    };
   } catch (error) {
-    console.error('Request fetch error:', error);
+    console.error('API Error:', error);
     throw error.response?.data?.message || 'Failed to fetch requests';
   }
 };
