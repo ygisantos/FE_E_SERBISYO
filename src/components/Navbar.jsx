@@ -3,10 +3,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FiMenu, FiUser, FiLogOut, FiChevronDown } from "react-icons/fi";
 import { useAuth } from "../contexts/AuthContext";
 import configService from "../utils/configService";
+import ConfirmationModal from "./modals/ConfirmationModal";
 import logo from "../assets/logo/santol_logo.png";
 
 const Navbar = ({
-  navOpen,
+  navOpen, // eslint-disable-line no-unused-vars
   setNavOpen,
   logo: propLogo,
   title,
@@ -20,6 +21,7 @@ const Navbar = ({
   const isLandingPage = location.pathname === "/";
   const [appName, setAppName] = useState(title || "Barangay Santoleño");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const dropdownRef = useRef(null);
 
   // Get user data
@@ -79,6 +81,12 @@ const Navbar = ({
       navigate('/login');
     }
     setIsDropdownOpen(false);
+    setShowLogoutModal(false);
+  };
+
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+    setIsDropdownOpen(false);
   };
 
   const handleProfileClick = () => {
@@ -118,7 +126,19 @@ const Navbar = ({
   };
 
   return (
-    <nav className="w-full fixed top-0 left-0 z-30 bg-red-800 border-b border-red-900 shadow-sm flex items-center justify-between px-4 sm:px-12 py-4">
+    <>
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+        title="Confirm Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Logout"
+        cancelText="Cancel"
+        type="warning"
+      />
+      
+      <nav className="w-full fixed top-0 left-0 z-30 bg-red-800 border-b border-red-900 shadow-sm flex items-center justify-between px-4 sm:px-12 py-4">
       <Link
         to="/"
         onClick={handleLogoClick}
@@ -174,7 +194,7 @@ const Navbar = ({
                 </button>
                 
                 <button
-                  onClick={handleLogout}
+                  onClick={handleLogoutClick}
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
                 >
                   <FiLogOut className="w-4 h-4" />
@@ -196,6 +216,7 @@ const Navbar = ({
         )}
       </div>
     </nav>
+    </>
   );
 };
 
