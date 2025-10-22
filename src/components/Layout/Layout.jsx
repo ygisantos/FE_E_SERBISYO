@@ -148,6 +148,7 @@ const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg =
             setNavOpen={setSidebarOpen}
             showSidebar={showSidebar} // Pass showSidebar prop
             isMobile={isMobile} // Pass isMobile prop
+            showProfileDropdown={showSidebar} // Show profile dropdown when sidebar is shown (authenticated pages)
           />
 
           <div className={`flex flex-grow pt-16 relative ${isMobile && sidebarOpen ? 'overflow-hidden fixed inset-0' : ''}`}>
