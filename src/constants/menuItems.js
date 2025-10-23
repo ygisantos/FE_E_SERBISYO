@@ -107,7 +107,7 @@ const menuItems = {
       label: "Sumbong",
       icon: FaBook,
       subMenu: [
-        { to: "/resident/sumbong/my-cases", label: "My Cases", icon: FaBook },
+        { to: "/resident/sumbong/my-cases", label: "My Sumbong", icon: FaBook },
       ],
     },
     { to: "/resident/feedback", label: "Submit Feedback", icon: FaCommentDots },

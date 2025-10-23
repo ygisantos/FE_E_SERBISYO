@@ -99,11 +99,11 @@ const WorkerManagement = () => {
 
   const handleAddStaff = async (staffData) => {
     try {
-      const response = await createAccount(staffData);
-      setShowAddModal(false);
-      loadWorkers(); // Refresh staff list
+      await createAccount(staffData);
+      await loadWorkers(); // Refresh list after successful creation
+      setShowAddModal(false); // Close modal only on success
     } catch (error) {
-      showCustomToast(error.message || 'Failed to create staff account', 'error');
+      throw error; // Let the modal handle the error
     }
   };
 
@@ -179,11 +179,11 @@ const WorkerManagement = () => {
       sortable: true,
       render: (value, row) => (
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+          {/* <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
             <span className="text-xs font-medium text-gray-600">
               {row.first_name?.charAt(0)}
             </span>
-          </div>
+          </div> */}
           <span className="text-xs text-gray-800">
             {`${row.first_name} ${row.last_name}`}
           </span>

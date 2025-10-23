@@ -107,7 +107,18 @@ const EditStaffModal = ({ isOpen, onClose, staff, onSuccess }) => {
                 options={typeOptions}
                 required
               />
-              <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} required error={errors.email} />
+              <InputField 
+                label="Email" 
+                name="email" 
+                type="email" 
+                value={formData.email} 
+                onChange={handleInputChange} 
+                required 
+                error={errors.email}
+                readOnly
+                disabled
+                className="bg-gray-50 cursor-not-allowed"
+              />
             </div>
           </div>
 

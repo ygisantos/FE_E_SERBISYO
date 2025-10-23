@@ -17,7 +17,7 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
     position: "",
     email: "",
     contact_no: "",
-    sex: "M",
+    sex: "",
     birthday: "",
     birth_place: "",
     civil_status: "",
@@ -44,12 +44,29 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
     { value: "Barangay Tanod", label: "Barangay Tanod" }
   ];
 
+  const genderOptions = [
+    { value: "M", label: "Male" },
+    { value: "F", label: "Female" }
+  ];
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Special handling for contact number
+    if (name === 'contact_no') {
+      // Only allow numbers and limit to 11 digits
+      const numericValue = value.replace(/\D/g, '').slice(0, 11);
+      setFormData(prev => ({
+        ...prev,
+        [name]: numericValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -355,6 +372,15 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     value={formData.suffix}
                     onChange={handleChange}
                   />
+                  <Select
+                    label="Gender"
+                    value={genderOptions.find(opt => opt.value === formData.sex)}
+                    onChange={(selected) => handleSelectChange(selected, 'sex')}
+                    options={genderOptions}
+                    required
+                    error={errors.sex}
+                    className={errors.sex ? 'border-red-500 ring-red-500' : ''}
+                  />
                   <InputField
                     label="Email"
                     name="email"
@@ -373,6 +399,13 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     required
                     error={errors.contact_no}
                     className="text-xs"
+                    maxLength={11}
+                     onKeyPress={(e) => {
+                      // Only allow numeric input
+                      if (!/[0-9]/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                   />
                   <InputField
                     label="Birthday"

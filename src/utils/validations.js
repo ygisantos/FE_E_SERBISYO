@@ -129,6 +129,7 @@ const validators = {
       }
       
       if (age < 0) return 'Birth date cannot be in the future';
+      if (age < 13) return 'Resident must be at least 13 years old';
       if (age > 150) return 'Invalid birth date';
       return '';
     } catch (error) {
