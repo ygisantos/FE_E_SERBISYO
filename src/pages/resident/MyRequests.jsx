@@ -18,6 +18,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-react";
+import { getRequestById } from "../../api/requestApi";
 
 const MyRequests = () => {
   const { currentUser } = useUser();
@@ -34,6 +35,7 @@ const MyRequests = () => {
   });
   const [status, setStatus] = useState("");
   const [expandedStatus, setExpandedStatus] = useState(null);
+  const [search, setSearch] = useState('');
   const scrollRef = React.useRef(null);
 
   const requestColumns = [
@@ -192,6 +194,7 @@ const MyRequests = () => {
           status: status || undefined,
           sort_by: sortConfig.sort_by,
           order: sortConfig.order,
+          search  // Add search parameter
         });
 
         // Make sure we're dealing with arrays
@@ -230,11 +233,16 @@ const MyRequests = () => {
     if (currentUser?.id) {
       loadRequests();
     }
-  }, [currentUser, page, sortConfig, status]);
+  }, [currentUser, page, sortConfig, status, search]); // Add search to dependencies
 
-  const handleViewRequest = (request) => {
-    setSelectedRequest(request);
-    setShowViewModal(true);
+  const handleViewRequest = async (request) => {
+    try {
+      const response = await getRequestById(request.id);
+      setSelectedRequest(response);
+      setShowViewModal(true);
+    } catch (error) {
+      showCustomToast(error.message || "Failed to fetch request details", "error");
+    }
   };
 
   const handleSort = ({ column, direction }) => {
@@ -266,6 +274,12 @@ const MyRequests = () => {
     const storageUrl = import.meta.env.VITE_API_STORAGE_URL;
     const cleanPath = path.replace(/^requirements\//, "");
     return `${storageUrl}/requirements/${cleanPath}`;
+  };
+
+  // Add search handler
+  const handleSearch = (value) => {
+    setSearch(value);
+    setPage(1);
   };
 
   return (
@@ -386,7 +400,7 @@ const MyRequests = () => {
             data={requests}
             loading={loading}
             enableSearch={true}
-            searchPlaceholder="Search by Transaction ID..."
+            searchPlaceholder="Search by Transaction ID, Name, Email, Status, or Document Name..."
             enablePagination={true}
             enableSelection={false}
             totalItems={total}
@@ -419,6 +433,8 @@ const MyRequests = () => {
                 { value: "rejected", label: "Rejected" },
               ],
             }}
+            searchValue={search}
+            onSearchChange={handleSearch}
           />
         </div>
       </div>

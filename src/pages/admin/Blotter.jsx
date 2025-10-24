@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../components/reusable/DataTable";
 import { FaEye } from "react-icons/fa";
-import { getAllBlotters } from "../../api/blotterApi";
+import { getAllBlotters, showBlotterByCase } from "../../api/blotterApi";
 import { showCustomToast } from "../../components/Toast/CustomToast";
 import { useUser } from "../../contexts/UserContext";
 import ViewBlotterModal from "../../components/modals/ViewBlotterModal";
@@ -92,9 +92,17 @@ const Blotter = () => {
     setCurrentPage(1); // Reset to first page when filters change
   };
 
-  const handleView = (blotter) => {
-    setSelectedBlotter(blotter);
-    setShowViewModal(true);
+  const handleView = async (blotter) => {
+    try {
+      setLoading(true);
+      const response = await showBlotterByCase(blotter.case_number);
+      setSelectedBlotter(response.data); // Access the data property from response
+      setShowViewModal(true);
+    } catch (error) {
+      showCustomToast(error.message || "Failed to fetch blotter details", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const columns = [
@@ -217,7 +225,7 @@ const Blotter = () => {
             setShowViewModal(false);
             setSelectedBlotter(null);
           }}
-          data={selectedBlotter}
+          data={selectedBlotter} // This now contains the correct data structure
          />
       )}
     </div>

@@ -21,10 +21,10 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
     birthday: "",
     birth_place: "",
     civil_status: "",
-    municipality: "",
-    barangay: "",
+    municipality: "Balagtas",
+    barangay: "Santol",
     house_no: "",
-    zip_code: "",
+    zip_code: "3016",
     street: "",
     term_start: "",
     term_end: "",
@@ -245,10 +245,10 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
       birthday: "",
       birth_place: "",
       civil_status: "",
-      municipality: "",
-      barangay: "",
+      municipality: "Balagtas",
+      barangay: "Santol",
       house_no: "",
-      zip_code: "",
+      zip_code: "3016",
       street: "",
       term_start: "",
       term_end: "",
@@ -452,19 +452,15 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     label="Municipality"
                     name="municipality"
                     value={formData.municipality}
-                    onChange={handleChange}
-                    required
-                    error={errors.municipality}
-                    className={`${errors.municipality ? 'border-red-500 ring-red-500' : ''}`}
+                    disabled={true}
+                    className="bg-gray-50"
                   />
                   <InputField
                     label="Barangay"
                     name="barangay"
                     value={formData.barangay}
-                    onChange={handleChange}
-                    required
-                    error={errors.barangay}
-                    className={`${errors.barangay ? 'border-red-500 ring-red-500' : ''}`}
+                    disabled={true}
+                    className="bg-gray-50"
                   />
                   <InputField
                     label="House No."
@@ -473,7 +469,6 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     onChange={handleChange}
                     required
                     error={errors.house_no}
-                    className={`${errors.house_no ? 'border-red-500 ring-red-500' : ''}`}
                   />
                   <InputField
                     label="Street"
@@ -481,17 +476,14 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     value={formData.street}
                     onChange={handleChange}
                     required
-                    error={errors.street }
-                    className={`${errors.street ? 'border-red-500 ring-red-500' : ''}`}
+                    error={errors.street}
                   />
                   <InputField
                     label="ZIP Code"
                     name="zip_code"
                     value={formData.zip_code}
-                    onChange={handleChange}
-                    required
-                    error={errors.zip_code}
-                    className={`${errors.zip_code ? 'border-red-500 ring-red-500' : ''}`}
+                    disabled={true}
+                    className="bg-gray-50"
                   />
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { showCustomToast } from "../../components/Toast/CustomToast";
 import InputField from "../reusable/InputField";
 import Select from "../reusable/Select";
 import { User, Mail, Phone, Home, MapPin } from "lucide-react";
+import validators from "../../utils/validations";
 
 const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -25,6 +26,8 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
     civil_status: resident?.civil_status || "",
     email: resident?.email || "",
     type: resident?.type || "residence",
+    pwd_number: resident?.pwd_number || "",
+    single_parent_number: resident?.single_parent_number || "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -66,10 +69,17 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
     const newErrors = {};
     let toastMessage = "";
 
+    // Add birthday validation
+    const birthdayError = validators.validateBirthday(formData.birthday);
+    if (birthdayError) {
+      newErrors.birthday = birthdayError;
+      toastMessage = birthdayError;
+    }
+
     // Required field validation
     if (!formData.email) {
       newErrors.email = "Email is required";
-      toastMessage = "Email is required";
+      toastMessage = toastMessage || "Email is required";
     }
     if (!formData.first_name) {
       newErrors.first_name = "First name is required";
@@ -147,7 +157,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
         </div>
       }
     >
-      <div className="p-4 space-y-4">
+      <form onSubmit={handleSubmit} className="p-4 space-y-4">
         {/* Account Type Selection */}
         <div className="space-y-4">
           <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -210,6 +220,16 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               className={`text-xs ${errors.birthday ? "border-red-500" : ""}`}
               error={errors.birthday}
             />
+            <InputField
+              label="Age"
+              value={`${resident?.age || ''} years old`}
+              readOnly
+              disabled
+              className="text-xs bg-gray-50"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Select
               label="Civil Status"
               value={
@@ -286,9 +306,58 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               className={`text-xs ${errors.street ? "border-red-500" : ""}`}
               error={errors.street}
             />
+            <InputField
+              label="Municipality"
+              name="municipality"
+              value={formData.municipality}
+              className="text-xs bg-gray-50"
+              disabled
+              readOnly
+            />
+            <InputField
+              label="Barangay"
+              name="barangay"
+              value={formData.barangay}
+              className="text-xs bg-gray-50"
+              disabled
+              readOnly
+            />
+            <InputField
+              label="ZIP Code"
+              name="zip_code"
+              value={formData.zip_code}
+              className="text-xs bg-gray-50"
+              disabled
+              readOnly
+            />
           </div>
         </div>
-      </div>
+
+        {/* Add PWD and Single Parent Section */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Additional Information
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <InputField
+              label="PWD ID Number"
+              name="pwd_number"
+              value={formData.pwd_number}
+              onChange={handleChange}
+              placeholder="Enter PWD ID number if applicable"
+              className="text-xs"
+            />
+            <InputField
+              label="Single Parent ID"
+              name="single_parent_number"
+              value={formData.single_parent_number}
+              onChange={handleChange}
+              placeholder="Enter Single Parent ID if applicable"
+              className="text-xs"
+            />
+          </div>
+        </div>
+      </form>
     </Modal>
   );
 };

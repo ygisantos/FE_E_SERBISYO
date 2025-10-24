@@ -7,6 +7,7 @@ import { useUser } from "../../contexts/UserContext";
 import Select from "../reusable/Select";
 import ConfirmationModal from "./ConfirmationModal";
 import { X, Clock } from "lucide-react";
+import { formatDate } from '../../utils/dateUtils';
 
 const ViewBlotterModal = ({ isOpen, onClose, data = false }) => {
   const [selectedStatus, setSelectedStatus] = useState("");
@@ -229,7 +230,7 @@ const ViewBlotterModal = ({ isOpen, onClose, data = false }) => {
                       <div className="flex justify-between">
                         <dt className="text-xs text-gray-500">Date Filed:</dt>
                         <dd className="text-xs font-medium">
-                          {new Date(data?.date_filed).toLocaleDateString()}
+                          {formatDate(data?.date_filed)}
                         </dd>
                       </div>
                       <div className="flex justify-between">

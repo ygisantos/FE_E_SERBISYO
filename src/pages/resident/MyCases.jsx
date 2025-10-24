@@ -6,7 +6,7 @@ import CreateBlotterModal from '../../components/modals/CreateBlotterModal';
 import ViewBlotterModal from '../../components/modals/ViewBlotterModal';
 import EditBlotterModal from '../../components/modals/EditBlotterModal';
 import ConfirmationModal from '../../components/modals/ConfirmationModal';
-import { getAllBlotters, updateBlotter, deleteBlotter } from '../../api/blotterApi';
+import { getAllBlotters, updateBlotter, deleteBlotter, showBlotterByCase } from '../../api/blotterApi';
 import { showCustomToast } from '../../components/Toast/CustomToast';
 
 const MyCases = () => {
@@ -81,9 +81,17 @@ const MyCases = () => {
     }
   };
 
-  const handleView = (blotter) => {
-    setSelectedCase(blotter);
-    setShowViewModal(true);
+  const handleView = async (blotter) => {
+    try {
+      setLoading(true);
+      const response = await showBlotterByCase(blotter.case_number);
+      setSelectedCase(response.data); // Access the data property from response
+      setShowViewModal(true);
+    } catch (error) {
+      showCustomToast(error.message || "Failed to fetch blotter details", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreateSuccess = () => {

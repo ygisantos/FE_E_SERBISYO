@@ -19,7 +19,6 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
     birth_place: '',
     municipality: 'Balagtas',
     barangay: 'Santol',
-    house_no: '',
     zip_code: '3016',
     street: '',
     type: 'staff',
@@ -326,6 +325,20 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
               <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Address</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <InputField
+                  label="Municipality"
+                  name="municipality"
+                  value={formData.municipality}
+                  disabled={true}
+                  className="bg-gray-50"
+                />
+                <InputField
+                  label="Barangay"
+                  name="barangay"
+                  value={formData.barangay}
+                  disabled={true}
+                  className="bg-gray-50"
+                />
+                <InputField
                   label="House No."
                   name="house_no"
                   value={formData.house_no}
@@ -340,6 +353,13 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
                   onChange={handleChange}
                   error={errors.street}
                   required
+                />
+                <InputField
+                  label="ZIP Code"
+                  name="zip_code"
+                  value={formData.zip_code}
+                  disabled={true}
+                  className="bg-gray-50"
                 />
               </div>
             </div>

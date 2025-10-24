@@ -27,15 +27,15 @@ export const fetchArchivedResidents = async (page = 1, perPage = 10) => {
 
 export const fetchAllResidents = async (params = {}) => {
   try {
-    const response = await axios.get('/accounts/all', { 
-      params: {
-        ...params,
-        status: 'active',
-        type: 'residence'
-        
-        
-      }
-    });
+    const queryParams = {
+      ...params,
+      status: 'active',
+      type: 'residence',
+      min_age: params.min_age || undefined,
+      max_age: params.max_age || undefined,
+    };
+
+    const response = await axios.get('/accounts/all', { params: queryParams });
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
