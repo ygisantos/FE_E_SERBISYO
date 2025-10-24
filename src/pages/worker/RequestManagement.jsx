@@ -61,7 +61,7 @@ const RequestManagement = () => {
         page: params.page || page,
         per_page: params.per_page || 10,
         search: params.search || search,
-        status: params.status, // Don't provide default here
+        status: params.status,  
         sort_by: params.sort_by || sortConfig.sort_by,
         order: params.order || sortConfig.order
       });
@@ -182,37 +182,24 @@ const RequestManagement = () => {
   };
 
   useEffect(() => {
-    loadRequests();
-  }, [page, search, sortConfig.sort_by, sortConfig.order]); // Remove filters.status
-
-  const handleStatusFilter = (value) => {
-    // When setting to 'All Status' (empty value), reset to default pagination
-    const newParams = {
-      page: 1,
+    loadRequests({
+      page,
       per_page: 10,
       search,
+      status: filters.status,
       sort_by: sortConfig.sort_by,
       order: sortConfig.order
-    };
+    });
+  }, [page, search, filters.status, sortConfig.sort_by, sortConfig.order]);
 
-    // Only add status if it's not empty (not "All Status")
-    if (value) {
-      newParams.status = value;
-    }
-
+  const handleStatusFilter = (value) => {
     setFilters(prev => ({ ...prev, status: value }));
-    loadRequests(newParams);
+    setPage(1);
   };
 
   const handleSearch = (value) => {
     setSearch(value);
-    loadRequests({
-      search: value,
-      status: filters.status,
-      sort_by: sortConfig.sort_by,
-      order: sortConfig.order,
-      page: 1 // Reset to first page when searching
-    });
+    setPage(1);
   };
 
   const handleSort = ({ column, direction }) => {
@@ -221,13 +208,7 @@ const RequestManagement = () => {
       sort_by: backendField,
       order: direction.toLowerCase()
     });
-    loadRequests({
-      sort_by: backendField,
-      order: direction.toLowerCase(),
-      search,
-      status: filters.status,
-      page
-    });
+    setPage(1);
   };
 
   const toggleRequirements = (rowId) => {

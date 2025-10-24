@@ -4,7 +4,7 @@ import InputField from '../reusable/InputField';
 import Select from '../reusable/Select';
 import { showCustomToast } from '../Toast/CustomToast';
 import ConfirmationModal from '../modals/ConfirmationModal';
-
+ 
 const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
   const initialFormData = {
     email: '',
@@ -18,9 +18,8 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
     contact_no: '',
     birth_place: '',
     municipality: 'Balagtas',
-    barangay: 'Pulong Gubat',
-    house_no: '',
-    zip_code: '3014',
+    barangay: 'Santol',
+    zip_code: '3016',
     street: '',
     type: 'staff',
     civil_status: '',
@@ -34,8 +33,20 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear the error message instead of just setting to false
+    
+    // Special handling for contact number
+    if (name === 'contact_no') {
+      // Only allow numbers and limit to 11 digits
+      const numericValue = value.replace(/\D/g, '').slice(0, 11);
+      setFormData(prev => ({
+        ...prev,
+        [name]: numericValue
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+
+    // Clear any existing errors
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -81,8 +92,8 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
       toastMessage = toastMessage || 'Last name is required';
     }
     if (!formData.sex) {
-      newErrors.sex = 'Sex is required';
-      toastMessage = toastMessage || 'Sex is required';
+      newErrors.sex = 'Gender is required';
+      toastMessage = toastMessage || 'Gender is required';
     }
     if (!formData.civil_status) {
       newErrors.civil_status = 'Civil status is required';
@@ -163,12 +174,21 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
   const handleConfirmedSubmit = async () => {
     try {
       await onSubmit(formData);
-      showCustomToast('Staff account created successfully', 'success');
       resetForm();
       setShowConfirmSubmit(false);
       onClose();
+      showCustomToast('Staff account created successfully', 'success');
     } catch (error) {
-      showCustomToast(error.message || 'Failed to create staff account', 'error');
+      if (error.response?.data?.error?.email) {
+        setErrors(prev => ({
+          ...prev,
+          email: error.response.data.error.email[0]
+        }));
+        showCustomToast("This email is already registered", "error");
+      } else {
+        showCustomToast(error.message || 'Failed to create staff account', 'error');
+      }
+      setShowConfirmSubmit(false); 
     }
   };
 
@@ -250,7 +270,7 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
               <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Personal Details</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Select
-                  label="Sex"
+                  label="Gender"
                   value={sexOptions.find(opt => opt.value === formData.sex)}
                   onChange={(selected) => handleSelectChange(selected, 'sex')}
                   options={sexOptions}
@@ -281,6 +301,13 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
                   onChange={handleChange}
                   error={errors.contact_no}
                   required
+                  maxLength={11}
+                   onKeyPress={(e) => {
+                    // Only allow numeric input
+                    if (!/[0-9]/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
                 <InputField
                   label="Birth Place"
@@ -298,6 +325,20 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
               <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Address</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <InputField
+                  label="Municipality"
+                  name="municipality"
+                  value={formData.municipality}
+                  disabled={true}
+                  className="bg-gray-50"
+                />
+                <InputField
+                  label="Barangay"
+                  name="barangay"
+                  value={formData.barangay}
+                  disabled={true}
+                  className="bg-gray-50"
+                />
+                <InputField
                   label="House No."
                   name="house_no"
                   value={formData.house_no}
@@ -312,6 +353,13 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
                   onChange={handleChange}
                   error={errors.street}
                   required
+                />
+                <InputField
+                  label="ZIP Code"
+                  name="zip_code"
+                  value={formData.zip_code}
+                  disabled={true}
+                  className="bg-gray-50"
                 />
               </div>
             </div>

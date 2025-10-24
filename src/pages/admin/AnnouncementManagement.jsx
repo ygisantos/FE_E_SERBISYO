@@ -36,34 +36,33 @@ const AnnouncementManagement = () => {
     sort_by: 'created_at',
     order: 'desc'
   });
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetchAnnouncements(1);
-  }, [filters.type, sortConfig.sort_by, sortConfig.order]);
+    fetchAnnouncements();
+  }, [pagination.currentPage, filters.type, sortConfig.sort_by, sortConfig.order, search]); 
 
-  const fetchAnnouncements = async (page = pagination.currentPage) => {
-    try {
+  const fetchAnnouncements = async () => {
+    try { 
       setIsLoading(true);
       const params = {
-        page,
+        page: pagination.currentPage,
         per_page: pagination.perPage,
         type: filters.type,
         sort_by: sortConfig.sort_by,
-        order: sortConfig.order
+        order: sortConfig.order,
+        search 
       };
- 
 
       const response = await getAnnouncements(params);
       
-    
       if (response.success) {
-        const { current_page, last_page, total, data } = response.data;
-        setAnnouncements(data);
+        setAnnouncements(response.data.data);
         setPagination(prev => ({
           ...prev,
-          currentPage: current_page,
-          totalPages: last_page,
-          total: total
+          currentPage: response.data.current_page,
+          totalPages: response.data.last_page,
+          total: response.data.total
         }));
       }
     } catch (error) {
@@ -205,6 +204,12 @@ const AnnouncementManagement = () => {
     }));
   };
 
+  // Add search handler
+  const handleSearch = (value) => {
+    setSearch(value);
+    setPagination(prev => ({ ...prev, currentPage: 1 })); // Reset to first page on search
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Main Content */}
@@ -273,6 +278,8 @@ const AnnouncementManagement = () => {
               direction: sortConfig.order
             }}
             onSort={handleSort}
+            searchValue={search}
+            onSearchChange={handleSearch}
           />
         </div>
       </div>

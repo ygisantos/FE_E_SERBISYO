@@ -18,10 +18,14 @@ const PendingResidents = () => {
   });
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedResident, setSelectedResident] = useState(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     setLoading(true);
-    fetchPendingResidents(page, sortConfig)
+    fetchPendingResidents(page, {
+      ...sortConfig,
+      search
+    })
       .then((response) => {
         const residentsWithName = (response.data || []).map((r) => ({
           ...r,
@@ -38,7 +42,7 @@ const PendingResidents = () => {
       .finally(() => {
         setLoading(false);
       });
-  }, [page, sortConfig]);
+  }, [page, sortConfig, search]);
 
   const handleSort = ({ column, direction }) => {
     setSortConfig({
@@ -164,6 +168,11 @@ const PendingResidents = () => {
     }
   ];
 
+  const handleSearch = (value) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -208,6 +217,8 @@ const PendingResidents = () => {
                   onClick: handleViewDetails
                 }
               ]}
+              searchValue={search}
+              onSearchChange={handleSearch}
             />
           </div>
         </div>

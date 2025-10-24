@@ -25,24 +25,21 @@ export const fetchArchivedResidents = async (page = 1, perPage = 10) => {
   return res.data;
 };
 
-export const fetchAllResidents = async (page = 1, params = {}) => {
-  const queryParams = {
-    per_page: params.per_page,
-    status: 'active',
-    type: 'residence',
-    page,
-    sort_by: params.sort_by,
-    order: params.order,
-    search: params.search,
-  };
+export const fetchAllResidents = async (params = {}) => {
+  try {
+    const queryParams = {
+      ...params,
+      status: 'active',
+      type: 'residence',
+      min_age: params.min_age || undefined,
+      max_age: params.max_age || undefined,
+    };
 
-  // Remove undefined values
-  Object.keys(queryParams).forEach(
-    (key) => queryParams[key] === undefined && delete queryParams[key]
-  );
-
-  const res = await axios.get('/accounts/all', { params: queryParams });
-  return res.data;
+    const response = await axios.get('/accounts/all', { params: queryParams });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
 };
 
 export const fetchRejectedAccounts = async (params = {}) => {

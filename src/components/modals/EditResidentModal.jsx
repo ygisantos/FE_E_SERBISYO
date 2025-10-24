@@ -1,30 +1,33 @@
-import React, { useState } from 'react';
-import Modal from '../Modal/Modal';
-import { updateAccountInformation } from '../../api/accountApi';
-import { showCustomToast } from '../../components/Toast/CustomToast';
-import InputField from '../reusable/InputField';
-import Select from '../reusable/Select';
-import { User, Mail, Phone, Home, MapPin } from 'lucide-react';
+import React, { useState } from "react";
+import Modal from "../Modal/Modal";
+import { updateAccountInformation } from "../../api/accountApi";
+import { showCustomToast } from "../../components/Toast/CustomToast";
+import InputField from "../reusable/InputField";
+import Select from "../reusable/Select";
+import { User, Mail, Phone, Home, MapPin } from "lucide-react";
+import validators from "../../utils/validations";
 
 const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
-    first_name: resident?.first_name || '',
-    middle_name: resident?.middle_name || '',
-    last_name: resident?.last_name || '',
-    suffix: resident?.suffix || '',
-    sex: resident?.sex || '',
-    nationality: resident?.nationality || 'Filipino',
-    birthday: resident?.birthday || '',
-    contact_no: resident?.contact_no || '',
-    birth_place: resident?.birth_place || '',
-    municipality: resident?.municipality || '',
-    barangay: resident?.barangay || '',
-    house_no: resident?.house_no || '',
-    zip_code: resident?.zip_code || '',
-    street: resident?.street || '',
-    civil_status: resident?.civil_status || '',
-    email: resident?.email || '',
-    type: resident?.type || 'residence'
+    first_name: resident?.first_name || "",
+    middle_name: resident?.middle_name || "",
+    last_name: resident?.last_name || "",
+    suffix: resident?.suffix || "",
+    sex: resident?.sex || "",
+    nationality: resident?.nationality || "Filipino",
+    birthday: resident?.birthday || "",
+    contact_no: resident?.contact_no || "",
+    birth_place: resident?.birth_place || "",
+    municipality: resident?.municipality || "",
+    barangay: resident?.barangay || "",
+    house_no: resident?.house_no || "",
+    zip_code: resident?.zip_code || "",
+    street: resident?.street || "",
+    civil_status: resident?.civil_status || "",
+    email: resident?.email || "",
+    type: resident?.type || "residence",
+    pwd_number: resident?.pwd_number || "",
+    single_parent_number: resident?.single_parent_number || "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -35,68 +38,77 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
     { value: "married", label: "Married" },
     { value: "widowed", label: "Widowed" },
     { value: "divorced", label: "Divorced" },
-    { value: "separated", label: "Separated" }
+    { value: "separated", label: "Separated" },
   ];
 
   const typeOptions = [
     { value: "residence", label: "Resident" },
     { value: "staff", label: "Staff" },
-    { value: "admin", label: "Admin" }
+    { value: "admin", label: "Admin" },
   ];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const handleSelectChange = (selected, fieldName) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [fieldName]: selected ? selected.value : ''
+      [fieldName]: selected ? selected.value : "",
     }));
   };
 
   const validateForm = () => {
     const newErrors = {};
-    let toastMessage = '';
-    
+    let toastMessage = "";
+
+    // Add birthday validation
+    const birthdayError = validators.validateBirthday(formData.birthday);
+    if (birthdayError) {
+      newErrors.birthday = birthdayError;
+      toastMessage = birthdayError;
+    }
+
     // Required field validation
     if (!formData.email) {
-      newErrors.email = 'Email is required';
-      toastMessage = 'Email is required';
+      newErrors.email = "Email is required";
+      toastMessage = toastMessage || "Email is required";
     }
     if (!formData.first_name) {
-      newErrors.first_name = 'First name is required';
-      toastMessage = toastMessage || 'First name is required';
+      newErrors.first_name = "First name is required";
+      toastMessage = toastMessage || "First name is required";
     }
     if (!formData.last_name) {
-      newErrors.last_name = 'Last name is required';
-      toastMessage = toastMessage || 'Last name is required';
+      newErrors.last_name = "Last name is required";
+      toastMessage = toastMessage || "Last name is required";
     }
     if (!formData.contact_no) {
-      newErrors.contact_no = 'Contact number is required';
-      toastMessage = toastMessage || 'Contact number is required';
+      newErrors.contact_no = "Contact number is required";
+      toastMessage = toastMessage || "Contact number is required";
     }
 
     // Format validations
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
-      toastMessage = toastMessage || 'Invalid email format';
+      newErrors.email = "Invalid email format";
+      toastMessage = toastMessage || "Invalid email format";
     }
     if (formData.contact_no && !/^09\d{9}$/.test(formData.contact_no)) {
-      newErrors.contact_no = 'Contact number must start with 09 and be 11 digits';
-      toastMessage = toastMessage || 'Contact number must start with 09 and be 11 digits';
+      newErrors.contact_no =
+        "Contact number must start with 09 and be 11 digits";
+      toastMessage =
+        toastMessage || "Contact number must start with 09 and be 11 digits";
     }
 
     setErrors(newErrors);
     if (toastMessage) {
-      showCustomToast(toastMessage, 'error');
+      showCustomToast(toastMessage, "error");
       return false;
     }
     return true;
@@ -104,23 +116,26 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-    
+
     try {
       setLoading(true);
       const response = await updateAccountInformation(resident.id, formData);
-      showCustomToast(response.message, 'success');
+      showCustomToast(response.message, "success");
       onSuccess(response.account);
       onClose();
     } catch (error) {
-      showCustomToast(error.message || 'Failed to update resident information', 'error');
+      showCustomToast(
+        error.message || "Failed to update resident information",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal 
-      isOpen={isOpen} 
+    <Modal
+      isOpen={isOpen}
       onClose={onClose}
       title="Edit Resident"
       modalClass="max-w-2xl"
@@ -137,19 +152,23 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
             disabled={loading}
             className="px-3 py-1.5 text-xs text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
           >
-            {loading ? 'Saving...' : 'Save Changes'}
+            {loading ? "Saving..." : "Save Changes"}
           </button>
         </div>
       }
     >
-      <div className="p-4 space-y-4">
+      <form onSubmit={handleSubmit} className="p-4 space-y-4">
         {/* Account Type Selection */}
         <div className="space-y-4">
-          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Account Type</h4>
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Account Type
+          </h4>
           <Select
             label="User Type"
-            value={typeOptions.find(opt => opt.value === formData.type) || null}
-            onChange={(selected) => handleSelectChange(selected, 'type')}
+            value={
+              typeOptions.find((opt) => opt.value === formData.type) || null
+            }
+            onChange={(selected) => handleSelectChange(selected, "type")}
             options={typeOptions}
             required
             className="text-xs"
@@ -159,7 +178,9 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
 
         {/* Personal Information */}
         <div className="space-y-4">
-          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Personal Information</h4>
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Personal Information
+          </h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <InputField
               label="First Name"
@@ -196,16 +217,34 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               value={formData.birthday}
               onChange={handleChange}
               required
-              className={`text-xs ${errors.birthday ? 'border-red-500' : ''}`}
+              className={`text-xs ${errors.birthday ? "border-red-500" : ""}`}
               error={errors.birthday}
             />
+            <InputField
+              label="Age"
+              value={`${resident?.age || ''} years old`}
+              readOnly
+              disabled
+              className="text-xs bg-gray-50"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Select
               label="Civil Status"
-              value={civilStatusOptions.find(opt => opt.value === formData.civil_status) || null}
-              onChange={(selected) => handleSelectChange(selected, 'civil_status')}
+              value={
+                civilStatusOptions.find(
+                  (opt) => opt.value === formData.civil_status
+                ) || null
+              }
+              onChange={(selected) =>
+                handleSelectChange(selected, "civil_status")
+              }
               options={civilStatusOptions}
               required
-              className={`text-xs ${errors.civil_status ? 'border-red-500 ring-1 ring-red-500' : ''}`}
+              className={`text-xs ${
+                errors.civil_status ? "border-red-500 ring-1 ring-red-500" : ""
+              }`}
               placeholder="Select Status"
               error={errors.civil_status}
             />
@@ -214,7 +253,9 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
 
         {/* Contact Information */}
         <div className="space-y-4">
-          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Information</h4>
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Contact Information
+          </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <InputField
               label="Contact Number"
@@ -235,13 +276,17 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               required
               className="text-xs"
               error={errors.email}
+              readOnly
+              disabled
             />
           </div>
         </div>
 
         {/* Address Information */}
         <div className="space-y-4">
-          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">Address Information</h4>
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Address Information
+          </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <InputField
               label="House No."
@@ -249,7 +294,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               value={formData.house_no}
               onChange={handleChange}
               required
-              className={`text-xs ${errors.house_no ? 'border-red-500' : ''}`}
+              className={`text-xs ${errors.house_no ? "border-red-500" : ""}`}
               error={errors.house_no}
             />
             <InputField
@@ -258,12 +303,61 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
               value={formData.street}
               onChange={handleChange}
               required
-              className={`text-xs ${errors.street ? 'border-red-500' : ''}`}
+              className={`text-xs ${errors.street ? "border-red-500" : ""}`}
               error={errors.street}
+            />
+            <InputField
+              label="Municipality"
+              name="municipality"
+              value={formData.municipality}
+              className="text-xs bg-gray-50"
+              disabled
+              readOnly
+            />
+            <InputField
+              label="Barangay"
+              name="barangay"
+              value={formData.barangay}
+              className="text-xs bg-gray-50"
+              disabled
+              readOnly
+            />
+            <InputField
+              label="ZIP Code"
+              name="zip_code"
+              value={formData.zip_code}
+              className="text-xs bg-gray-50"
+              disabled
+              readOnly
             />
           </div>
         </div>
-      </div>
+
+        {/* Add PWD and Single Parent Section */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Additional Information
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <InputField
+              label="PWD ID Number"
+              name="pwd_number"
+              value={formData.pwd_number}
+              onChange={handleChange}
+              placeholder="Enter PWD ID number if applicable"
+              className="text-xs"
+            />
+            <InputField
+              label="Single Parent ID"
+              name="single_parent_number"
+              value={formData.single_parent_number}
+              onChange={handleChange}
+              placeholder="Enter Single Parent ID if applicable"
+              className="text-xs"
+            />
+          </div>
+        </div>
+      </form>
     </Modal>
   );
 };

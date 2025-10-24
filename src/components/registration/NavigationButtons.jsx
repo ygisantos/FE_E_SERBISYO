@@ -35,18 +35,18 @@ const NavigationButtons = ({
   };
 
   return (
-    <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+    <div className="flex justify-between items-center mt-4 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
       <button
         type="button"
         onClick={prevStep}
         disabled={currentStep === 1}
-        className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 ${
+        className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm md:text-base font-semibold transition-all duration-200 ${
           currentStep === 1 
             ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
         }`}
       >
-        <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
         Previous
@@ -57,19 +57,19 @@ const NavigationButtons = ({
           type="button"
           onClick={handleFormSubmit}
           disabled={!isValid || isLoading || !termsAccepted}
-          className={`px-8 py-3 rounded-xl font-bold transition-all duration-200 text-white cursor-pointer ${
+          className={`px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm md:text-base font-bold transition-all duration-200 text-white cursor-pointer ${
             isValid && !isLoading && termsAccepted
               ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 hover:shadow-lg hover:scale-105'
               : 'bg-gray-400 cursor-not-allowed opacity-75'
           }`}
         >
-          {isLoading ? 'Submitting...' : (!termsAccepted ? 'Accept Terms to Submit' : 'Submit Registration')}
+          {isLoading ? 'Submitting...' : (!termsAccepted ? 'Accept Terms' : 'Submit')}
         </button>
       ) : (
         <button
           type="button"
           onClick={nextStep}
-          className="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer"
+          className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm md:text-base font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer"
         >
           Next
         </button>

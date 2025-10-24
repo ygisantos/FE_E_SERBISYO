@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import DataTable from "../../../components/reusable/DataTable";
 import Button from "../../../components/reusable/Button";
 import { FaEye, FaEdit, FaArchive } from "react-icons/fa";
+import { UserPlus } from 'lucide-react';
 import AddOfficialModal from "../../../components/modals/AddOfficialModal";
 import EditOfficialModal from "../../../components/modals/EditOfficialModal";
 import ViewOfficialModal from "../../../components/modals/ViewOfficialModal";
@@ -89,12 +90,11 @@ const BarangayOfficials = () => {
 
   const handleSubmitOfficial = async (officialData) => {
     try {
-      const response = await createOfficial(officialData);
-      await loadOfficials(); // Reload the list after adding
-      setIsModalOpen(false);
-      showCustomToast("Official added successfully", "success");
+      await createOfficial(officialData);
+      await loadOfficials(); // Reload list only after successful creation
+      setIsModalOpen(false); // Close modal only on success
     } catch (error) {
-      showCustomToast(error.message || "Failed to add official", "error");
+      throw error; // Re-throw error to be handled by modal
     }
   };
 
@@ -282,6 +282,7 @@ const BarangayOfficials = () => {
               onSearchChange={handleSearch}
               actionButton={{
                 label: "Add Official",
+                icon: <UserPlus className="w-3.5 h-3.5" />,
                 onClick: handleAddOfficial,
                 className: "bg-red-900 text-white hover:bg-red-800",
               }}

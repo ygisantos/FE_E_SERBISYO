@@ -338,7 +338,7 @@ const EditOfficialModal = ({ isOpen, onClose, onSubmit, official }) => {
                   <InputField label="Middle Name" name="middle_name" value={formData.middle_name} onChange={handleInputChange} className="text-xs" />
                   <InputField label="Suffix" name="suffix" value={formData.suffix} onChange={handleInputChange} className="text-xs" />
                   
-                  <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} required error={errors.email} className="text-xs" />
+                  <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} required readOnly disabled error={errors.email} className="text-xs" />
                   <InputField label="Contact No" name="contact_no" value={formData.contact_no} onChange={handleInputChange} required error={errors.contact_no} className="text-xs" />
                   
                   <InputField label="Birth Place" name="birth_place" value={formData.birth_place} onChange={handleInputChange} required className="text-xs" />

@@ -11,6 +11,7 @@ const ArchivedResidents = () => {
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -19,7 +20,8 @@ const ArchivedResidents = () => {
       page,
       per_page: itemsPerPage,
       sort_by: 'created_at',
-      order: 'desc'
+      order: 'desc',
+      search
     })
       .then((data) => {
         const residentsWithName = (data.data || []).map((r) => ({
@@ -28,13 +30,19 @@ const ArchivedResidents = () => {
         }));
         setResidents(residentsWithName);
         setTotal(data.total || 0);
-        setLoading(false);
       })
       .catch(() => {
         setError('Failed to fetch rejected accounts.');
+      })
+      .finally(() => {
         setLoading(false);
       });
-  }, [page]);
+  }, [page, search]);
+
+  const handleSearch = (value) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
+  };
 
   const getProfilePicUrl = (path) => {
     if (!path) return '/placeholder-avatar.png';
@@ -159,6 +167,8 @@ const ArchivedResidents = () => {
                 variant: "primary",
               }
             ]}
+            searchValue={search}
+            onSearchChange={handleSearch}
             searchPlaceholder="Search by name, email, or contact number..."
           />
         </div>

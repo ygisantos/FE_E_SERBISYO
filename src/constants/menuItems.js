@@ -53,6 +53,13 @@ const adminMenu = [
        { to: "/admin/certificates/logs", label: "Certificate Logs", icon: FaBook },
     ],
   },
+  {
+    label: "Request Management",
+    icon: FaCertificate,
+    subMenu: [
+      { to: "/admin/requests", label: "View All Requests", icon: FaFileAlt },
+     ],
+  },
    { to: "/admin/sumbong", label: "View Sumbong Cases", icon: FaBook },
   { to: "/admin/announcements", label: "Announcement Management", icon: FaCommentDots },
   { to: "/admin/feedback", label: "Feedback Reports", icon: FaCommentDots },
@@ -107,7 +114,7 @@ const menuItems = {
       label: "Sumbong",
       icon: FaBook,
       subMenu: [
-        { to: "/resident/sumbong/my-cases", label: "My Cases", icon: FaBook },
+        { to: "/resident/sumbong/my-cases", label: "My Sumbong", icon: FaBook },
       ],
     },
     { to: "/resident/feedback", label: "Submit Feedback", icon: FaCommentDots },

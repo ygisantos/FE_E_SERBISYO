@@ -330,21 +330,28 @@ const ViewResidentApplicationModal = ({
             </div>
           </div>
 
-          {/* Basic Information */}
+          {/* Updated Basic Information */}
           <div className="grid md:grid-cols-2 gap-4 mb-4">
             {renderSection("Personal Details",
               <div className="space-y-2">
                 {renderField("Name", `${resident?.first_name} ${resident?.middle_name || ''} ${resident?.last_name} ${resident?.suffix || ''}`)}
                 {renderField("Gender", resident?.sex === 'M' ? 'Male' : 'Female')}
                 {renderField("Birthday", formattedDate(resident?.birthday))}
+                {renderField("Age", `${resident?.age} years old`)}
                 {renderField("Civil Status", resident?.civil_status)}
+                {renderField("Nationality", resident?.nationality)}
+                {resident?.pwd_number && renderField("PWD ID", resident?.pwd_number)}
+                {resident?.single_parent_number && renderField("Single Parent ID", resident?.single_parent_number)}
               </div>
             )}
-            {renderSection("Contact Details",
+
+            {renderSection("Contact & Address",
               <div className="space-y-2">
                 {renderField("Phone", resident?.contact_no)}
+                {renderField("Email", resident?.email)}
                 {renderField("Birth Place", resident?.birth_place)}
-                {renderField("Address", `${resident?.house_no} ${resident?.street}, ${resident?.barangay}`)}
+                {renderField("Complete Address", `${resident?.house_no} ${resident?.street}, ${resident?.barangay}, ${resident?.municipality}`)}
+                {renderField("ZIP Code", resident?.zip_code)}
               </div>
             )}
           </div>

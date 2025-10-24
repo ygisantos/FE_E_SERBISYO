@@ -17,14 +17,14 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
     position: "",
     email: "",
     contact_no: "",
-    sex: "M",
+    sex: "",
     birthday: "",
     birth_place: "",
     civil_status: "",
-    municipality: "",
-    barangay: "",
+    municipality: "Balagtas",
+    barangay: "Santol",
     house_no: "",
-    zip_code: "",
+    zip_code: "3016",
     street: "",
     term_start: "",
     term_end: "",
@@ -44,12 +44,29 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
     { value: "Barangay Tanod", label: "Barangay Tanod" }
   ];
 
+  const genderOptions = [
+    { value: "M", label: "Male" },
+    { value: "F", label: "Female" }
+  ];
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Special handling for contact number
+    if (name === 'contact_no') {
+      // Only allow numbers and limit to 11 digits
+      const numericValue = value.replace(/\D/g, '').slice(0, 11);
+      setFormData(prev => ({
+        ...prev,
+        [name]: numericValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -228,10 +245,10 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
       birthday: "",
       birth_place: "",
       civil_status: "",
-      municipality: "",
-      barangay: "",
+      municipality: "Balagtas",
+      barangay: "Santol",
       house_no: "",
-      zip_code: "",
+      zip_code: "3016",
       street: "",
       term_start: "",
       term_end: "",
@@ -355,6 +372,15 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     value={formData.suffix}
                     onChange={handleChange}
                   />
+                  <Select
+                    label="Gender"
+                    value={genderOptions.find(opt => opt.value === formData.sex)}
+                    onChange={(selected) => handleSelectChange(selected, 'sex')}
+                    options={genderOptions}
+                    required
+                    error={errors.sex}
+                    className={errors.sex ? 'border-red-500 ring-red-500' : ''}
+                  />
                   <InputField
                     label="Email"
                     name="email"
@@ -373,6 +399,13 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     required
                     error={errors.contact_no}
                     className="text-xs"
+                    maxLength={11}
+                     onKeyPress={(e) => {
+                      // Only allow numeric input
+                      if (!/[0-9]/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                   />
                   <InputField
                     label="Birthday"
@@ -419,19 +452,15 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     label="Municipality"
                     name="municipality"
                     value={formData.municipality}
-                    onChange={handleChange}
-                    required
-                    error={errors.municipality}
-                    className={`${errors.municipality ? 'border-red-500 ring-red-500' : ''}`}
+                    disabled={true}
+                    className="bg-gray-50"
                   />
                   <InputField
                     label="Barangay"
                     name="barangay"
                     value={formData.barangay}
-                    onChange={handleChange}
-                    required
-                    error={errors.barangay}
-                    className={`${errors.barangay ? 'border-red-500 ring-red-500' : ''}`}
+                    disabled={true}
+                    className="bg-gray-50"
                   />
                   <InputField
                     label="House No."
@@ -440,7 +469,6 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     onChange={handleChange}
                     required
                     error={errors.house_no}
-                    className={`${errors.house_no ? 'border-red-500 ring-red-500' : ''}`}
                   />
                   <InputField
                     label="Street"
@@ -448,17 +476,14 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
                     value={formData.street}
                     onChange={handleChange}
                     required
-                    error={errors.street }
-                    className={`${errors.street ? 'border-red-500 ring-red-500' : ''}`}
+                    error={errors.street}
                   />
                   <InputField
                     label="ZIP Code"
                     name="zip_code"
                     value={formData.zip_code}
-                    onChange={handleChange}
-                    required
-                    error={errors.zip_code}
-                    className={`${errors.zip_code ? 'border-red-500 ring-red-500' : ''}`}
+                    disabled={true}
+                    className="bg-gray-50"
                   />
                 </div>
               </div>

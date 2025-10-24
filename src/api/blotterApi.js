@@ -3,41 +3,37 @@ import axios from '../axios';
 /**
  * Create a new blotter
  */
-export const createBlotter = async (blotterData) => {
+export const createBlotter = async (formData) => {
   try {
-    const formattedData = {
-      complainant_name: blotterData.complainant_name,
-      respondent_name: blotterData.respondent_name,
-      additional_respondent: blotterData.additional_respondent || [],
-      complaint_details: blotterData.complaint_details,
-      relief_sought: blotterData.relief_sought,
-      date_created: new Date(blotterData.date_created).toISOString().split('T')[0],
-      date_filed: new Date(blotterData.date_filed).toISOString().split('T')[0],
-      received_by: blotterData.received_by,
-      created_by: blotterData.created_by,
-      case_type: blotterData.case_type,
-      status: 'filed'
-    };
-
-    const response = await axios.post('/blotters/create', formattedData);
+    // Send FormData directly, with proper headers for multipart/form-data
+    const response = await axios.post('/blotters/create', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
     return response.data;
   } catch (error) {
-    if (error.response?.data?.error) {
-      // Handle validation errors
-      if (typeof error.response.data.error === 'object') {
-        const validationErrors = error.response.data.error;
-        const firstError = Object.values(validationErrors)[0][0];
-        throw { validationErrors, message: firstError };
-      }
-      throw new Error(error.response.data.error);
-    }
-    throw error;
+    console.error('API error:', error.response?.data);
+    throw error.response?.data || { message: 'Failed to create blotter' };
   }
 };
 
 /**
  * Get all blotters with optional filtering and pagination
  */
+/**
+ * Update a blotter
+ */
+export const updateBlotter = async (caseNumber, data) => {
+  try {
+    const response = await axios.put(`/blotters/update/${caseNumber}`, data);
+    return response.data;
+  } catch (error) {
+    console.error('API error:', error.response?.data);
+    throw error.response?.data || { message: 'Failed to update blotter' };
+  }
+};
+
 export const getAllBlotters = async (params = {}) => {
   try {
     const queryParams = {
@@ -45,10 +41,11 @@ export const getAllBlotters = async (params = {}) => {
       from_date: params.from_date ? new Date(params.from_date).toISOString().split('T')[0] : undefined,
       to_date: params.to_date ? new Date(params.to_date).toISOString().split('T')[0] : undefined,
       page: params.page || 1,
-      per_page: params.per_page ,
+      per_page: params.per_page || 10,
       sort_by: params.sort_by || 'date_filed',
       order: params.order || 'desc',
-      search: params.search || undefined
+      search: params.search || undefined,
+      created_by: params.created_by || undefined
     };
 
     // Remove undefined values
@@ -61,16 +58,8 @@ export const getAllBlotters = async (params = {}) => {
     const response = await axios.get('/blotters', { params: queryParams });
 
     return {
-      data: response.data.data.data,
-      pagination: {
-        currentPage: response.data.data.current_page,
-        totalItems: response.data.data.total,
-        lastPage: response.data.data.last_page,
-        perPage: response.data.data.per_page,
-        from: response.data.data.from,
-        to: response.data.data.to
-      },
-      success: response.data.success
+      success: true,
+      data: response.data.data
     };
   } catch (error) {
     throw error.response?.data?.error || 'Failed to fetch blotters';
@@ -80,14 +69,51 @@ export const getAllBlotters = async (params = {}) => {
 /**
  * Get a specific blotter by ID
  */
-export const showBlotter = async (id) => {
+export const showBlotterByCase = async (caseNumber) => {
   try {
-    const response = await axios.post('/blotters/show', { id });
+    const response = await axios.post(`/blotters/show/${caseNumber}`);
     return response.data;
   } catch (error) {
-    if (error.response?.data?.error) {
-      throw new Error(error.response.data.error);
-    }
-    throw error;
+    throw error.response?.data?.error || 'Failed to fetch blotter details';
+  }
+};
+
+/**
+ * Update blotter status
+ */
+export const updateBlotterStatus = async (caseNumber, data) => {
+  try {
+    // Change to PUT method
+    const response = await axios.put(`/blotters/update-status/${caseNumber}`, {
+      status: data.status,
+      notes: data.notes
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.error || 'Failed to update blotter status';
+  }
+};
+
+/**
+ * Get blotter history
+ */
+export const getBlotterHistory = async (caseNumber) => {
+  try {
+    const response = await axios.get(`/blotters/history/${caseNumber}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.error || 'Failed to fetch blotter history';
+  }
+};
+
+/**
+ * Delete a blotter
+ */
+export const deleteBlotter = async (caseNumber) => {
+  try {
+    const response = await axios.delete(`/blotters/delete/${caseNumber}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
   }
 };

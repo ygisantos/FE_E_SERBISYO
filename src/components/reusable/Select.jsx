@@ -20,6 +20,11 @@ const Select = ({
       ...provided,
       borderColor: error ? '#ef4444' : state.isFocused ? '#ef4444' : '#e5e7eb',
       boxShadow: state.isFocused ? '0 0 0 1px #ef4444' : 'none',
+      minHeight: '34px',
+      fontSize: '0.75rem',
+      '@media (min-width: 640px)': {
+        fontSize: '0.875rem',
+      },
       '&:hover': {
         borderColor: '#ef4444',
       },
@@ -28,8 +33,43 @@ const Select = ({
       ...provided,
       backgroundColor: state.isSelected ? '#7f1d1d' : state.isFocused ? '#fee2e2' : 'white',
       color: state.isSelected ? 'white' : '#374151',
+      fontSize: '0.75rem',
+      padding: '6px 12px',
+      '@media (min-width: 640px)': {
+        fontSize: '0.875rem',
+        padding: '8px 12px',
+      },
       '&:active': {
         backgroundColor: '#7f1d1d',
+      },
+    }),
+    menuPortal: (base) => ({
+      ...base,
+      zIndex: 9999,
+    }),
+    menu: (base) => ({
+      ...base,
+      zIndex: 9999,
+    }),
+    placeholder: (base) => ({
+      ...base,
+      fontSize: '0.75rem',
+      '@media (min-width: 640px)': {
+        fontSize: '0.875rem',
+      },
+    }),
+    singleValue: (base) => ({
+      ...base,
+      fontSize: '0.75rem',
+      '@media (min-width: 640px)': {
+        fontSize: '0.875rem',
+      },
+    }),
+    input: (base) => ({
+      ...base,
+      fontSize: '0.75rem',
+      '@media (min-width: 640px)': {
+        fontSize: '0.875rem',
       },
     }),
   };
@@ -37,8 +77,8 @@ const Select = ({
   return (
     <div className={`w-full ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label} {required && <span className="text-red-500">*</span>}
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+          {label} 
         </label>
       )}
       <ReactSelect
@@ -51,7 +91,9 @@ const Select = ({
         isDisabled={isDisabled}
         placeholder={placeholder}
         styles={customStyles}
-        className="text-sm"
+        menuPortalTarget={document.body}
+        menuPosition="fixed"
+        className="text-xs sm:text-sm"
         theme={(theme) => ({
           ...theme,
           colors: {
@@ -64,7 +106,7 @@ const Select = ({
         })}
       />
       {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
+        <p className="mt-1 text-xs sm:text-sm text-red-600">{error}</p>
       )}
     </div>
   );

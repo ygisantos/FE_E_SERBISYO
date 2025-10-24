@@ -20,6 +20,26 @@ const AllResidents = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [residentToArchive, setResidentToArchive] = useState(null);
+  const [search, setSearch] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: "created_at",
+    order: "desc",
+  });
+
+  const [filters, setFilters] = useState({
+    min_age: "",
+    max_age: "",
+  });
+
+  const ageRangeOptions = [
+    { value: "", label: "All Ages" },
+    { value: "13-17", label: "13-17 years" },
+    { value: "18-25", label: "18-25 years" },
+    { value: "26-35", label: "26-35 years" },
+    { value: "36-45", label: "36-45 years" },
+    { value: "46-59", label: "46-59 years" },
+    { value: "60-up", label: "60+ years" },
+  ];
 
   const getProfilePicUrl = (path) => {
     if (!path) return "/placeholder-avatar.png";
@@ -42,22 +62,44 @@ const AllResidents = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetchAllResidents(page, itemsPerPage)
-      .then((data) => {
-        const residentsWithName = (data.data || []).map((r) => ({
+    fetchAllResidents({
+      page,
+      per_page: itemsPerPage,
+      search,
+      sort_by: sortConfig.sort_by,
+      order: sortConfig.order,
+      min_age: filters.min_age || undefined,
+      max_age: filters.max_age || undefined,
+    })
+      .then((response) => {
+        const residentsWithName = response.data.map((r) => ({
           ...r,
           name: `${r.first_name} ${r.last_name}`,
         }));
         setResidents(residentsWithName);
-        setTotal(data.total || 0);
-        setLoading(false);
+        setTotal(response.total || 0);
       })
-      .catch(() => {
-        setError("Failed to fetch residents.");
+      .catch((error) => {
+        console.error("Error fetching residents:", error);
         showCustomToast("Failed to fetch residents", "error");
-        setLoading(false);
-      });
-  }, [page]);
+        setResidents([]);
+        setTotal(0);
+      })
+      .finally(() => setLoading(false));
+  }, [page, search, sortConfig, filters.min_age, filters.max_age]);
+
+  const handleSearch = (value) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleSort = ({ column, direction }) => {
+    setSortConfig({
+      sort_by: column,
+      order: direction.toLowerCase(),
+    });
+    setPage(1);
+  };
 
   const handleView = async (resident) => {
     try {
@@ -77,6 +119,19 @@ const AllResidents = () => {
   const handleArchive = (resident) => {
     setResidentToArchive(resident);
     setShowConfirmModal(true);
+  };
+
+  const handleAgeRangeChange = (selectedRange) => {
+    if (!selectedRange) {
+      setFilters({ min_age: "", max_age: "" });
+    } else {
+      const [min, max] = selectedRange.split("-");
+      setFilters({
+        min_age: min,
+        max_age: max === "up" ? "150" : max, // Use 150 as max age when "60+" is selected
+      });
+    }
+    setPage(1);
   };
 
   const columns = [
@@ -156,7 +211,6 @@ const AllResidents = () => {
         <div className="bg-white rounded-lg shadow-sm">
           <div className="px-6 py-4">
             <DataTable
-              size="small"
               columns={columns}
               data={residents}
               loading={loading}
@@ -171,8 +225,25 @@ const AllResidents = () => {
               cellClassName="py-2.5 text-xs"
               headerClassName="text-xs font-medium text-gray-500 bg-gray-50/50"
               tableClassName="border-none"
-              searchPlaceholder="Search residents..."
+              searchValue={search}
+              onSearchChange={handleSearch}
+              searchPlaceholder="Search by name, email, or contact number..."
+              onSort={handleSort}
+              sortConfig={{
+                field: sortConfig.sort_by,
+                direction: sortConfig.order,
+              }}
               emptyMessage="No residents found"
+              comboBoxFilter={{
+                label: "Age Range",
+                value: filters.min_age
+                  ? `${filters.min_age}-${
+                      filters.max_age === "150" ? "up" : filters.max_age
+                    }`
+                  : "",
+                onChange: handleAgeRangeChange,
+                options: ageRangeOptions,
+              }}
               actions={[
                 {
                   icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,

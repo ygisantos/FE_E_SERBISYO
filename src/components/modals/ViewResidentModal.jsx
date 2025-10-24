@@ -19,13 +19,36 @@ const ViewResidentModal = ({ resident, isOpen, onClose }) => {
         { label: 'Email', value: resident?.email },
         { label: 'Contact', value: resident?.contact_no },
         { label: 'Birthday', value: resident?.birthday ? new Date(resident?.birthday).toLocaleDateString() : '-' },
+        { label: 'Age', value: `${resident?.age || 0} years old` },
+        { label: 'Sex', value: resident?.sex === 'M' ? 'Male' : 'Female' },
         { label: 'Civil Status', value: resident?.civil_status },
+        { label: 'Birth Place', value: resident?.birth_place },
+        { label: 'Nationality', value: resident?.nationality },
       ]
     },
     {
-      title: 'Address',
+      title: 'Address Information',
       fields: [
-        { label: 'Complete Address', value: `${resident?.house_no} ${resident?.street}, ${resident?.barangay}, ${resident?.municipality}` },
+        { label: 'House No.', value: resident?.house_no },
+        { label: 'Street', value: resident?.street },
+        { label: 'Barangay', value: resident?.barangay },
+        { label: 'Municipality', value: resident?.municipality },
+        { label: 'ZIP Code', value: resident?.zip_code },
+      ]
+    },
+    {
+      title: 'Special Status',
+      fields: [
+        { 
+          label: 'PWD ID', 
+          value: resident?.pwd_number || 'Not Registered',
+          className: resident?.pwd_number ? 'text-blue-600 font-medium' : 'text-gray-500 italic'
+        },
+        { 
+          label: 'Single Parent ID', 
+          value: resident?.single_parent_number || 'Not Registered',
+          className: resident?.single_parent_number ? 'text-blue-600 font-medium' : 'text-gray-500 italic'
+        },
       ]
     }
   ];
@@ -67,11 +90,13 @@ const ViewResidentModal = ({ resident, isOpen, onClose }) => {
             <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
               {section.title}
             </h4>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {section.fields.map((field, fieldIdx) => (
                 <div key={fieldIdx} className="flex flex-col">
                   <span className="text-xs text-gray-500">{field.label}</span>
-                  <span className="text-sm text-gray-900">{field.value || '-'}</span>
+                  <span className={`text-sm ${field.className || 'text-gray-900'}`}>
+                    {field.value || '-'}
+                  </span>
                 </div>
               ))}
             </div>

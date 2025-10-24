@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Modal from '../Modal/Modal';
 import { FaFilePdf, FaEye, FaCheck, FaClock, FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaIdCard, FaBirthdayCake, FaTimes } from 'react-icons/fa';
 import { ChevronDown } from 'lucide-react';
+import { formatDate } from '../../utils/dateUtils';
 
 const ViewRequestModal = ({ 
   isOpen, 
@@ -245,7 +246,22 @@ const ViewRequestModal = ({
         <DetailItem
           icon={FaBirthdayCake}
           label="Birth Date"
-          value={new Date(request.account.birth_date).toLocaleDateString()}
+          value={formatDate(request.account.birthday)}
+        />
+        <DetailItem
+          icon={FaUser}
+          label="Age"
+          value={`${request.account.age || 'N/A'} `}
+        />
+        <DetailItem
+          icon={FaUser}
+          label="Civil Status"
+          value={request.account.civil_status}
+        />
+        <DetailItem
+          icon={FaUser}
+          label="Nationality"
+          value={request.account.nationality}
         />
         <DetailItem
           icon={FaPhone}
@@ -337,32 +353,7 @@ const ViewRequestModal = ({
           </section>
 
           {/* Requestor Info Section */}
-          <section className="bg-white rounded-lg border p-4">
-            <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-3">Requestor Details</h4>
-            <div className="grid gap-3">
-              <DetailItem 
-                icon={FaUser} 
-                label="Full Name"
-                value={`${request.account.first_name} ${request.account.middle_name || ''} ${request.account.last_name}`}
-              />
-              <DetailItem 
-                icon={FaPhone} 
-                label="Contact"
-                value={request.account.contact_no}
-              />
-              <DetailItem 
-                icon={FaEnvelope} 
-                label="Email"
-                value={request.account.email}
-              />
-              <DetailItem 
-                icon={FaMapMarkerAlt} 
-                label="Address"
-                value={`${request.account.house_no} ${request.account.street}, ${request.account.barangay}`}
-                isLongText={true}
-              />
-            </div>
-          </section>
+          <RequestorDetails />
 
           {/* Requirements Section */}
           <section className="bg-white rounded-lg border p-4">

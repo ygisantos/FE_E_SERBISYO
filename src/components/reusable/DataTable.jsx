@@ -1,15 +1,16 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import {
-  Search,
-  ChevronDown,
-  ChevronUp,
-  Filter,
-  X,
-  Download,
-  MoreVertical,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Filter } from "lucide-react";
+import SearchInput from '../datatable/SearchInput';
+import LoadingState from '../datatable/LoadingState';
+import EmptyState from '../datatable/EmptyState';
+import FilterPanel from '../datatable/FilterPanel';
 import Pagination from "./Pagination";
 import DateRangeFilter from './DateRangeFilter';
+import { createPortal } from 'react-dom';
+import TruncatedText from '../datatable/TruncatedText';
+import URLDisplay from '../datatable/URLDisplay';
+import StatusBadge from '../datatable/StatusBadge';
+import ActionMenu from '../datatable/ActionMenu';
 
 const DataTable = ({
   columns = [],
@@ -232,198 +233,12 @@ const DataTable = ({
     setCurrentPage(1);
   }, []);
 
-  // Action menu component with portal-like positioning
-  const ActionMenu = ({ row, index, actions }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-    const buttonRef = useRef(null);
-    const menuRef = useRef(null);
-
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (menuRef.current && !menuRef.current.contains(event.target) &&
-            buttonRef.current && !buttonRef.current.contains(event.target)) {
-          setIsOpen(false);
-        }
-      };
-
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    useEffect(() => {
-      if (isOpen && buttonRef.current) {
-        const rect = buttonRef.current.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        
-        // Calculate position relative to viewport
-        let top = rect.bottom + 4;
-        let left = rect.right - 192; // 192px = w-48
-        
-        // Adjust if menu would go off-screen
-        if (left < 8) {
-          left = rect.left;
-        }
-        
-        if (top + 200 > viewportHeight) {
-          top = rect.top - 200;
-        }
-        
-        setMenuPosition({ top, left });
-      }
-    }, [isOpen]);
-
-    const filteredActions = actions.filter(action => 
-      !action.renderIf || action.renderIf(row)
-    );
-
-    return (
-      <>
-        <div className="relative">
-          <button
-            ref={buttonRef}
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(!isOpen);
-            }}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            aria-label="Actions"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
-        </div>
-
-        {isOpen && (
-          <>
-            {/* Backdrop */}
-            <div 
-              className="fixed inset-0 z-40" 
-              onClick={() => setIsOpen(false)} 
-            />
-            
-            {/* Menu positioned absolutely to viewport */}
-            <div 
-              ref={menuRef}
-              className="fixed z-50 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
-              style={{
-                top: `${menuPosition.top}px`,
-                left: `${menuPosition.left}px`,
-              }}
-            >
-              {filteredActions.map((action, i) => (
-                <button
-                  key={i}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    action.onClick(row, index);
-                    setIsOpen(false);
-                  }}
-                  className={`
-                    group flex w-full items-center px-4 py-2 text-sm transition-all duration-200 cursor-pointer text-left
-                    ${action.label.toLowerCase().includes('delete') || action.label.toLowerCase().includes('archive') || action.label.toLowerCase().includes('reject')
-                      ? 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                      : action.label.toLowerCase().includes('edit')
-                      ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700'
-                      : action.label.toLowerCase().includes('view')
-                      ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
-                      : action.label.toLowerCase().includes('approve') || action.label.toLowerCase().includes('ready') || action.label.toLowerCase().includes('release')
-                      ? 'text-green-600 hover:bg-green-50 hover:text-green-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'}
-                  `}
-                >
-                  {action.icon && React.cloneElement(action.icon, {
-                    className: `mr-3 h-4 w-4 ${
-                      action.label.toLowerCase().includes('delete') || action.label.toLowerCase().includes('archive') || action.label.toLowerCase().includes('reject')
-                        ? 'text-red-500'
-                        : action.label.toLowerCase().includes('edit')
-                        ? 'text-blue-500'
-                        : action.label.toLowerCase().includes('approve') || action.label.toLowerCase().includes('ready') || action.label.toLowerCase().includes('release')
-                        ? 'text-green-500'
-                        : 'text-gray-400'
-                    }`
-                  })}
-                  {action.label}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </>
-    );
-  };
-
-  // Truncated text component
-  const TruncatedText = ({ text, maxLength = 100 }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-    
-    if (!text || text.length <= maxLength) {
-      return <span className="text-xs text-gray-700 whitespace-pre-wrap break-words">{text}</span>;
-    }
-
-    return (
-      <div className="relative">
-      <div 
-        className={`text-xs text-gray-700 whitespace-pre-wrap break-words ${
-          !isExpanded && 'line-clamp-2'
-        }`}
-        style={{ maxWidth: '400px' }}
-      >
-        {text}
-      </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsExpanded(!isExpanded);
-        }}
-        className="mt-1 text-xs font-medium text-red-600 hover:text-red-700"
-      >
-        {isExpanded ? 'Show Less' : 'Read More'}
-      </button>
-    </div>
-    );
-  };
-
-  // URL component for handling long URLs
-  const URLDisplay = ({ url, label = "View Link", maxLength = 30 }) => {
-    if (!url) return <span className="text-xs text-gray-500">—</span>;
-    
-    const isMapUrl = url.includes('maps.google.com') || url.includes('maps/embed');
-    const displayLabel = isMapUrl ? "View Map" : label;
-    
-    // Create a truncated version for display
-    const truncatedUrl = url.length > maxLength 
-      ? `${url.substring(0, maxLength)}...` 
-      : url;
-    
-    return (
-      <div className="flex flex-col gap-1" style={{ maxWidth: '200px' }}>
-        <div className="text-2xs text-gray-500 font-mono truncate" title={url}>
-          {truncatedUrl}
-        </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            window.open(url, '_blank', 'noopener,noreferrer');
-          }}
-          className="inline-flex items-center gap-1 px-2 py-1 text-2xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 hover:border-blue-300 transition-all duration-200 w-fit"
-        >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-          {displayLabel}
-        </button>
-      </div>
-    );
-  };
-
   // Render different cell types
   const renderCellContent = (column, value, row, index) => {
     if (column.render) return column.render(value, row, index);
 
     switch (column.type) {
       case "avatar":
-        // Just display the value as an image src, let the column definition handle the correct value
         return (
           <div className="flex items-center space-x-2">
             <img
@@ -446,43 +261,7 @@ const DataTable = ({
         );
 
       case "badge":
-        const badgeColor = column.badgeColors?.[value] || "gray";
-        const colorClasses = {
-          gray: "bg-gray-100 text-gray-800 border-gray-200",
-          green: "bg-emerald-100 text-emerald-800 border-emerald-200",
-          red: "bg-red-100 text-red-800 border-red-200",
-          yellow: "bg-amber-100 text-amber-800 border-amber-200",
-          blue: "bg-blue-100 text-blue-800 border-blue-200",
-          purple: "bg-purple-100 text-purple-800 border-purple-200",
-          active: "bg-emerald-100 text-emerald-800 border-emerald-200",
-          inactive: "bg-red-100 text-red-800 border-red-200",
-          pending: "bg-amber-100 text-amber-800 border-amber-200",
-          processing: "bg-blue-100 text-blue-800 border-blue-200",
-          approved: "bg-green-100 text-green-800 border-green-200",
-          rejected: "bg-red-100 text-red-800 border-red-200",
-          completed: "bg-emerald-100 text-emerald-800 border-emerald-200",
-          cancelled: "bg-gray-100 text-gray-800 border-gray-200",
-          filed: "bg-yellow-100 text-yellow-800 border-yellow-200",
-          resolved: "bg-green-100 text-green-800 border-green-200",
-          scheduled: "bg-blue-100 text-blue-800 border-blue-200",
-        };
-        
-        const statusIndicator = ['active', 'approved', 'completed', 'resolved'].includes(value?.toLowerCase()) 
-          ? 'bg-green-500' 
-          : ['pending', 'filed'].includes(value?.toLowerCase())
-          ? 'bg-yellow-500'
-          : ['processing', 'scheduled'].includes(value?.toLowerCase())
-          ? 'bg-blue-500'
-          : 'bg-red-500';
-          
-        return (
-          <span
-            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-200 hover:scale-105 ${colorClasses[badgeColor] || colorClasses[value?.toLowerCase()] || colorClasses.gray}`}
-          >
-            <span className={`w-2 h-2 rounded-full mr-2 ${statusIndicator} animate-pulse`} />
-            {value?.charAt(0).toUpperCase() + value?.slice(1)}
-          </span>
-        );
+        return <StatusBadge value={value} customColors={column.badgeColors} />;
 
       case "longText":
         return <TruncatedText text={value} maxLength={column.maxLength || 100} />;
@@ -491,11 +270,9 @@ const DataTable = ({
         return <URLDisplay url={value} label={column.linkLabel} maxLength={column.maxLength || 30} />;
       
       default:
-        // Handle URLs automatically if they start with http/https
         if (typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'))) {
           return <URLDisplay url={value} maxLength={30} />;
         }
-        // Handle long text automatically if content is too long
         if (typeof value === 'string' && value.length > 100) {
           return <TruncatedText text={value} />;
         }
@@ -599,43 +376,16 @@ const DataTable = ({
     </div>
   );
 
-  // Render loading state as part of the main return
   if (loading) {
-    return (
-      <div className={`w-full ${className}`}>
-        <div className="animate-pulse">
-          <div className="h-12 bg-gradient-to-r from-gray-100 to-gray-200 rounded-t-lg mb-1"></div>
-          <div className="rounded-b-lg border border-gray-200 overflow-hidden shadow-sm">
-            <div className="h-14 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200"></div>
-            <div className="space-y-1">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-14 ${i % 2 === 0 ? "bg-gray-50" : "bg-white"} flex items-center px-4`}
-                >
-                  <div className="flex space-x-4 w-full">
-                    <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState className={className} />;
   }
 
   return (
     <div className="w-full">
-      {/* Table controls */}
       <div className="mb-3 space-y-2">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          {/* Action Button and Search */}
           <div className="flex flex-wrap items-center gap-2 w-full">
-         
             {actionButton && (!actionButton.show || actionButton.show()) && (
               <button
                 onClick={actionButton.onClick}
@@ -652,10 +402,21 @@ const DataTable = ({
                 {actionButton.label}
               </button>
             )}
-            {enableSearch && renderSearchInput()}
+            {enableSearch && (
+              <SearchInput
+                value={searchTerm}
+                onChange={handleSearchChange}
+                onClear={() => {
+                  setSearchTerm('');
+                  if (onSearchChange) onSearchChange('');
+                }}
+                placeholder={searchPlaceholder}
+                size={size}
+              />
+            )}
           </div>
 
-          {/* Second row: Filters */}
+          {/* Filters */}
           <div className="flex flex-col gap-2 w-full lg:w-auto">
             {comboBoxFilter && (
               <div className="flex items-center gap-1">
@@ -701,66 +462,16 @@ const DataTable = ({
           </div>
         </div>
 
-        {/* Filter panel */}
-        {enableColumnFilters && showFilterPanel && (
-          <div className="p-3 border border-gray-200 bg-white rounded shadow-xs">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-              {columns
-                .filter((col) => col.filterable !== false)
-                .map((col) => (
-                  <div key={col.accessor} className="space-y-1">
-                    <label className="block text-2xs font-medium text-gray-500">
-                      {col.label}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={`Filter ${col.label}...`}
-                      value={filters[col.accessor] || ""}
-                      onChange={(e) =>
-                        handleFilterChange(col.accessor, e.target.value)
-                      }
-                      className="w-full px-2.5 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
+        <FilterPanel
+          columns={columns}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          show={enableColumnFilters && showFilterPanel}
+        />
       </div>
 
       {/* Table */}
-      {/* Selection Actions */}
-      {enableSelection && selectedRows.length > 0 && (
-        <div className="mb-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-blue-700">
-              {selectedRows.length} item{selectedRows.length !== 1 ? 's' : ''} selected
-            </span>
-            <button
-              onClick={() => setSelectedRows([])}
-              className="text-blue-600 hover:text-blue-800 text-xs font-medium"
-            >
-              Clear selection
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            {bulkActions.map((action, idx) => (
-              <button
-                key={idx}
-                onClick={() => action.handler(selectedRows)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 rounded-md text-xs font-medium text-blue-700 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm hover:scale-105 transition-all duration-200 cursor-pointer"
-              >
-                {action.icon}
-                {action.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div
-        className={`rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm ${tableClassName}`}
-      >
+      <div className={`rounded-lg border border-gray-200 bg-white overflow-hidden shadow-sm ${tableClassName}`}>
         <div className="overflow-x-auto custom-scrollbar">
           <table className="min-w-full divide-y divide-gray-200 bg-white">
             <thead className={`bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 ${headerClassName}`}>

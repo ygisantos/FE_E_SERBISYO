@@ -151,7 +151,7 @@ const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg =
             showProfileDropdown={showSidebar} // Show profile dropdown when sidebar is shown (authenticated pages)
           />
 
-          <div className={`flex flex-grow pt-16 relative ${isMobile && sidebarOpen ? 'overflow-hidden fixed inset-0' : ''}`}>
+          <div className={`flex flex-grow pt-12 relative ${isMobile && sidebarOpen ? 'overflow-hidden fixed inset-0' : ''}`}>
             {/* Sidebar */}
             {showSidebar && (
               <>
@@ -160,10 +160,10 @@ const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg =
                   className={`
                   ${
                     isMobile
-                      ? `fixed top-16 left-0 h-[calc(100vh-4rem)] z-50 transform transition-transform duration-300 ease-in-out ${
+                      ? `fixed top-12 left-0 h-[calc(100vh-3rem)] z-50 transform transition-transform duration-300 ease-in-out ${
                           sidebarOpen ? "translate-x-0" : "-translate-x-full"
                         }`
-                      : "sticky top-16 h-[calc(100vh-4rem)] z-20"
+                      : "sticky top-12 h-[calc(100vh-3rem)] z-20"
                   }
                 `}
                 >
@@ -183,7 +183,7 @@ const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg =
             {/* Blur overlay only on mobile, only over main content */}
             {isMobile && sidebarOpen && (
               <div
-                className="fixed top-16 left-0 w-full h-[calc(100vh-4rem)] z-40 backdrop-blur-xs backdrop-brightness-70 bg-white/40 transition-all duration-200"
+                className="fixed top-12 left-0 w-full h-[calc(100vh-3rem)] z-40 backdrop-blur-xs backdrop-brightness-70 bg-white/40 transition-all duration-200"
                 style={{ pointerEvents: "auto" }}
               />
             )}
@@ -198,7 +198,7 @@ const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg =
               <div
                 className="p-4 sm:p-6"
                 style={{
-                  minHeight: "calc(100vh - 4rem)",
+                  minHeight: "calc(100vh - 3rem)",
                   position: "relative",
                 }}
               >

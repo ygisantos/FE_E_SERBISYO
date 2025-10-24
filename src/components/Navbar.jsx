@@ -138,84 +138,79 @@ const Navbar = ({
         type="warning"
       />
       
-      <nav className="w-full fixed top-0 left-0 z-30 bg-red-800 border-b border-red-900 shadow-sm flex items-center justify-between px-4 sm:px-12 py-4">
-      <Link
-        to="/"
-        onClick={handleLogoClick}
-        className="flex items-center gap-3 min-w-0"
-      >
-        {propLogo && (
-          <img src={propLogo} alt="Logo" className="h-10 w-10 rounded-full object-cover bg-white/80 border border-white shadow" />
-        )}
-        <span className="text-sm font-bold text-white tracking-tight uppercase hidden sm:inline sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-xl transition-all duration-200">
-          {appName}
-        </span>
-      </Link>
+      <nav className="w-full fixed top-0 left-0 z-30 bg-red-800 border-b border-red-900 shadow-sm flex items-center justify-between px-4 sm:px-6 py-2">
+        <Link
+          to="/"
+          onClick={handleLogoClick}
+          className="flex items-center gap-2 min-w-0"
+        >
+          {propLogo && (
+            <img src={propLogo} alt="Logo" className="h-8 w-8 rounded-full object-cover bg-white/80 border border-white shadow" />
+          )}
+          <span className="text-xs font-bold text-white tracking-tight uppercase hidden sm:inline sm:text-xs md:text-sm lg:text-base xl:text-lg transition-all duration-200">
+            {appName}
+          </span>
+        </Link>
 
-      <div className="flex items-center gap-4">
-        {/* Profile Dropdown - only show when user is authenticated and showProfileDropdown is true */}
-        {showProfileDropdown && userData && Object.keys(userData).length > 0 && (
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-            >
-              <img
-                src={userAvatar}
-                alt={userName}
-                className="h-8 w-8 rounded-full object-cover bg-white border border-white shadow"
-              />
-              <span className="hidden sm:inline text-sm font-medium truncate max-w-32">
-                {userName}
-              </span>
-              <FiChevronDown 
-                className={`w-4 h-4 transition-transform duration-200 ${
-                  isDropdownOpen ? 'rotate-180' : ''
-                }`} 
-              />
-            </button>
+        <div className="flex items-center gap-3">
+          {showProfileDropdown && userData && Object.keys(userData).length > 0 && (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-red-700 hover:bg-red-600 text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                <img
+                  src={userAvatar}
+                  alt={userName}
+                  className="h-6 w-6 rounded-full object-cover bg-white border border-white shadow"
+                />
+                <span className="hidden sm:inline text-xs font-medium truncate max-w-32">
+                  {userName}
+                </span>
+                <FiChevronDown className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-            {/* Dropdown Menu */}
-            {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
-                  <p className="text-xs text-gray-500 capitalize">
-                    {userRole === 'residence' ? 'Resident' : userRole}
-                  </p>
+              {/* Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <div className="px-3 py-1.5 border-b border-gray-100">
+                    <p className="text-xs font-medium text-gray-900 truncate">{userName}</p>
+                    <p className="text-[10px] text-gray-500 capitalize">
+                      {userRole === 'residence' ? 'Resident' : userRole}
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={handleProfileClick}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    <FiUser className="w-3 h-3" />
+                    My Profile
+                  </button>
+                  
+                  <button
+                    onClick={handleLogoutClick}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
+                  >
+                    <FiLogOut className="w-3 h-3" />
+                    Logout
+                  </button>
                 </div>
-                
-                <button
-                  onClick={handleProfileClick}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
-                >
-                  <FiUser className="w-4 h-4" />
-                  My Profile
-                </button>
-                
-                <button
-                  onClick={handleLogoutClick}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
-                >
-                  <FiLogOut className="w-4 h-4" />
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
 
-        {/* Only show hamburger on mobile when sidebar is available */}
-        {showSidebar && isMobile && (
-          <button
-            className="p-2 rounded focus:outline-none focus:ring-2 focus:ring-red-700"
-            onClick={() => setNavOpen((open) => !open)}
-          >
-            <FiMenu className="text-xl text-white" />
-          </button>
-        )}
-      </div>
-    </nav>
+          {/* Hamburger button */}
+          {showSidebar && isMobile && (
+            <button
+              className="p-1.5 rounded focus:outline-none focus:ring-2 focus:ring-red-700"
+              onClick={() => setNavOpen((open) => !open)}
+            >
+              <FiMenu className="text-lg text-white" />
+            </button>
+          )}
+        </div>
+      </nav>
     </>
   );
 };

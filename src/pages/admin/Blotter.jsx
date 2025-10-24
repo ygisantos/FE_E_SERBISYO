@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../components/reusable/DataTable";
-import { FileText, CheckCircle, Clock, AlertTriangle } from "lucide-react";
-import { FaEye } from "react-icons/fa"; 
-import { getAllBlotters } from "../../api/blotterApi";
+import { FaEye } from "react-icons/fa";
+import { getAllBlotters, showBlotterByCase } from "../../api/blotterApi";
 import { showCustomToast } from "../../components/Toast/CustomToast";
-import CreateBlotterModal from "../../components/modals/CreateBlotterModal";
+import { useUser } from "../../contexts/UserContext";
 import ViewBlotterModal from "../../components/modals/ViewBlotterModal";
-import { useDebounce } from "../../hooks/useDebounce";
+
 import { formatDate, isDateInRange } from '../../utils/dateUtils';
 
 const Blotter = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showNewCaseModal, setShowNewCaseModal] = useState(false);
+  const [totalItems, setTotalItems] = useState(0);
+  const [perPage] = useState(10);
+  const { currentUser } = useUser();
   const [selectedBlotter, setSelectedBlotter] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 500);
+
   const [sortConfig, setSortConfig] = useState({
     sort_by: 'created_at',
     order: 'desc'
@@ -47,14 +47,15 @@ const Blotter = () => {
         page: currentPage,
         status: filters.status,
         ...sortConfig,
-        search: search
+        search: search,
+        per_page: 10
       });
 
       if (response.success) {
-        // Filter data by date range
-        let filteredData = response.data;
+        // Filter data by date range if dates are provided
+        let filteredData = response.data.data; // Access the nested data array
         if (filters.from_date || filters.to_date) {
-          filteredData = response.data.filter(item => 
+          filteredData = filteredData.filter(item => 
             isDateInRange(
               item.date_filed,
               filters.from_date,
@@ -64,7 +65,7 @@ const Blotter = () => {
         }
 
         setData(filteredData);
-        setTotalItems(filteredData.length);
+        setTotalItems(response.data.total); // Update to access total from the correct path
       }
     } catch (error) {
       showCustomToast("Failed to fetch sumbong cases", "error");
@@ -91,9 +92,17 @@ const Blotter = () => {
     setCurrentPage(1); // Reset to first page when filters change
   };
 
-  const handleView = (blotter) => {
-    setSelectedBlotter(blotter);
-    setShowViewModal(true);
+  const handleView = async (blotter) => {
+    try {
+      setLoading(true);
+      const response = await showBlotterByCase(blotter.case_number);
+      setSelectedBlotter(response.data); // Access the data property from response
+      setShowViewModal(true);
+    } catch (error) {
+      showCustomToast(error.message || "Failed to fetch blotter details", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const columns = [
@@ -176,11 +185,11 @@ const Blotter = () => {
             enableSearch
             searchValue={search}
             onSearchChange={setSearch}
-            enablePagination
-            itemsPerPage={filters.per_page}
-            totalItems={totalItems}
+            enablePagination={true}
             currentPage={currentPage}
             onPageChange={setCurrentPage}
+            totalItems={totalItems}
+            itemsPerPage={perPage}
             searchPlaceholder="Search sumbong cases..."
             enableSelection={false}
             comboBoxFilter={{
@@ -216,8 +225,8 @@ const Blotter = () => {
             setShowViewModal(false);
             setSelectedBlotter(null);
           }}
-          data={selectedBlotter}
-        />
+          data={selectedBlotter} // This now contains the correct data structure
+         />
       )}
     </div>
   );

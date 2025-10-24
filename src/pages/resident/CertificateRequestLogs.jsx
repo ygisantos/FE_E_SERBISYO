@@ -5,6 +5,7 @@ import { getAllRequests } from '../../api/documentApi';
 import { useUser } from '../../contexts/UserContext';
 import ViewRequestModal from '../../components/modals/ViewRequestModal';
 import { showCustomToast } from '../../components/Toast/CustomToast';
+import { getRequestById } from '../../api/requestApi';
 
 const CertificateRequestLogs = () => {
   const { currentUser } = useUser();
@@ -100,9 +101,17 @@ const CertificateRequestLogs = () => {
     }
   }, [currentUser, page, sortConfig, status]);
 
-  const handleViewRequest = (request) => {
-    setSelectedRequest(request);
-    setShowViewModal(true);
+  const handleViewRequest = async (request) => {
+    try {
+      setLoading(true);
+      const response = await getRequestById(request.id);
+      setSelectedRequest(response);
+      setShowViewModal(true);
+    } catch (error) {
+      showCustomToast(error.message || "Failed to fetch request details", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSort = ({ column, direction }) => {
