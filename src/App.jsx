@@ -166,6 +166,7 @@ function App() {
                     <Route path="activity-logs" element={<ActivityLogs />} />
                     <Route path="reports" element={<Reports />} />
                     <Route path="profile" element={<MyProfile />} />
+                    <Route path="requests" element={<RequestManagement />} />
                   </Routes>
                 </ProtectedRoute>
               } />

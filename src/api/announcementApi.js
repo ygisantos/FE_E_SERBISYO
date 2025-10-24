@@ -26,24 +26,23 @@ export const getAnnouncements = async ({
   per_page = 10, 
   type = '',
   sort_by = 'created_at',
-  order = 'desc'
+  order = 'desc',
+  search = ''
 } = {}) => {
   try {
-    const params = new URLSearchParams();
-    params.append('page', page);
-    params.append('per_page', per_page);
-    params.append('sort_by', sort_by);
-    params.append('order', order);
-
-    if (type && type.trim() !== '') {
-      params.append('type', type);
-    }
-
-    const response = await axios.get(`/announcements?${params.toString()}`);
+    const response = await axios.get('/announcements', {
+      params: {
+        page,
+        per_page,
+        type,
+        sort_by,
+        order,
+        search
+      }
+    });
     return response.data;
   } catch (error) {
-    console.error('Error fetching announcements:', error);
-    throw error;
+    throw error.response?.data || error.message;
   }
 };
 

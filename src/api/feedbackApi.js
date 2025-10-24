@@ -6,7 +6,7 @@ export const getFeedbacks = async ({
   category, 
   rating, 
   search,
-  sort_by,  // Add sort parameters
+  sort_by,   
   order
 }) => {
   try {
@@ -16,7 +16,7 @@ export const getFeedbacks = async ({
       ...(category && { category }),
       ...(rating && { rating }),
       ...(search && { search }),
-      ...(sort_by && { sort_by }), // Add sort parameters to query
+      ...(sort_by && { sort_by }),  
       ...(order && { order })
     });
 

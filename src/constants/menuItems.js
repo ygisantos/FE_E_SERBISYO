@@ -53,6 +53,13 @@ const adminMenu = [
        { to: "/admin/certificates/logs", label: "Certificate Logs", icon: FaBook },
     ],
   },
+  {
+    label: "Request Management",
+    icon: FaCertificate,
+    subMenu: [
+      { to: "/admin/requests", label: "View All Requests", icon: FaFileAlt },
+     ],
+  },
    { to: "/admin/sumbong", label: "View Sumbong Cases", icon: FaBook },
   { to: "/admin/announcements", label: "Announcement Management", icon: FaCommentDots },
   { to: "/admin/feedback", label: "Feedback Reports", icon: FaCommentDots },

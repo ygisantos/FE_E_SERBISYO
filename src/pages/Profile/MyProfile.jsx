@@ -26,9 +26,13 @@ const MyProfile = () => {
 
   const handleProfileUpdate = async (updatedProfile) => {
     try {
+      const { getUserById } = await import('../../api/accountApi');
+      const updatedUser = await getUserById(currentUser.id);
+      setEditForm(updatedUser);
       setIsEditModalOpen(false);
     } catch (error) {
-      console.error('Failed to log profile update:', error);
+      console.error('Failed to update profile:', error);
+      toast.error('Failed to update profile');
     }
   };
 
@@ -85,18 +89,45 @@ const MyProfile = () => {
             imagePreview={imagePreview}
             handleImageChange={handleImageChange}
             fileInputRef={fileInputRef}
-            onEdit={() => setIsEditModalOpen(true)}
+            onEdit={async () => {
+              try {
+                const { getUserById } = await import('../../api/accountApi');
+                const userData = await getUserById(currentUser.id);
+                setEditForm(userData);
+                setIsEditModalOpen(true);
+              } catch (error) {
+                toast.error('Failed to load user data');
+              }
+            }}
           />
           
           <div className="space-y-4 sm:space-y-6">
             <PersonalInformation 
               profile={currentUser}
-              onEdit={() => setIsEditModalOpen(true)}
+              onEdit={async () => {
+                try {
+                  const { getUserById } = await import('../../api/accountApi');
+                  const userData = await getUserById(currentUser.id);
+                  setEditForm(userData);
+                  setIsEditModalOpen(true);
+                } catch (error) {
+                  toast.error('Failed to load user data');
+                }
+              }}
             />
 
             <AddressInformation 
               profile={currentUser}
-              onEdit={() => setIsEditModalOpen(true)}
+              onEdit={async () => {
+                try {
+                  const { getUserById } = await import('../../api/accountApi');
+                  const userData = await getUserById(currentUser.id);
+                  setEditForm(userData);
+                  setIsEditModalOpen(true);
+                } catch (error) {
+                  toast.error('Failed to load user data');
+                }
+              }}
             />
 
             <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">

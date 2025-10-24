@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../../components/reusable/DataTable';
 import Modal from '../../components/Modal/Modal';
 import { FaEye } from 'react-icons/fa';
 import { getFeedbacks } from '../../api/feedbackApi';
 import { showCustomToast } from '../../components/Toast/CustomToast';
+import StarRating from '../../components/reusable/StarRating';
 
 const FeedbackManagement = () => {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -28,7 +29,7 @@ const FeedbackManagement = () => {
 
   useEffect(() => {
     fetchFeedbacks();
-  }, [pagination.currentPage, pagination.perPage, filters, sortConfig]);
+  }, [pagination.currentPage, filters, sortConfig, search]);  
 
   const fetchFeedbacks = async () => {
     try {
@@ -37,7 +38,8 @@ const FeedbackManagement = () => {
         page: pagination.currentPage,
         per_page: pagination.perPage,
         ...filters,
-        ...sortConfig
+        ...sortConfig,
+        search  
       });
       
       if (response.success) {
@@ -51,7 +53,7 @@ const FeedbackManagement = () => {
         }));
       }
     } catch (error) {
-      toast.error('Failed to fetch feedbacks');
+      showCustomToast('Failed to fetch feedbacks', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -78,6 +80,24 @@ const FeedbackManagement = () => {
     });
   };
 
+  // Add search handler
+  const handleSearch = (value) => {
+    setSearch(value);
+    setPagination(prev => ({ ...prev, currentPage: 1 })); // Reset to first page on search
+  };
+
+  // Add new computed categories from data
+  const categoryOptions = useMemo(() => {
+    const uniqueCategories = [...new Set(feedbacks.map(item => item.category))];
+    return [
+      { label: 'All Categories', value: '' },
+      ...uniqueCategories.map(category => ({
+        label: category,
+        value: category
+      }))
+    ];
+  }, [feedbacks]);
+
   const columns = [
     {
       label: 'Category',
@@ -91,11 +111,7 @@ const FeedbackManagement = () => {
       label: 'Rating',
       accessor: 'rating',
       sortable: true,
-      render: (value) => (
-        <div className="flex items-center">
-          <span className="text-xs text-gray-600">{value}/5</span>
-        </div>
-      ),
+      render: (value) => <StarRating rating={value} showText={false} />,
     },
     {
       label: 'Remarks',
@@ -141,7 +157,8 @@ const FeedbackManagement = () => {
             loading={isLoading}
             enableSearch={true}
             searchValue={search}
-            onSearchChange={setSearch}
+            enableSelection={false}
+            onSearchChange={handleSearch}
             enablePagination={true}
             itemsPerPage={pagination.perPage}
             totalItems={pagination.total}
@@ -150,10 +167,7 @@ const FeedbackManagement = () => {
             searchPlaceholder="Search feedbacks..."
             comboBoxFilter={{
               label: "Category",
-              options: [
-                { label: 'All Categories', value: '' },
-                { label: 'Random', value: 'Random' }
-              ],
+              options: categoryOptions,
               value: filters.category || '',
               onChange: (value) => handleFilterChange('category', value)
             }}
@@ -188,7 +202,9 @@ const FeedbackManagement = () => {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500">Rating</label>
-                <p className="text-sm mt-1">{selectedFeedback.rating}/5</p>
+                <div className="mt-1">
+                  <StarRating rating={selectedFeedback.rating} size="md" showText={false} />
+                </div>
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-500">Feedback</label>
@@ -205,4 +221,3 @@ const FeedbackManagement = () => {
 };
 
 export default FeedbackManagement;
-    

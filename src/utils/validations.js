@@ -31,7 +31,7 @@ const patterns = {
   age: /^(?:1[0-4][0-9]|[1-9][0-9]|[0-9])$/,
   
   // Sex/Gender validation
-  sex: /^[MF]$/,
+  sex: /^[MF]$|^(Male|Female)$/,
   
   // Nationality validation (letters, spaces, and hyphens)
   nationality: /^[a-zA-Z\s-]{2,50}$/,
@@ -94,8 +94,11 @@ const validators = {
 
   // Sex/Gender validation
   validateSex: (sex) => {
-    if (!sex) return 'Sex is required';
-    if (!patterns.sex.test(sex)) return 'Sex must be either M or F';
+    if (!sex) return 'Gender is required';
+    const value = typeof sex === 'object' ? sex.value : sex;
+    // Normalize the value to M/F format
+    const normalizedValue = value === 'Male' ? 'M' : value === 'Female' ? 'F' : value;
+    if (!patterns.sex.test(value)) return 'Please select a valid gender';
     return '';
   },
 
@@ -289,7 +292,7 @@ export const validateForm = (form) => {
 
   if ('sex' in form) {
     const error = validators.validateSex(form.sex);
-    if (error) {
+    if (error && form.sex !== '') { // Only show error if field is not empty
       errors.sex = error;
       isValid = false;
     }

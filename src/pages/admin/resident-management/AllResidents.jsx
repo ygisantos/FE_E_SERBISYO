@@ -20,6 +20,11 @@ const AllResidents = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [residentToArchive, setResidentToArchive] = useState(null);
+  const [search, setSearch] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: "created_at",
+    order: "desc",
+  });
 
   const getProfilePicUrl = (path) => {
     if (!path) return "/placeholder-avatar.png";
@@ -42,14 +47,20 @@ const AllResidents = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetchAllResidents(page, itemsPerPage)
-      .then((data) => {
-        const residentsWithName = (data.data || []).map((r) => ({
+    fetchAllResidents({
+      page,
+      per_page: itemsPerPage,
+      search,
+      sort_by: sortConfig.sort_by,
+      order: sortConfig.order,
+    })
+      .then((response) => {
+        const residentsWithName = (response.data || []).map((r) => ({
           ...r,
           name: `${r.first_name} ${r.last_name}`,
         }));
         setResidents(residentsWithName);
-        setTotal(data.total || 0);
+        setTotal(response.total || 0);
         setLoading(false);
       })
       .catch(() => {
@@ -57,7 +68,20 @@ const AllResidents = () => {
         showCustomToast("Failed to fetch residents", "error");
         setLoading(false);
       });
-  }, [page]);
+  }, [page, search, sortConfig.sort_by, sortConfig.order]);
+
+  const handleSearch = (value) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleSort = ({ column, direction }) => {
+    setSortConfig({
+      sort_by: column,
+      order: direction.toLowerCase(),
+    });
+    setPage(1);
+  };
 
   const handleView = async (resident) => {
     try {
@@ -171,7 +195,14 @@ const AllResidents = () => {
               cellClassName="py-2.5 text-xs"
               headerClassName="text-xs font-medium text-gray-500 bg-gray-50/50"
               tableClassName="border-none"
-              searchPlaceholder="Search residents..."
+              searchValue={search}
+              onSearchChange={handleSearch}
+              searchPlaceholder="Search by name, email, or contact number..."
+              onSort={handleSort}
+              sortConfig={{
+                field: sortConfig.sort_by,
+                direction: sortConfig.order,
+              }}
               emptyMessage="No residents found"
               actions={[
                 {
