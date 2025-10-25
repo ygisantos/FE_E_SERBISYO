@@ -4,6 +4,7 @@ import InputField from '../reusable/InputField';
 import Select from '../reusable/Select';
 import { showCustomToast } from '../Toast/CustomToast';
 import ConfirmationModal from '../modals/ConfirmationModal';
+import validators from '../../utils/validations';
  
 const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
   const initialFormData = {
@@ -102,6 +103,12 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
     if (!formData.birthday) {
       newErrors.birthday = 'Birthday is required';
       toastMessage = toastMessage || 'Birthday is required';
+    } else {
+      const birthdayError = validators.validateBirthday(formData.birthday);
+      if (birthdayError) {
+        newErrors.birthday = birthdayError;
+        toastMessage = toastMessage || birthdayError;
+      }
     }
     if (!formData.contact_no) {
       newErrors.contact_no = 'Contact number is required';

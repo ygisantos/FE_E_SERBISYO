@@ -4,6 +4,7 @@ import InputField from '../reusable/InputField';
 import Select from "../reusable/Select";
 import { showCustomToast } from '../Toast/CustomToast';
 import ConfirmationModal from '../modals/ConfirmationModal';
+import validators from '../../utils/validations';
 
 const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -116,6 +117,12 @@ const AddOfficialModal = ({ isOpen, onClose, onSubmit }) => {
     if (!formData.birthday) {
       newErrors.birthday = 'Birthday is required';
       toastMessage = toastMessage || 'Birthday is required';
+    } else {
+      const birthdayError = validators.validateBirthday(formData.birthday);
+      if (birthdayError) {
+        newErrors.birthday = birthdayError;
+        toastMessage = toastMessage || birthdayError;
+      }
     }
     if (!formData.birth_place) {
       newErrors.birth_place = 'Birth place is required';

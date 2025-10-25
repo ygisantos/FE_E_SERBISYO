@@ -1,11 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaCamera, FaSpinner, FaTimes, FaEdit } from 'react-icons/fa';
 import { showCustomToast } from '../Toast/CustomToast';
+import { updateProfilePicture } from '../../api/accountApi';
 
 const ProfileHeader = ({ profile, onProfileUpdate = () => {}, onEdit }) => {
   const [uploading, setUploading] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showPhotoOverlay, setShowPhotoOverlay] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [localProfilePic, setLocalProfilePic] = useState(profile?.profile_picture_path);
   const fileInputRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -41,61 +46,39 @@ const ProfileHeader = ({ profile, onProfileUpdate = () => {}, onEdit }) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
-  const handleImageSelect = (e) => {
+  // Update local state when profile changes
+  useEffect(() => {
+    setLocalProfilePic(profile?.profile_picture_path);
+  }, [profile]);
+
+  const handleImageSelect = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setSelectedImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setShowModal(true);
-    }
-  };
+      try {
+        setUploading(true);
+        
+        // Show preview immediately
+        const previewUrl = URL.createObjectURL(file);
+        setLocalProfilePic(previewUrl);
+        setShowProfileMenu(false);
 
-  const handleUpload = async () => {
-    try {
-      setUploading(true);
-      const formData = new FormData();
-      formData.append('profile_picture', selectedImage);
-      
-      const response = await updateProfilePicture(profile.id, formData);
-      
-      if (response?.profile_picture_path) {
-        showCustomToast('Profile picture updated successfully', 'success');
-        // Add null check before calling onProfileUpdate
-        if (typeof onProfileUpdate === 'function') {
+        const formData = new FormData();
+        formData.append('profile_picture', file);
+        
+        const response = await updateProfilePicture(profile.id, formData);
+        
+        if (response?.profile_picture_path) {
+          showCustomToast('Profile picture updated successfully', 'success');
           onProfileUpdate(response.profile_picture_path);
+          setLocalProfilePic(response.profile_picture_path);
         }
-        setShowModal(false);
-        setSelectedImage(null);
-        setPreviewUrl(null);
+      } catch (error) {
+        // Revert to original profile pic on error
+        setLocalProfilePic(profile?.profile_picture_path);
+        showCustomToast('Failed to update profile picture', 'error');
+      } finally {
+        setUploading(false);
       }
-    } catch (error) {
-      console.error('Upload error:', error);
-      showCustomToast('Failed to update profile picture', 'error');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setSelectedImage(null);
-    setPreviewUrl(null);
-    setShowModal(false);
-  };
-
-  const handleRemovePhoto = async () => {
-    try {
-      setUploading(true);
-      const formData = new FormData();
-      formData.append('remove_photo', true);
-      
-      const response = await updateProfilePicture(profile.id, formData);
-      showCustomToast('Profile picture removed successfully', 'success');
-      onProfileUpdate(null);
-      setShowModal(false);
-    } catch (error) {
-      showCustomToast('Failed to remove profile picture', 'error');
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -122,10 +105,14 @@ const ProfileHeader = ({ profile, onProfileUpdate = () => {}, onEdit }) => {
         {/* Profile Picture Section */}
         <div className="relative group">
           <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 ring-4 ring-white shadow-lg">
-            {profile?.profile_picture_path ? (
+            {uploading ? (
+              <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                <FaSpinner className="w-8 h-8 text-red-600 animate-spin" />
+              </div>
+            ) : localProfilePic ? (
               <img 
-                src={getProfilePicUrl(profile.profile_picture_path)}
-                alt={`${profile.first_name}'s profile`}
+                src={getProfilePicUrl(localProfilePic)}
+                alt={`${profile?.first_name}'s profile`}
                 className="w-full h-full object-cover"
                 onClick={() => setShowProfileMenu(true)}
               />
@@ -158,27 +145,16 @@ const ProfileHeader = ({ profile, onProfileUpdate = () => {}, onEdit }) => {
                 {profile?.profile_picture_path ? 'Update photo' : 'Upload photo'}
               </button>
               {profile?.profile_picture_path && (
-                <>
-                  <button
-                    onClick={() => setShowPhotoOverlay(true)}
-                    className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    View photo
-                  </button>
-                  <button
-                    onClick={handleRemovePhoto}
-                    className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Remove photo
-                  </button>
-                </>
+                <button
+                  onClick={() => setShowPhotoOverlay(true)}
+                  className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  View photo
+                </button>
               )}
             </div>
           )}
@@ -209,34 +185,38 @@ const ProfileHeader = ({ profile, onProfileUpdate = () => {}, onEdit }) => {
         </div>
       </div>
 
-      {/* Preview Photo Overlay */}
+      {/* Improved Preview Photo Overlay */}
       {showPhotoOverlay && (
         <div 
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          className="fixed inset-0 z-[999] bg-black/95 backdrop-blur-sm"
           onClick={() => setShowPhotoOverlay(false)}
         >
-          <div className="relative max-w-4xl w-full mx-4">
-            {/* Close button */}
+          <div className="absolute top-4 right-4 z-10">
             <button
               onClick={() => setShowPhotoOverlay(false)}
-              className="absolute -top-12 right-0 text-white/80 hover:text-white p-2"
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
             >
-              <FaTimes className="w-6 h-6" />
+              <FaTimes className="w-6 h-6 text-white" />
             </button>
-            
-            {/* Full size image */}
-            <img
-              src={getProfilePicUrl(profile?.profile_picture_path)}
-              alt={profile?.first_name}
-              className="w-full h-auto rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
+          </div>
+
+          <div className="w-full h-full flex items-center justify-center p-4">
+            <div 
+              className="relative max-w-4xl max-h-[90vh] w-full h-full"
+              onClick={e => e.stopPropagation()}
+            >
+              <img
+                src={getProfilePicUrl(profile?.profile_picture_path)}
+                alt={profile?.first_name}
+                className="w-full h-full object-contain rounded-lg select-none"
+                draggable="false"
+              />
+            </div>
           </div>
         </div>
       )}
 
-      {/* ...rest of existing modals... */}
-    </>
+     </>
   );
 };
 
