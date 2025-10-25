@@ -388,7 +388,7 @@ const RequestManagement = () => {
                   icon: <FaFileWord className="h-3.5 w-3.5 text-blue-400" />,
                   label: 'Download Filled Document',
                   onClick: (row) => handleDownloadFilledDocument(row.id),
-                  show: (row) => row.document_details?.template_path && ['processing', 'ready to pickup', 'released'].includes(row.status),
+                  show: (row) => ['processing', 'ready to pickup', 'released', 'approved'].includes(row.status)
                 }
               ]}
               onSort={handleSort}
