@@ -4,6 +4,7 @@ import { FiFileText, FiClock, FiCheckCircle, FiAlertCircle } from 'react-icons/f
 import { useUser } from '../../contexts/UserContext';
 import StatCard from '../../components/reusable/StatCard';
 import { getAllRequests } from '../../api/documentApi';
+import { getAllBlotters } from '../../api/blotterApi';
 
 const ResidentDashboard = () => {
   const { currentUser } = useUser();
@@ -20,32 +21,47 @@ const ResidentDashboard = () => {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
+        // Fetch document requests
         const response = await getAllRequests();
-        
+        let userRequests = [];
         if (response.success) {
-          // Filter requests to only show current user's requests
-          const userRequests = (response.data.data || []).filter(
+          userRequests = (response.data.data || []).filter(
             req => req.account?.id === currentUser?.id
           );
-          
-          // Calculate stats from filtered requests
-          setStats({
-            totalRequests: userRequests.length,
-            pendingRequests: userRequests.filter(req => req.status === 'pending').length,
-            completedRequests: userRequests.filter(req => req.status === 'released').length,
-            activeCases: userRequests.filter(req => req.status === 'processing').length
-          });
-
-          // Get 5 most recent requests from filtered requests
-          const sortedRequests = userRequests
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-            .slice(0, 5);
-
-          setRecentRequests(sortedRequests);
         }
+
+        // Fetch blotters for active cases (not completed/resolved/settled)
+        let activeCases = 0;
+        try {
+          const blotterRes = await getAllBlotters({ created_by: currentUser?.id, per_page: 100 });
+          if (blotterRes.success && Array.isArray(blotterRes.data)) {
+            activeCases = blotterRes.data.filter(
+              b => !['completed', 'resolved', 'settled'].includes((b.status || '').toLowerCase())
+            ).length;
+          }
+        } catch (e) {
+          // If blotter fetch fails, just show 0
+          activeCases = 0;
+        }
+
+        setStats({
+          totalRequests: userRequests.length,
+          pendingRequests: userRequests.filter(req => req.status === 'pending').length,
+          completedRequests: userRequests.filter(req => req.status === 'released').length,
+          activeCases
+        });
+
+        // Get 5 most recent requests from filtered requests
+        const sortedRequests = userRequests
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+          .slice(0, 5);
+
+        setRecentRequests(sortedRequests);
       } catch (error) {
         console.error('Error loading dashboard data:', error);
-        showCustomToast("Failed to load dashboard data", "error");
+        if (typeof showCustomToast === 'function') {
+          showCustomToast("Failed to load dashboard data", "error");
+        }
         setStats({
           totalRequests: 0,
           pendingRequests: 0,

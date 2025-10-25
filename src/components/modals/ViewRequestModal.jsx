@@ -397,7 +397,7 @@ const ViewRequestModal = ({
           </section>
 
           {/* User History Section (from show API: user_blotters) */}
-          <section className="bg-white rounded-lg border p-4">
+          {/* <section className="bg-white rounded-lg border p-4">
             <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-3">User History</h4>
             <div className="space-y-3">
               {history?.length > 0 ? (
@@ -424,7 +424,7 @@ const ViewRequestModal = ({
                 </div>
               )}
             </div>
-          </section>
+          </section> */}
         </div>
 
         {/* Footer - Fixed */}
