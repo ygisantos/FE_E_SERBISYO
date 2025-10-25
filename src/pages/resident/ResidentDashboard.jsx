@@ -22,20 +22,22 @@ const ResidentDashboard = () => {
         setLoading(true);
         const response = await getAllRequests();
         
-         if (response.success) {
-          // Get requests array from paginated response
-          const requests = response.data.data || [];
+        if (response.success) {
+          // Filter requests to only show current user's requests
+          const userRequests = (response.data.data || []).filter(
+            req => req.account?.id === currentUser?.id
+          );
           
-          // Calculate stats
+          // Calculate stats from filtered requests
           setStats({
-            totalRequests: response.data.total || 0,
-            pendingRequests: requests.filter(req => req.status === 'pending').length,
-            completedRequests: requests.filter(req => req.status === 'released').length,
-            activeCases: requests.filter(req => req.status === 'processing').length
+            totalRequests: userRequests.length,
+            pendingRequests: userRequests.filter(req => req.status === 'pending').length,
+            completedRequests: userRequests.filter(req => req.status === 'released').length,
+            activeCases: userRequests.filter(req => req.status === 'processing').length
           });
 
-          // Get 5 most recent requests
-          const sortedRequests = requests
+          // Get 5 most recent requests from filtered requests
+          const sortedRequests = userRequests
             .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
             .slice(0, 5);
 

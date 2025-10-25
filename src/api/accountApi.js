@@ -20,6 +20,8 @@ export const updateAccountInformation = async (accountId, data) => {
         municipality: data.municipality,
         barangay: data.barangay,
         house_no: data.house_no,
+        pwd_number: data.pwd_number,
+        single_parent_number: data.single_parent_number,
         zip_code: data.zip_code,
         street: data.street,
         type: data.type,

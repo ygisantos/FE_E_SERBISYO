@@ -5,7 +5,7 @@ import { showCustomToast } from '../Toast/CustomToast';
 import ConfirmationModal from './ConfirmationModal';
 import { FaUpload, FaTimes, FaSpinner } from 'react-icons/fa';
 import { extractPlaceholders } from '../../api/documentApi';
-import { isSystemKeyword, SYSTEM_KEYWORDS } from '../../utils/documentKeywords';
+import { isSystemKeyword, SYSTEM_KEYWORDS, CHECKBOX_GROUPS } from '../../utils/documentKeywords';
 
 const RequestDocumentModal = ({ 
   isOpen, 
@@ -16,9 +16,8 @@ const RequestDocumentModal = ({
 }) => {
   const [formData, setFormData] = useState({
     document: '',
-    purpose: '',
     requirements: [],
-    placeholders: {} // Add placeholders to form data
+    placeholders: {}
   });
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [showConfirmDiscard, setShowConfirmDiscard] = useState(false);
@@ -32,7 +31,6 @@ const RequestDocumentModal = ({
     if (document) {
       setFormData({
         document: document.id,
-        purpose: '',
         requirements: [],
         placeholders: {}
       });
@@ -52,45 +50,67 @@ const RequestDocumentModal = ({
       const response = await extractPlaceholders(documentId);
       
       if (response.placeholders && response.placeholders.length > 0) {
-        setPlaceholders(response.placeholders);
+         setPlaceholders(response.placeholders);
         
-        // Initialize placeholder values in form data
         const initialPlaceholders = {};
         response.placeholders.forEach(placeholder => {
-          initialPlaceholders[placeholder] = '';
+          initialPlaceholders[placeholder] = placeholder.startsWith('CHECK_') ? 'false' : '';
         });
         
-        setFormData(prev => ({
+         setFormData(prev => ({
           ...prev,
           placeholders: initialPlaceholders
         }));
       }
     } catch (error) {
       console.error('Error fetching placeholders:', error);
-      // Don't show error toast as placeholders are optional
     } finally {
       setLoadingPlaceholders(false);
     }
   };
 
-  const handlePurposeChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      purpose: e.target.value 
-    }));
-    setHasChanges(true);
-  };
+  const handlePlaceholderChange = (placeholder, event) => {
+    if (placeholder === 'DATE_TODAY') {
+      return;
+    }
 
-  const handlePlaceholderChange = (placeholder, value) => {
-    if (isSystemKeyword(placeholder)) return; // Prevent editing system keywords
-    
-    setFormData(prev => ({
-      ...prev,
-      placeholders: {
-        ...prev.placeholders,
-        [placeholder]: value
+    if (event?.target?.type === 'checkbox') {
+      // Clear all checkboxes in the same group first
+      const group = Object.entries(CHECKBOX_GROUPS).find(([_, g]) => 
+        Object.keys(g.checkboxes).includes(placeholder)
+      );
+
+      if (group) {
+        const [groupKey] = group;
+        const groupCheckboxes = Object.keys(CHECKBOX_GROUPS[groupKey].checkboxes);
+        
+        setFormData(prev => {
+          const newPlaceholders = { ...prev.placeholders };
+          // Clear all checkboxes in this group
+          groupCheckboxes.forEach(key => {
+            newPlaceholders[key] = '';
+          });
+          // Set the selected checkbox
+          newPlaceholders[placeholder] = event.target.checked ? '✓' : '';
+          return {
+            ...prev,
+            placeholders: newPlaceholders
+          };
+        });
       }
-    }));
+    } else {
+      // Handle regular input fields
+      const newValue = event?.target?.value || event;
+      setFormData(prev => ({
+        ...prev,
+        placeholders: {
+          ...prev.placeholders,
+          [placeholder]: newValue
+        }
+      }));
+    }
+    
+    setHasChanges(true);
   };
 
   const formatPlaceholderLabel = (placeholder) => {
@@ -133,12 +153,6 @@ const RequestDocumentModal = ({
   };
 
   const validateForm = () => {
-    // Check if purpose is provided
-    if (!formData.purpose?.trim()) {
-      showCustomToast('Please enter a purpose', 'error');
-      return false;
-    }
-
     // Check if all required documents are uploaded
     const missingRequirements = document?.requirements?.filter(
       req => !formData.requirements.find(r => r.requirement_id === req.id)
@@ -155,8 +169,8 @@ const RequestDocumentModal = ({
     // Only check non-system placeholders
     const emptyPlaceholders = placeholders.filter(
       placeholder => {
-        // Skip validation for system keywords
         if (isSystemKeyword(placeholder)) return false;
+        if (placeholder.startsWith('CHECK_')) return false;
         return !formData.placeholders[placeholder]?.trim();
       }
     );
@@ -182,7 +196,6 @@ const RequestDocumentModal = ({
     try {
       const requestFormData = new FormData();
       requestFormData.append('document', document.id);
-      requestFormData.append('purpose', formData.purpose);
 
       // Process placeholders including system keywords
       const processedPlaceholders = {};
@@ -230,20 +243,53 @@ const RequestDocumentModal = ({
     }
   }, [document]);
 
+  const groupPlaceholders = (placeholders) => {
+    const groups = {};
+    const ungrouped = [];
+
+    placeholders.forEach(placeholder => {
+      if (placeholder.startsWith('CHECK_')) {
+        // Find which group this checkbox belongs to
+        const groupEntry = Object.entries(CHECKBOX_GROUPS).find(([_, group]) => 
+          Object.keys(group.checkboxes).includes(placeholder)
+        );
+        
+        if (groupEntry) {
+          const [groupKey] = groupEntry;
+          if (!groups[groupKey]) {
+            groups[groupKey] = [];
+          }
+          groups[groupKey].push(placeholder);
+        } else {
+          ungrouped.push(placeholder);
+        }
+      } else {
+        ungrouped.push(placeholder);
+      }
+    });
+
+    return { groups, ungrouped };
+  };
+
   const renderPlaceholderInput = (placeholder) => {
-    // Handle checkbox placeholders
     if (placeholder.startsWith('CHECK_')) {
+      const group = Object.entries(CHECKBOX_GROUPS).find(([_, g]) => 
+        Object.keys(g.checkboxes).includes(placeholder)
+      );
+      
+      const isChecked = formData.placeholders[placeholder] === '✓';
+      
       return (
         <div key={placeholder} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
           <input
             type="checkbox"
             id={placeholder}
-            checked={formData.placeholders[placeholder] === 'true'}
-            onChange={(e) => handlePlaceholderChange(placeholder, e)}
+            checked={isChecked}
+            onChange={e => handlePlaceholderChange(placeholder, e)}
             className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
           />
-          <label htmlFor={placeholder} className="text-sm text-gray-700">
-            {formatPlaceholderLabel(placeholder.replace('CHECK_', ''))}
+          <label htmlFor={placeholder} className="text-sm text-gray-700 cursor-pointer select-none">
+            {group ? group[1].checkboxes[placeholder] : formatPlaceholderLabel(placeholder.replace('CHECK_', ''))}
           </label>
         </div>
       );
@@ -302,27 +348,17 @@ const RequestDocumentModal = ({
       >
         <div className="p-4 space-y-6">
           {/* Document Info */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h4 className="font-medium text-gray-900">{document?.document_name}</h4>
-            <p className="text-sm text-gray-600 mt-1">{document?.description}</p>
-            {document?.contact_no && (
-              <p className="text-xs text-gray-500 mt-2">
-                Contact: {document.contact_no}
-              </p>
-            )}
-          </div>
-
-          {/* Purpose Field*/}
-          <div className="space-y-2">
-            <h4 className="font-medium text-gray-900">Request Purpose</h4>
-            <InputField
-              label="Purpose"
-              placeholder="Enter the purpose for requesting this document"
-              value={formData.purpose}
-              onChange={handlePurposeChange}
-              className="w-full"
-              required
-            />
+          <div className="space-y-4">
+            <h4 className="font-medium text-gray-900">Document Details</h4>
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-900">{document?.document_name}</h4>
+              <p className="text-sm text-gray-600 mt-1">{document?.description}</p>
+              {document?.contact_no && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Contact: {document.contact_no}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Dynamic Placeholder Fields */}
@@ -334,47 +370,65 @@ const RequestDocumentModal = ({
           )}
 
           {placeholders.length > 0 && !loadingPlaceholders && (
-            <div className="space-y-3">
+            <div className="space-y-6">
               <h4 className="font-medium text-gray-900">Document Information</h4>
-              <div className="space-y-3">
-                {placeholders.map(placeholder => renderPlaceholderInput(placeholder))}
+              
+              {/* Render grouped checkboxes */}
+              {Object.entries(groupPlaceholders(placeholders).groups).map(([groupKey, groupPlaceholders]) => (
+                <div key={groupKey} className="space-y-2">
+                  <h5 className="text-sm font-medium text-gray-700">{CHECKBOX_GROUPS[groupKey].label}</h5>
+                  <div className="grid grid-cols-2 gap-2">
+                    {groupPlaceholders.map(placeholder => renderPlaceholderInput(placeholder))}
+                  </div>
+                </div>
+              ))}
+              
+              {/* Render ungrouped placeholders */}
+              <div className="grid grid-cols-1 gap-4">
+                {groupPlaceholders(placeholders).ungrouped.map(placeholder => 
+                  renderPlaceholderInput(placeholder)
+                )}
               </div>
             </div>
           )}
 
-          {/* Requirements */}
-          <div className="space-y-3">
-            <h4 className="font-medium text-gray-900">Requirements</h4>
-            {document?.requirements?.map((req) => (
-              <div key={req.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <label className="block text-sm text-gray-700 mb-2">
-                  {req.name} *
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="file"
-                    onChange={(e) => handleFileUpload(req.id, e.target.files[0])}
-                    className="hidden"
-                    id={`req_${req.id}`}
-                    accept=".pdf"
-                  />
-                  <label
-                    htmlFor={`req_${req.id}`}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm cursor-pointer transition-all duration-200 hover:scale-105"
-                  >
-                    <FaUpload className="w-4 h-4" />
-                    {formData.requirements.find(r => r.requirement_id === req.id) 
-                      ? 'Change File' 
-                      : 'Upload File'
-                    }
-                  </label>
-                  {formData.requirements.find(r => r.requirement_id === req.id) && (
-                    <span className="text-xs text-green-600">✓ File selected</span>
-                  )}
-                </div>
+          {/* Requirements Section */}
+          {document?.requirements?.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-medium text-gray-900">Required Documents</h4>
+              <div className="grid grid-cols-1 gap-4">
+                {document?.requirements?.map((req) => (
+                  <div key={req.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <label className="block text-sm text-gray-700 mb-2">
+                      {req.name} *
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        onChange={(e) => handleFileUpload(req.id, e.target.files[0])}
+                        className="hidden"
+                        id={`req_${req.id}`}
+                        accept=".pdf"
+                      />
+                      <label
+                        htmlFor={`req_${req.id}`}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm cursor-pointer transition-all duration-200 hover:scale-105"
+                      >
+                        <FaUpload className="w-4 h-4" />
+                        {formData.requirements.find(r => r.requirement_id === req.id) 
+                          ? 'Change File' 
+                          : 'Upload File'
+                        }
+                      </label>
+                      {formData.requirements.find(r => r.requirement_id === req.id) && (
+                        <span className="text-xs text-green-600">✓ File selected</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       </Modal>
 
