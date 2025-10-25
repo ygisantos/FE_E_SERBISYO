@@ -209,6 +209,13 @@ const AllResidents = () => {
       accessor: "name",
       render: (value) => <span className="text-xs text-gray-800">{value}</span>,
     },
+    {
+      label: "Age",
+      accessor: "age",
+      render: (value) => (
+        <span className="text-xs text-gray-800">{typeof value === 'number' ? value : '-'}</span>
+      ),
+    },
     { label: "Email", accessor: "email" },
     { label: "Contact No.", accessor: "contact_no" },
     { label: "House No.", accessor: "house_no" },
