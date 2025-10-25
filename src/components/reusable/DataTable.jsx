@@ -11,6 +11,7 @@ import TruncatedText from '../datatable/TruncatedText';
 import URLDisplay from '../datatable/URLDisplay';
 import StatusBadge from '../datatable/StatusBadge';
 import ActionMenu from '../datatable/ActionMenu';
+import Select from './Select';
 
 const DataTable = ({
   columns = [],
@@ -40,6 +41,7 @@ const DataTable = ({
   onSelectionChange = () => {},
   bulkActions = [], // Array of { label, icon, handler }
   comboBoxFilter = null, // { label, options, value, onChange }
+  extraFilters = null, // array of { label, options, value, onChange }
   actionButton = null, // { label, icon, onClick, show, className }
   totalItems,
   currentPage,
@@ -180,6 +182,16 @@ const DataTable = ({
   // For API pagination, totalItems is a prop; otherwise, use filteredData.length
   const computedTotalItems = isControlledPagination ? totalItems : filteredData.length;
 
+  // Helper to set page in both controlled and uncontrolled modes
+  const setPage = (n) => {
+    if (isControlledPagination) {
+      if (onPageChange) onPageChange(n);
+    } else {
+      setInternalPage(n);
+      if (onPageChange) onPageChange(n);
+    }
+  };
+
   // Event handlers
   const handleSort = useCallback(
     (columnId) => {
@@ -224,13 +236,13 @@ const DataTable = ({
 
   const handleFilterChange = useCallback((column, value) => {
     setFilters((prev) => ({ ...prev, [column]: value }));
-    setCurrentPage(1);
+    setPage(1);
   }, []);
 
   const clearAllFilters = useCallback(() => {
     setFilters({});
     setSearchTerm("");
-    setCurrentPage(1);
+    setPage(1);
   }, []);
 
   // Render different cell types
@@ -284,7 +296,7 @@ const DataTable = ({
   const getVisiblePages = () => {
     const visiblePages = [];
     const maxVisible = 5;
-    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let start = Math.max(1, page - Math.floor(maxVisible / 2));
     let end = Math.min(totalPages, start + maxVisible - 1);
 
     if (end - start + 1 < maxVisible) {
@@ -423,17 +435,37 @@ const DataTable = ({
                 <label className="text-xs text-gray-600 font-medium">
                   {comboBoxFilter.label}:
                 </label>
-                <select
-                  value={comboBoxFilter.value}
-                  onChange={(e) => comboBoxFilter.onChange(e.target.value)}
-                  className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 bg-white cursor-pointer transition-all duration-200"
-                >
-                  {comboBoxFilter.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="w-44">
+                  <Select
+                    options={comboBoxFilter.options}
+                    value={comboBoxFilter.options.find(o => o.value === comboBoxFilter.value) || null}
+                    onChange={(opt) => comboBoxFilter.onChange(opt ? opt.value : "")}
+                    placeholder={`Select ${comboBoxFilter.label}`}
+                    isClearable={true}
+                    className="text-xs"
+                  />
+                </div>
+              </div>
+            )}
+            {extraFilters && Array.isArray(extraFilters) && extraFilters.length > 0 && (
+              <div className="flex items-center gap-2">
+                {extraFilters.map((filter) => (
+                  <div className="flex items-center gap-1" key={filter.label}>
+                    <label className="text-xs text-gray-600 font-medium">
+                      {filter.label}:
+                    </label>
+                    <div className="w-44">
+                      <Select
+                        options={filter.options}
+                        value={filter.options.find(o => o.value === filter.value) || null}
+                        onChange={(opt) => filter.onChange(opt ? opt.value : "")}
+                        placeholder={`Select ${filter.label}`}
+                        isClearable={true}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
             {dateFilter && (

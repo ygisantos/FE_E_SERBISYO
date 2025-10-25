@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../../components/reusable/DataTable";
+import InputField from "../../../components/reusable/InputField";
+import Select from "../../../components/reusable/Select";
 import { fetchAllResidents } from "../../../api/adminApi";
 import { getUserById } from "../../../api/userApi";
 import { FaEye, FaEdit, FaArchive } from "react-icons/fa";
@@ -21,6 +23,7 @@ const AllResidents = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [residentToArchive, setResidentToArchive] = useState(null);
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [sortConfig, setSortConfig] = useState({
     sort_by: "created_at",
     order: "desc",
@@ -29,6 +32,8 @@ const AllResidents = () => {
   const [filters, setFilters] = useState({
     min_age: "",
     max_age: "",
+    pwd: "", // '', '1' => has PWD, '0' => no PWD
+    single_parent: "", // '', '1' => has single parent, '0' => no
   });
 
   const ageRangeOptions = [
@@ -39,6 +44,18 @@ const AllResidents = () => {
     { value: "36-45", label: "36-45 years" },
     { value: "46-59", label: "46-59 years" },
     { value: "60-up", label: "60+ years" },
+  ];
+
+  const pwdOptions = [
+    { value: "", label: "All" },
+    { value: "1", label: "With PWD" },
+    { value: "0", label: "Without PWD" },
+  ];
+
+  const singleParentOptions = [
+    { value: "", label: "All" },
+    { value: "1", label: "With Single Parent" },
+    { value: "0", label: "Without Single Parent" },
   ];
 
   const getProfilePicUrl = (path) => {
@@ -70,6 +87,8 @@ const AllResidents = () => {
       order: sortConfig.order,
       min_age: filters.min_age || undefined,
       max_age: filters.max_age || undefined,
+      pwd: filters.pwd !== "" ? filters.pwd : undefined,
+      single_parent: filters.single_parent !== "" ? filters.single_parent : undefined,
     })
       .then((response) => {
         const residentsWithName = response.data.map((r) => ({
@@ -86,7 +105,16 @@ const AllResidents = () => {
         setTotal(0);
       })
       .finally(() => setLoading(false));
-  }, [page, search, sortConfig, filters.min_age, filters.max_age]);
+  }, [page, search, sortConfig, filters.min_age, filters.max_age, filters.pwd, filters.single_parent]);
+
+  // Debounce search input to avoid too many requests while typing
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const handleSearch = (value) => {
     setSearch(value);
@@ -134,6 +162,16 @@ const AllResidents = () => {
     setPage(1);
   };
 
+  const handlePwdChange = (val) => {
+    setFilters((prev) => ({ ...prev, pwd: val }));
+    setPage(1);
+  };
+
+  const handleSingleParentChange = (val) => {
+    setFilters((prev) => ({ ...prev, single_parent: val }));
+    setPage(1);
+  };
+
   const columns = [
     {
       label: "Profile Picture",
@@ -171,12 +209,34 @@ const AllResidents = () => {
       accessor: "name",
       render: (value) => <span className="text-xs text-gray-800">{value}</span>,
     },
+    {
+      label: "Age",
+      accessor: "age",
+      render: (value) => (
+        <span className="text-xs text-gray-800">{typeof value === 'number' ? value : '-'}</span>
+      ),
+    },
     { label: "Email", accessor: "email" },
     { label: "Contact No.", accessor: "contact_no" },
     { label: "House No.", accessor: "house_no" },
-    { label: "Street", accessor: "street" },
-    { label: "Municipality", accessor: "municipality" },
-    { label: "Barangay", accessor: "barangay" },
+    {
+      label: "PWD",
+      accessor: "pwd_number",
+      render: (value, row) => (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${row.pwd_number ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+          {row.pwd_number ? 'Yes' : 'No'}
+        </span>
+      ),
+    },
+    {
+      label: "Single Parent",
+      accessor: "single_parent_number",
+      render: (value, row) => (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${row.single_parent_number ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+          {row.single_parent_number ? 'Yes' : 'No'}
+        </span>
+      ),
+    },
     {
       label: "Status",
       accessor: "status",
@@ -209,12 +269,85 @@ const AllResidents = () => {
 
         {/* Main Content */}
         <div className="bg-white rounded-lg shadow-sm">
-          <div className="px-6 py-4">
+          <div className="px-6 py-4 space-y-4">
+            {/* Filters toolbar */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+              <div className="flex items-center gap-3 w-full lg:w-auto flex-wrap">
+                <div className="w-full sm:w-80">
+                  <InputField
+                    label={null}
+                    placeholder="Search by name, email, or contact number..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    icon={null}
+                    className=""
+                  />
+                </div>
+
+                <div className="w-44">
+                  <Select
+                    label={null}
+                    options={ageRangeOptions}
+                    value={
+                      (() => {
+                        const combined = filters.min_age
+                          ? `${filters.min_age}-${
+                              filters.max_age === "150" ? "up" : filters.max_age
+                            }`
+                          : "";
+                        return ageRangeOptions.find((o) => o.value === combined) || null;
+                      })()
+                    }
+                    onChange={(opt) => handleAgeRangeChange(opt ? opt.value : "")}
+                    placeholder="Age Range"
+                  />
+                </div>
+
+                <div className="w-44">
+                  <Select
+                    label={null}
+                    options={pwdOptions}
+                    value={pwdOptions.find((o) => o.value === filters.pwd) || null}
+                    onChange={(opt) => handlePwdChange(opt ? opt.value : "")}
+                    placeholder="PWD"
+                  />
+                </div>
+
+                <div className="w-44">
+                  <Select
+                    label={null}
+                    options={singleParentOptions}
+                    value={
+                      singleParentOptions.find((o) => o.value === filters.single_parent) || null
+                    }
+                    onChange={(opt) => handleSingleParentChange(opt ? opt.value : "")}
+                    placeholder="Single Parent"
+                  />
+                </div>
+
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // reset filters
+                      setSearchInput("");
+                      setSearch("");
+                      setFilters({ min_age: "", max_age: "", pwd: "", single_parent: "" });
+                      setPage(1);
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <DataTable
               columns={columns}
               data={residents}
               loading={loading}
-              enableSearch={true}
+              enableSearch={false}
               enablePagination={true}
               onPageChange={setPage}
               totalItems={total}
@@ -234,16 +367,7 @@ const AllResidents = () => {
                 direction: sortConfig.order,
               }}
               emptyMessage="No residents found"
-              comboBoxFilter={{
-                label: "Age Range",
-                value: filters.min_age
-                  ? `${filters.min_age}-${
-                      filters.max_age === "150" ? "up" : filters.max_age
-                    }`
-                  : "",
-                onChange: handleAgeRangeChange,
-                options: ageRangeOptions,
-              }}
+              
               actions={[
                 {
                   icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
