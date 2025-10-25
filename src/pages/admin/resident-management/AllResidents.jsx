@@ -212,9 +212,24 @@ const AllResidents = () => {
     { label: "Email", accessor: "email" },
     { label: "Contact No.", accessor: "contact_no" },
     { label: "House No.", accessor: "house_no" },
-    { label: "Street", accessor: "street" },
-    { label: "Municipality", accessor: "municipality" },
-    { label: "Barangay", accessor: "barangay" },
+    {
+      label: "PWD",
+      accessor: "pwd_number",
+      render: (value, row) => (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${row.pwd_number ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+          {row.pwd_number ? 'Yes' : 'No'}
+        </span>
+      ),
+    },
+    {
+      label: "Single Parent",
+      accessor: "single_parent_number",
+      render: (value, row) => (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${row.single_parent_number ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+          {row.single_parent_number ? 'Yes' : 'No'}
+        </span>
+      ),
+    },
     {
       label: "Status",
       accessor: "status",

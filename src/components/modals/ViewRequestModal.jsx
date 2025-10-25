@@ -17,6 +17,12 @@ const ViewRequestModal = ({
 
   if (!request) return null;
 
+  // Support two shapes of the show API response:
+  // 1) direct request object
+  // 2) { request_document: { ... }, user_blotters: [...] }
+  const req = request.request_document || request;
+  const history = request.user_blotters || request.user_history || [];
+
   const handlePreviewPdf = (url) => {
     const fullUrl = getFileUrl(url);
     setSelectedPdf(fullUrl);
@@ -63,10 +69,10 @@ const ViewRequestModal = ({
 
   // Get timestamp for a specific status from certificate logs
   const getStatusTimestamp = (status) => {
-    if (!request.certificate_logs?.length) return null;
+  if (!req.certificate_logs?.length) return null;
     
     // Get the log that matches the status change
-    const log = request.certificate_logs.find(log => {
+  const log = req.certificate_logs.find(log => {
       if (status === 'submitted') return log.remark.includes('request created');
       if (status === 'processing') return log.remark.includes('being processed');
       if (status === 'ready to pickup') return log.remark.includes('ready for pickup');
@@ -82,7 +88,7 @@ const ViewRequestModal = ({
     {
       status: 'submitted',
       label: 'Request Submitted',
-      date: request.created_at, // Use request creation date for submitted status
+    date: req.created_at, // Use request creation date for submitted status
       description: 'Request has been received and is awaiting review',
       icon: <FaClock className="w-4 h-4" />,
       color: 'yellow'
@@ -90,7 +96,7 @@ const ViewRequestModal = ({
     {
       status: 'processing',
       label: 'Processing',
-      date: getStatusTimestamp('processing'),
+    date: getStatusTimestamp('processing'),
       description: 'Documents are being prepared',
       icon: <FaClock className="w-4 h-4" />,
       color: 'blue'
@@ -98,7 +104,7 @@ const ViewRequestModal = ({
     {
       status: 'ready to pickup',
       label: 'Ready for Pickup',
-      date: getStatusTimestamp('ready to pickup'),
+    date: getStatusTimestamp('ready to pickup'),
       description: 'Documents are ready for collection',
       icon: <FaCheck className="w-4 h-4" />,
       color: 'purple'
@@ -106,13 +112,13 @@ const ViewRequestModal = ({
     {
       status: 'released',
       label: 'Released',
-      date: getStatusTimestamp('released'),
+    date: getStatusTimestamp('released'),
       description: 'Documents have been collected',
       icon: <FaCheck className="w-4 h-4" />,
       color: 'green'
     },
     // Only show rejected step if status is rejected
-    ...(request.status === 'rejected' ? [{
+    ...(req.status === 'rejected' ? [{
       status: 'rejected',
       label: 'Request Rejected',
       date: getStatusTimestamp('rejected'),
@@ -123,12 +129,12 @@ const ViewRequestModal = ({
   ];
 
   const currentStepIndex = requestSteps.findIndex(step => {
-    if (request.status === 'rejected') {
+    if (req.status === 'rejected') {
       // For rejected status, only show the submitted step as active
       return step.status === 'submitted';
     }
-    return step.status === request.status || 
-      (step.status === 'submitted' && request.status === 'pending');
+    return step.status === req.status || 
+      (step.status === 'submitted' && req.status === 'pending');
   });
 
   const ActionButton = ({ label, onClick, variant = 'default' }) => (
@@ -153,7 +159,7 @@ const ViewRequestModal = ({
         {isLongText ? (
           <CollapsibleText text={value} />
         ) : (
-          <p className="text-sm font-medium text-gray-900 whitespace-pre-wrap break-words">
+    <p className="text-sm font-medium text-gray-900 whitespace-pre-wrap wrap-break-word">
             {value || 'N/A'}
           </p>
         )}
@@ -241,53 +247,53 @@ const ViewRequestModal = ({
         <DetailItem
           icon={FaUser}
           label="Full Name"
-          value={`${request.account.first_name} ${request.account.middle_name || ''} ${request.account.last_name} ${request.account.suffix || ''}`}
+          value={`${req.account?.first_name || ''} ${req.account?.middle_name || ''} ${req.account?.last_name || ''} ${req.account?.suffix || ''}`}
         />
         <DetailItem
           icon={FaBirthdayCake}
           label="Birth Date"
-          value={formatDate(request.account.birthday)}
+          value={formatDate(req.account?.birthday)}
         />
         <DetailItem
           icon={FaUser}
           label="Age"
-          value={`${request.account.age || 'N/A'} `}
+          value={`${req.account?.age || 'N/A'} `}
         />
         <DetailItem
           icon={FaUser}
           label="Civil Status"
-          value={request.account.civil_status}
+          value={req.account?.civil_status}
         />
         <DetailItem
           icon={FaUser}
           label="Nationality"
-          value={request.account.nationality}
+          value={req.account?.nationality}
         />
         <DetailItem
           icon={FaPhone}
           label="Contact Number"
-          value={request.account.contact_no}
+          value={req.account?.contact_no}
         />
         <DetailItem
           icon={FaEnvelope}
           label="Email Address"
-          value={request.account.email}
+          value={req.account?.email}
         />
         <DetailItem
           icon={FaIdCard}
           label="ID Type"
-          value={request.account.id_type || 'Not provided'}
+          value={req.account?.id_type || 'Not provided'}
         />
         <DetailItem
           icon={FaIdCard}
           label="ID Number"
-          value={request.account.id_number || 'Not provided'}
+          value={req.account?.id_number || 'Not provided'}
         />
         <div className="sm:col-span-2">
           <DetailItem
             icon={FaMapMarkerAlt}
             label="Complete Address"
-            value={`${request.account.house_no} ${request.account.street}, ${request.account.barangay}, ${request.account.municipality}`}
+            value={`${req.account?.house_no || ''} ${req.account?.street || ''}, ${req.account?.barangay || ''}, ${req.account?.municipality || ''}`}
           />
         </div>
       </div>
@@ -307,11 +313,11 @@ const ViewRequestModal = ({
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <div className="flex-1 min-w-0">
               <h3 className="text-sm sm:text-base font-medium text-gray-900 truncate">
-                {request.document_details.document_name}
+                {req.document_details?.document_name}
               </h3>
-              <p className="text-xs text-gray-500 mt-0.5">Reference No: {request.transaction_id}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Reference No: {req.transaction_id}</p>
             </div>
-            <StatusBadge status={request.status} />
+            <StatusBadge status={req.status} />
           </div>
         </div>
 
@@ -341,12 +347,12 @@ const ViewRequestModal = ({
               <DetailItem
                 icon={FaFilePdf}
                 label="Document Type"
-                value={request.document_details.document_name}
+                value={req.document_details?.document_name}
               />
               <DetailItem
                 icon={FaUser}
                 label="Purpose"
-                value={request.purpose}
+                value={req.purpose}
                 isLongText={true}
               />
             </div>
@@ -359,20 +365,20 @@ const ViewRequestModal = ({
           <section className="bg-white rounded-lg border p-4">
             <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-3">Requirements</h4>
             <div className="space-y-2">
-              {request.uploaded_requirements?.length > 0 ? (
-                request.uploaded_requirements.map((req) => (
-                  <div key={req.id} className="flex items-start gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
+              {req.uploaded_requirements?.length > 0 ? (
+                req.uploaded_requirements.map((r) => (
+                  <div key={r.id} className="flex items-start gap-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
                     <FaFilePdf className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-gray-900 break-words">
-                        {req.requirement.name}
+                      <p className="text-xs sm:text-sm font-medium text-gray-900 wrap-break-word">
+                        {r.requirement.name}
                       </p>
                       <p className="text-[11px] text-gray-500 mt-1">
-                        {new Date(req.created_at).toLocaleString()}
+                        {new Date(r.created_at).toLocaleString()}
                       </p>
                     </div>
                     <button
-                      onClick={() => handlePreviewPdf(req.file_path)}
+                      onClick={() => handlePreviewPdf(r.file_path)}
                       className="shrink-0 flex items-center gap-1.5 px-2 py-1 text-xs text-gray-600 hover:text-red-600"
                     >
                       <FaEye className="w-3.5 h-3.5" />
@@ -389,37 +395,67 @@ const ViewRequestModal = ({
               )}
             </div>
           </section>
+
+          {/* User History Section (from show API: user_blotters) */}
+          <section className="bg-white rounded-lg border p-4">
+            <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-3">User History</h4>
+            <div className="space-y-3">
+              {history?.length > 0 ? (
+                history.map((h) => (
+                  <div key={h.id} className="flex items-start justify-between gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{h.case_number} • {h.case_type}</p>
+                      <p className="text-xs text-gray-500 mt-1">Status: <span className="font-medium text-gray-700">{h.status}</span></p>
+                      <p className="text-xs text-gray-400 mt-1">Filed: {h.date_filed}</p>
+                      {h.complaint_details && (
+                        <p className="text-xs text-gray-500 mt-1">{h.complaint_details}</p>
+                      )}
+                    </div>
+                    {h.attached_proof_url ? (
+                      <a href={h.attached_proof_url} target="_blank" rel="noreferrer" className="text-xs text-red-600 hover:underline">View proof</a>
+                    ) : (
+                      <span className="text-xs text-gray-400">No proof</span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center py-6 px-4 text-center bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">No history available for this user</p>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
 
         {/* Footer - Fixed */}
         {isStaff && (
           <div className="px-4 sm:px-6 py-3 border-t bg-gray-50 mt-auto">
             <div className="flex justify-end gap-2">
-              {request.status === 'pending' && (
+              {req.status === 'pending' && (
                 <ActionButton
                   label="Process Request"
-                  onClick={() => onUpdateStatus(request.id, 'processing')}
+                  onClick={() => onUpdateStatus(req.id, 'processing')}
                   variant="primary"
                 />
               )}
-              {request.status === 'processing' && (
+              {req.status === 'processing' && (
                 <ActionButton
                   label="Mark as Ready"
-                  onClick={() => onUpdateStatus(request.id, 'ready to pickup')}
+                  onClick={() => onUpdateStatus(req.id, 'ready to pickup')}
                   variant="primary"
                 />
               )}
-              {request.status === 'ready to pickup' && (
+              {req.status === 'ready to pickup' && (
                 <ActionButton
                   label="Release"
-                  onClick={() => onUpdateStatus(request.id, 'released')}
+                  onClick={() => onUpdateStatus(req.id, 'released')}
                   variant="primary"
                 />
               )}
-              {['pending', 'processing'].includes(request.status) && (
+              {['pending', 'processing'].includes(req.status) && (
                 <ActionButton
                   label="Reject"
-                  onClick={() => onUpdateStatus(request.id, 'rejected')}
+                  onClick={() => onUpdateStatus(req.id, 'rejected')}
                   variant="danger"
                 />
               )}
