@@ -5,6 +5,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "../Navbar";
 import UserSidebar from "../Sidebar";
 import logo from "../../assets/logo/santol_logo.png";
+import { useConfig } from '../../hooks/useConfig';
 import { LoadingProvider, useLoading } from "../LoadingContext";
 import LoadingSpinner from "../Loading";
 import CustomToastContainer from "../Toast/CustomToast";
@@ -28,7 +29,8 @@ const shouldShowSidebar = (pathname) => {
   );
 };
 
-const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg = logo }) => {
+const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg }) => {
+  const logoUrl = useConfig('logo_url') || logo;
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
 
@@ -142,7 +144,7 @@ const Layout = ({ children, title = "Barangay Santoleño", links = [], logoImg =
         
         <div className={`min-h-screen flex flex-col bg-white ${isMobile && sidebarOpen ? 'overflow-hidden' : ''}`}>
           <Navbar
-            logo={logoImg}
+            logo={logoImg || logoUrl}
             title={title}
             navOpen={sidebarOpen}
             setNavOpen={setSidebarOpen}

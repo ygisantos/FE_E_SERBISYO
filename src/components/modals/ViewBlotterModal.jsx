@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../Modal/Modal";
 import municipalSeal from "../../assets/logo/santol_logo.png";
+import { useConfig } from '../../hooks/useConfig';
 import { updateBlotterStatus, getBlotterHistory } from "../../api/blotterApi";
 import { showCustomToast } from "../Toast/CustomToast";
 import { useUser } from "../../contexts/UserContext";
@@ -145,6 +146,7 @@ const ViewBlotterModal = ({ isOpen, onClose, data = false }) => {
     </Modal>
   );
 
+  const logoUrl = useConfig('logo_url') || municipalSeal;
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} title="Sumbong Details" size="xl">
@@ -155,7 +157,7 @@ const ViewBlotterModal = ({ isOpen, onClose, data = false }) => {
             <div className="relative text-center font-serif p-4">
               <div className="absolute left-0 top-0 w-16 sm:w-20 md:w-24 p-2">
                 <img
-                  src={municipalSeal}
+                  src={logoUrl}
                   alt="Municipal Seal of Barangay Santol"
                   className="w-full h-auto object-contain"
                 />

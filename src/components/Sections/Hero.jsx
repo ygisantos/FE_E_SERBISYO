@@ -12,6 +12,8 @@ const HeroSection = () => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [location.pathname]);
 
+  const logoUrl = useConfig('logo_url') || santolLogo;
+
   return (
     <section
       id="hero"
@@ -25,8 +27,8 @@ const HeroSection = () => {
       <div className="container max-w-5xl mx-auto px-4 sm:px-6">
         <div className="flex flex-col items-center text-center">
           <img 
-            src={santolLogo} 
-            alt="Barangay Santol Logo" 
+            src={logoUrl} 
+            alt="Barangay Logo" 
             className="w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 rounded-full object-cover bg-white/90 border-2 border-white shadow-lg mb-6 sm:mb-8" 
           />
 

@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import configService from "../utils/configService";
 import ConfirmationModal from "./modals/ConfirmationModal";
 import logo from "../assets/logo/santol_logo.png";
+import { useConfig } from '../hooks/useConfig';
 
 const Navbar = ({
   navOpen, // eslint-disable-line no-unused-vars
@@ -31,7 +32,8 @@ const Navbar = ({
       `${userData.first_name} ${userData.last_name}` : 
       userData?.name || userData?.username || "User");
   const userRole = userData?.type || "resident";
-  const userAvatar = userData?.profilePicture || logo;
+  const logoUrl = useConfig('logo_url') || logo;
+  const userAvatar = userData?.profilePicture || logoUrl;
 
   useEffect(() => {
     // Get app name from configuration
@@ -144,9 +146,7 @@ const Navbar = ({
           onClick={handleLogoClick}
           className="flex items-center gap-2 min-w-0"
         >
-          {propLogo && (
-            <img src={propLogo} alt="Logo" className="h-8 w-8 rounded-full object-cover bg-white/80 border border-white shadow" />
-          )}
+          <img src={logoUrl} alt="Logo" className="h-8 w-8 rounded-full object-cover bg-white/80 border border-white shadow" />
           <span className="text-xs font-bold text-white tracking-tight uppercase hidden sm:inline sm:text-xs md:text-sm lg:text-base xl:text-lg transition-all duration-200">
             {appName}
           </span>

@@ -12,12 +12,13 @@ const Footer = () => {
   const appName = useConfig('app_name')
   const fbLink = useConfig('fb_link')
 
+  const logoUrl = useConfig('logo_url') || logo;
   return (
   <footer className="w-full bg-red-800 text-white py-10 px-4 flex flex-col items-center justify-center mt-auto max-w-full overflow-x-visible border-t border-red-900">
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 w-full max-w-5xl mb-6 text-left text-xs sm:text-sm">
       {/* Brand */}
       <div className="flex flex-col items-center sm:items-start gap-2">
-        <img src={logo} alt="Barangay Santol Logo" className="h-12 w-12 sm:h-16 sm:w-16 rounded-full object-cover bg-white/80 border border-white shadow mb-1" />
+  <img src={logoUrl} alt="Barangay Logo" className="h-12 w-12 sm:h-16 sm:w-16 rounded-full object-cover bg-white/80 border border-white shadow mb-1" />
         <span className="font-extrabold text-xl sm:text-2xl text-white tracking-wide">{appName}</span>
         <span className="flex items-center gap-2 text-xs sm:text-sm text-white/90"><FiMapPin className="inline-block" /> {exactAddress}</span>
       </div>
