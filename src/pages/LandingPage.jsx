@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import HeroSection from "../components/Sections/Hero";
 import AnnouncementsSection from "../components/Sections/Announcements";
 import FeaturesSection from "../components/Sections/Features";
+import MissionVision from "../components/Sections/MissionVision";  
 import AboutSection from "../components/Sections/About";
 import HowItWorksSection from "../components/Sections/HowItWorks";
 import ContactSection from "../components/Sections/Contact";
@@ -21,6 +22,7 @@ const LandingPage = () => {
       <HeroSection />
       <AnnouncementsSection />
       <FeaturesSection />
+      <MissionVision /> 
       <AboutSection />
       <HowItWorksSection />
       <ContactSection />
@@ -30,5 +32,4 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
- 
- 
+

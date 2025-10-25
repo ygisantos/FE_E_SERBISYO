@@ -1,203 +1,206 @@
 {
   "barangayInfo": {
     "name": "Barangay Santol",
-    "location": "Balagtas, Bulacan",
-    "officeHours": "Lunes - Biyernes: 8:00 AM - 5:00 PM",
+    "location": "Santol, Balagtas, Bulacan",
+    "officeHours": "Lunes - Sabado: 8:00 AM - 5:00 PM",
     "contactInfo": {
       "telephone": "(044) 123-4567",
       "mobile": "+63 912 345 6789",
-      "email": "brgy.santol@balagtas.gov.ph",
-      "emergencyHotline": "0917-XXX-XXXX"
-    }
+      "email": "brgy.santol@balagtas.gov.ph"
+     }
+  },
+  "mission_vision": {
+    "mission": "Maisaayos at maipatupad ang lahat ng mga plano at programa ng barangay upang maging matagumpay at kapaki-pakinabang para sa mga mamamayan.",
+    "vision": "Ang Barangay Santol ay isang progresibo at maunlad na barangay na may handa at nagkakaisang mamamayan at matalag na pamumuhay. Mayroong tahimik, matiwasay at malinis na kapaligiran na pinangangasiwaaan ng mga tapat at masigasig na lingkod barangay."
   },
   "documents": {
+    "communityTaxCertificate": {
+      "name": "Community Tax Certificate (CTC)",
+      "description": "Also known as Cedula — proof of payment of community tax.",
+      "requirements": [
+        {
+          "name": "Valid ID",
+          "details": "Original ID na may litrato tulad ng: Driver's License, UMID, Passport, atbp.",
+          "source": "personal"
+        },
+        {
+          "name": "Application Form",
+          "details": "Fill up ng form sa barangay hall",
+          "source": "barangay"
+        }
+      ],
+      "processingTime": "3 minutes",
+      "validityPeriod": "1 year",
+      "fee": "₱50.00 (minimum)",
+      "whereToFile": "Barangay Hall",
+      "onlineRequest": false,
+      "note": "Lahat ng requirements ay kailangang ipakita sa barangay"
+    },
     "barangayClearance": {
       "name": "Barangay Clearance",
-      "description": "Dokumentong nagpapatunay na ikaw ay residente ng barangay at walang derogatory record.",
+      "description": "Dokumentong nagpapatunay na ikaw ay residente ng barangay.",
       "requirements": [
-        "Valid ID (Original at photocopy)",
-        "Community Tax Certificate (Cedula)",
-        "Proof of Residency (kung hindi ka nakalista sa masterlist)",
-        "Latest na bayarin ng kuryente o tubig"
+        {
+          "name": "Valid ID",
+          "details": "Dapat kasalukuyang valid at may litrato",
+          "source": "personal",
+          "submission": "upload"
+        },
+        {
+          "name": "Community Tax Certificate (Cedula)",
+          "details": "Kukunin muna sa barangay hall bago mag-apply online",
+          "source": "barangay",
+          "submission": "present"
+        },
+        {
+          "name": "Previous Barangay Clearance",
+          "details": "Kung meron, i-upload ang dating clearance",
+          "source": "personal",
+          "submission": "upload",
+          "optional": true
+        }
       ],
-      "processingTime": "15-30 minuto",
-      "validityPeriod": "6 na buwan",
-      "fee": "₱50.00",
-      "whereToFile": "Barangay Hall - Window 1",
-      "steps": [
-        "Maghanda ng mga kinakailangang dokumento",
-        "Pumunta sa Barangay Hall - Window 1",
-        "Ipakita ang mga requirements sa staff",
-        "Magbayad ng processing fee",
-        "Maghintay ng 15-30 minuto para sa releasing"
-      ]
+      "validityPeriod": "6 months",
+      "fee": "₱25.00",
+      "whereToFile": "E-Serbisyo Online Portal",
+      "onlineRequest": true,
+      "systemRequirements": ["valid_id", "previous_clearance"],
+      "physicalRequirements": ["cedula"],
+      "note": "Magdala ng CTC/Cedula sa pag-claim. Bayad sa barangay."
     },
-    "certificateOfResidency": {
-      "name": "Certificate of Residency",
-      "description": "Dokumentong nagpapatunay na ikaw ay naninirahan sa barangay.",
+    "businessClearance": {
+      "name": "Business Clearance",
+      "description": "Clearance for business registration and compliance.",
       "requirements": [
-        "Valid ID (Original at photocopy)",
-        "Proof of Residency",
-        "Latest na bayarin ng kuryente o tubig"
+        "DTI/SEC Registration",
+        "Recent CTC",
+        "Fill up form",
+        "Previous Barangay Business Clearance",
+        "Pay inspection fee"
       ],
-      "processingTime": "15 minuto",
-      "validityPeriod": "6 na buwan",
-      "fee": "₱30.00",
-      "whereToFile": "Barangay Hall - Window 1"
+      "validityPeriod": "1 year",
+      "fee": "Depends on Revenue Code",
+      "whereToFile": "E-Serbisyo Online Portal",
+      "onlineRequest": true,
+      "note": "Payment should be made at the Barangay Hall upon pickup"
     },
-    "barangayID": {
-      "name": "Barangay ID",
-      "description": "Opisyal na ID na nagpapatunay na ikaw ay residente ng barangay.",
+    "buildingClearance": {
+      "name": "Building/Electrical Clearance",
+      "description": "Required clearance for construction/electrical works.",
       "requirements": [
-        "2x2 ID Picture (3 piraso)",
-        "Birth Certificate/Valid ID",
-        "Proof of Residency",
-        "Community Tax Certificate (Cedula)"
+        "Recent CTC",
+        "Fill up info",
+        "Previous Building/Electrical Clearance",
+        "Pay inspection fee"
       ],
-      "processingTime": "1-2 araw",
-      "validityPeriod": "1 taon",
+      "validityPeriod": "Project duration",
       "fee": "₱100.00",
-      "whereToFile": "Barangay Hall - Window 2"
+      "whereToFile": "E-Serbisyo Online Portal",
+      "onlineRequest": true,
+      "note": "Payment should be made at the Barangay Hall upon pickup"
+    },
+    "residency": {
+      "name": "Certificate of Residency",
+      "description": "Certification of residence in the barangay.",
+      "requirements": [
+        "Valid ID / Fill up info",
+        "Previous Certificate (if any)",
+        "Pay fee"
+      ],
+      "validityPeriod": "6 months",
+      "fee": "₱0.00",
+      "whereToFile": "E-Serbisyo Online Portal",
+      "onlineRequest": true
+    },
+    "indigency": {
+      "name": "Certificate of Indigency",
+      "description": "Certification for indigent residents.",
+      "requirements": [
+        {
+          "name": "Valid ID",
+          "details": "Government-issued ID na may litrato at address",
+          "source": "personal",
+          "submission": "upload"
+        },
+        {
+          "name": "Proof of Income",
+          "details": "Pay slip, certification of unemployment, o iba pang katibayan",
+          "source": "personal",
+          "submission": "upload",
+          "optional": true
+        },
+        {
+          "name": "Interview",
+          "details": "Personal na pakikipanayam sa social worker",
+          "source": "barangay",
+          "submission": "personal"
+        }
+      ],
+      "validityPeriod": "3 months",
+      "fee": "₱0.00",
+      "whereToFile": "E-Serbisyo Online Portal",
+      "onlineRequest": true,
+      "systemRequirements": ["valid_id", "proof_of_income"],
+      "physicalRequirements": ["interview"],
+      "note": "Required ang personal interview sa social worker bago ma-approve"
     }
   },
   "services": {
-    "blotterReport": {
-      "name": "Blotter Report",
-      "description": "Para sa pag-uulat ng mga insidente o reklamo sa barangay.",
-      "requirements": [
-        "Valid ID ng complainant",
-        "Supporting documents (kung mayroon)",
-        "Listahan ng witnesses (kung mayroon)"
-      ],
+    "sumbongReport": {
+      "name": "Sumbong",
+      "description": "Para sa pag-uulat ng mga insidente o reklamo sa barangay. Maaaring mag-report sa online system.",
+      "onlineReporting": true,
       "process": [
-        "Pumunta sa Barangay Hall",
-        "Mag-fill up ng complaint form",
-        "Interview sa Barangay Officer",
-        "Scheduling ng hearing (kung kinakailangan)"
+        "Mag-login sa E-Serbisyo Portal",
+        "Pumili ng 'Report/Sumbong' sa menu",
+        "Punan ang form at ilagay ang detalye ng reklamo",
+        "I-submit ang report",
+        "Hintayin ang update mula sa barangay"
       ],
-      "schedule": "Lunes - Biyernes, 9:00 AM - 4:00 PM",
-      "location": "Barangay Hall - Peace and Order Section"
-    },
-    "certification": {
-      "businessPermit": {
-        "name": "Business Permit Certification",
-        "requirements": [
-          "DTI Registration",
-          "Valid ID ng owner",
-          "Proof of Business Location",
-          "Barangay Clearance",
-          "Fire Safety Inspection Certificate"
-        ],
-        "fee": "₱500.00",
-        "processingTime": "2-3 araw"
-      }
+      "available": "24/7 sa online system",
+      "note": "Para sa emergency cases, tumawag direkta sa mga hotline numbers ng barangay"
     }
   },
-  "programs": {
-    "health": {
-      "vaccination": {
-        "name": "Libreng Bakuna",
-        "schedule": "Tuwing Sabado, 8:00 AM - 12:00 NN",
-        "location": "Barangay Health Center",
-        "requirements": [
-          "Health Card",
-          "Birth Certificate (para sa mga bata)",
-          "Valid ID ng magulang"
-        ]
-      },
-      "medical": {
-        "name": "Medical Mission",
-        "frequency": "Quarterly",
-        "services": [
-          "General Check-up",
-          "Dental Services",
-          "Eye Check-up",
-          "Blood Pressure Monitoring"
-        ]
-      }
-    },
-    "social": {
-      "seniorCitizen": {
-        "name": "Senior Citizen Support Program",
-        "benefits": [
-          "Monthly allowance",
-          "Medical assistance",
-          "Birthday benefits",
-          "Christmas package"
-        ],
-        "requirements": [
-          "Senior Citizen ID",
-          "Barangay Certificate",
-          "Latest ID Picture"
-        ]
-      },
-      "youth": {
-        "name": "Youth Development Program",
-        "activities": [
-          "Sports Festival",
-          "Leadership Training",
-          "Skills Workshop",
-          "Educational Support"
-        ],
-        "schedule": "Quarterly activities"
-      }
-    }
-  },
-  "guidelines": {
-    "garbageCollection": {
-      "schedule": {
-        "Monday": ["Zone 1", "Zone 2"],
-        "Wednesday": ["Zone 3", "Zone 4"],
-        "Friday": ["Zone 5", "Zone 6"]
-      },
-      "segregationRules": [
-        "Ihiwalay ang biodegradable at non-biodegradable",
-        "Gumamit ng tamang basurahan",
-        "Ilabas ang basura 30 minuto bago ang collection time"
-      ]
-    },
-    "curfewHours": {
-      "start": "10:00 PM",
-      "end": "4:00 AM",
-      "exemptions": [
-        "Emergency cases",
-        "Night shift workers with proper ID",
-        "Medical personnel"
-      ]
-    }
-  },
-  "announcements": {
-    "current": [
-      {
-        "title": "Libreng Medical Mission",
-        "date": "Agosto 15, 2025",
-        "time": "8:00 AM - 3:00 PM",
-        "location": "Barangay Hall",
-        "details": "Magkakaroon ng libreng check-up, dental services, at eye check-up."
-      }
-    ],
-    "upcoming": [
-      {
-        "title": "Clean and Green Program",
-        "date": "Agosto 20, 2025",
-        "time": "6:00 AM",
-        "location": "Barangay Plaza",
-        "details": "Sama-sama tayong maglinis ng ating barangay."
-      }
-    ]
-  },
+  
+   
   "faqs": [
     {
       "question": "Ano ang mga requirements para sa Barangay Clearance?",
-      "answer": "Para sa Barangay Clearance, kailangan mo ng: 1) Valid ID, 2) Cedula, 3) Proof of Residency, at 4) Latest utility bill."
+      "answer": "Para sa Barangay Clearance, kailangan mo ng: 1) Valid ID, 2) Previous Barangay Clearance (kung meron), 3) Community Tax Certificate (Cedula), at 4) Fill up form. Bayad ay ₱25.00."
     },
     {
-      "question": "Magkano ang bayad sa Business Permit?",
-      "answer": "Ang Business Permit ay may bayad na ₱500.00 at may processing time na 2-3 araw."
+      "question": "Saan ako pwedeng mag-request ng mga dokumento?",
+      "answer": "Pwede kang mag-request sa E-Serbisyo Online Portal. Ang bayad ay gagawin sa Barangay Hall kapag pipickupin na ang dokumento."
     },
     {
-      "question": "Saan pwedeng mag-report ng emergency?",
-      "answer": "Para sa emergency, tumawag sa aming 24/7 hotline: 0917-XXX-XXXX o pumunta direkta sa Barangay Hall."
+      "question": "Paano mag-report ng emergency o isumbong ang problema?",
+      "answer": "Para sa emergency, tumawag sa mga sumusunod: Barangay (09670692660, 09955934766, 09557434029), PNP (09985985374), o BFP (09257348169). Para sa hindi emergency, gamitin ang Sumbong feature sa E-Serbisyo Portal."
+    },
+    {
+      "question": "Anong oras bukas ang Barangay Hall?",
+      "answer": "Ang Barangay Hall ay bukas tuwing Lunes hanggang Sabado, 8:00 AM hanggang 5:00 PM."
+    },
+    {
+      "question": "May bayad ba ang Certificate of Indigency?",
+      "answer": "Ang Certificate of Indigency ay libre o walang bayad. Kailangan lang ng Valid ID at interview sa social worker."
     }
-  ]
+  ],
+  "hotlines": {
+    "barangay": [
+      { "label": "Primary", "number": "09670692660" },
+      { "label": "Hepe Ogie", "number": "09955934766" },
+      { "label": "Dep. Rodel", "number": "09557434029" }
+    ],
+    "PNP": "09985985374",
+    "BFP": "09257348169",
+    "NationalEmergency": "911",
+    "MAKABATA": "1383",
+    "MDRRMO_Balagtas": {
+      "landline": "044-919-8300",
+      "local": "101",
+      "mobile1": "0938-9595273",
+      "mobile2": "0906-2372616"
+    },
+    "MSWDO_Balagtas": "0908-8792079"
+  }
 }

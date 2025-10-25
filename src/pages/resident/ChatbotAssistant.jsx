@@ -2,21 +2,27 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FiSend, FiLoader } from 'react-icons/fi';
 import { useChat } from '../../contexts/ChatContext';
 import { saveChatMessages, loadChatMessages } from '../../utils/chatStorage';
-
+import barangayData from '../../data/datasets/barangay.data.json';   
 import { showCustomToast } from '../../components/Toast/CustomToast';
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
-const systemPrompt = `Ikaw ay isang AI assistant para sa Barangay Santol sa Balagtas, Bulacan. Ang iyong tungkulin ay tumulong sa mga residente sa kanilang mga katanungan tungkol sa mga serbisyo, dokumento, at pamamaraan ng barangay. Dapat kang maging matulungin, propesyonal, at malinaw sa iyong mga sagot. Dapat ay may kaalaman ka rin sa mga karaniwang serbisyo ng barangay tulad ng:
+const systemPrompt = `Ikaw ay ang official na AI assistant ng ${barangayData.barangayInfo.name}. MAHALAGA:
 
-1. Mga kahilingan sa dokumento (barangay clearance, certificates, atbp.)
-2. Pag-uulat ng mga insidente o alalahanin
-3. Pangunahing impormasyon tungkol sa mga programa at serbisyo ng barangay
-4. Mga alituntunin para sa iba't ibang pamamaraan ng barangay
+1. Sumagot LANG gamit ang datos mula sa official na dataset ng barangay.
+2. Kung ang tanong ay HINDI tungkol sa:
+   - Mga dokumento at requirements
+   - Contact information at oras ng opisina
+   - Mga serbisyo ng barangay (sumbong/reklamo)
+   - Mga hotline numbers
+   - FAQs na nasa dataset
+   DAPAT sumagot ng: "Pasensya po, pero limitado lang po ang aking kaalaman sa mga official na datos ng barangay. Para sa tanong na iyan, mas mainam po na direktang makipag-ugnayan sa barangay office."
 
-Panatilihin ang propesyonal at matulunging tono, at kung hindi ka sigurado sa mga partikular na detalye, iayon ang mga user na bumisita o makipag-ugnayan sa barangay office ng direkta. 
+3. BAWAL gumawa o mag-imbento ng sariling sagot.
+4. Kung walang exact na sagot sa dataset, i-redirect sa barangay office.
 
-MAHALAGA: Palaging sumagot sa Tagalog maliban kung ang user ay gumamit ng Ingles. Gumamit ng simple at madaling maintindihang Tagalog. Maging pormal pero friendly sa pakikipag-usap.`;
+DATASET NG BARANGAY:
+${JSON.stringify(barangayData, null, 2)}`;
 
 const formatMessage = (text) => {
   // Format lists (numbered and bulleted)
@@ -64,24 +70,24 @@ const ChatbotAssistant = ({ isWidget = false, onClose }) => {
 
   const quickLinks = [
     {
-      label: "🗂️ Mga Available na Sertipiko",
-      value: "Ano ang mga available na certificates sa barangay?"
-    },
-    {
-      label: "📝 Blotter Assistance",
-      value: "Paano mag-file ng blotter?"
-    },
-    {
-      label: "💡 Mga Serbisyo",
-      value: "Ano ang mga serbisyong inaalok ng barangay?"
+      label: "📝 Available na Dokumento",
+      value: "Ano ang mga available na dokumento sa barangay at requirements nito?"
     },
     {
       label: "⏰ Oras ng Opisina",
-      value: "Ano ang office hours ng barangay?"
+      value: "Ano po ang office hours ng barangay?"
     },
     {
-      label: "📞 Contact Details",
-      value: "Paano makontak ang barangay?"
+      label: "📞 Emergency Hotlines",
+      value: "Ano ang mga emergency hotline numbers ng barangay?"
+    },
+    {
+      label: "❓ Sumbong/Reklamo",
+      value: "Paano po mag-report ng reklamo sa barangay?"
+    },
+    {
+      label: "🎯 Mission & Vision",
+      value: "Ano po ang mission at vision ng Barangay Santol?"
     }
   ];
 
