@@ -110,14 +110,14 @@ const CertificateTemplate = ({ type = 'clearance', data }) => {
         <Page size="A4" style={styles.page}>
           {/* Watermark */}
           <Image 
-            src="/src/assets/logo/santol_logo.png" 
+            src={data?.logoUrl || '/src/assets/logo/santol_logo.png'} 
             style={styles.watermark} 
           />
 
           {/* Header */}
           <View style={styles.header}>
             <Image 
-              src="/src/assets/logo/santol_logo.png" 
+              src={data?.logoUrl || '/src/assets/logo/santol_logo.png'} 
               style={styles.logo} 
             />
             <Text style={styles.headerText}>Republic of the Philippines</Text>

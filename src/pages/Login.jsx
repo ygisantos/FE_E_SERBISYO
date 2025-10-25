@@ -216,6 +216,13 @@ const Login = () => {
             >
               Create Account
             </button>
+            <button
+              type="button"
+              onClick={() => navigate("/forgot-password")}
+              className="w-full py-2.5 text-xs text-gray-600 hover:text-red-700 transition-colors"
+            >
+              Forgot Password?
+            </button>
           </form>
         </div>
       </div>

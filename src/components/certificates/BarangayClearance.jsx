@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
-import municipalSeal from '../../assets/logo/santol_logo.png'; 
+import municipalSeal from '../../assets/logo/santol_logo.png';
+import { useConfig } from '../../hooks/useConfig';
 
 
 const BarangayClearance = ({ data, onClose, onSubmit, previewOnly = false }) => {
@@ -16,6 +17,7 @@ const BarangayClearance = ({ data, onClose, onSubmit, previewOnly = false }) => 
     'Franchise Permit'
   ];
 
+  const logoUrl = useConfig('logo_url') || municipalSeal;
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Preview Notice and Back Button */}
@@ -57,7 +59,7 @@ const BarangayClearance = ({ data, onClose, onSubmit, previewOnly = false }) => 
             {/* Left: Municipal Seal */}
             <div className="w-16 sm:w-20 md:w-24">
               <img 
-                src={municipalSeal} 
+                src={logoUrl} 
                 alt="Municipal Seal" 
                 className="w-full h-auto object-contain"
               />
