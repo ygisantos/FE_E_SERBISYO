@@ -331,14 +331,37 @@ const AdminDashboard = () => {
                 color: "border-green-200 text-green-700 hover:bg-green-50",
                 onClick: () => navigate('/admin/resident-management/new')
               },
-              
               {
                 icon: <Users className="w-4 h-4" />,
                 label: "View Residents",
                 color: "border-purple-200 text-purple-700 hover:bg-purple-50",
                 onClick: () => navigate('/admin/resident-management/all-resident')
               },
-              
+              // new quick actions
+              {
+                icon: <UserPlus className="w-4 h-4" />,
+                label: "Add Staff",
+                color: "border-green-200 text-green-700 hover:bg-green-50",
+                onClick: () => navigate('/admin/staff-management/new')
+              },
+              {
+                icon: <Users className="w-4 h-4" />,
+                label: "View Staff",
+                color: "border-purple-200 text-purple-700 hover:bg-purple-50",
+                onClick: () => navigate('/admin/staff-management/all-staff')
+              },
+              {
+                icon: <Bell className="w-4 h-4" />,
+                label: "Create Announcement",
+                color: "border-yellow-200 text-yellow-700 hover:bg-yellow-50",
+                onClick: () => navigate('/admin/announcements/new')
+              },
+              {
+                icon: <FileText className="w-4 h-4" />,
+                label: "Create Blotter",
+                color: "border-red-200 text-red-700 hover:bg-red-50",
+                onClick: () => navigate('/admin/blotter/create')
+              },
             ].map((action, idx) => (
               <button
                 key={idx}
