@@ -29,7 +29,7 @@ export const fetchAllResidents = async (params = {}) => {
   try {
     const queryParams = {
       ...params,
-      status: 'active',
+      status: params.status,
       type: 'residence',
       min_age: params.min_age || undefined,
       max_age: params.max_age || undefined,
