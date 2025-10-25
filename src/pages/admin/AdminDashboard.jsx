@@ -159,7 +159,7 @@ const AdminDashboard = () => {
         // Performance
         setPerformanceMetrics({
           completion_rate: d.completion_rate_percent ?? d.completion_rate ?? null,
-          average_processing_time: d.average_processing_time_days ?? d.average_processing_time ?? null,
+          average_processing_time: d.average_processing_time_minutes ?? d.average_processing_time ?? null,
           median_processing_time: d.median_processing_time ?? null,
           pending_requests: d.pending_document_requests ?? d.pending_requests ?? null,
         });
@@ -201,32 +201,55 @@ const AdminDashboard = () => {
 
   // yearOptions removed — we use system-stat monthly data instead
 
-  // Dynamic stats cards
+  // Dynamic stats cards (now includes all Performance Metrics)
   const dynamicStats = overviewStats
     ? [
         {
-          icon: <UserCheck className="text-green-600" />,
+          icon: <UserCheck className="text-green-600" />, 
           label: "Official Members",
           value: overviewStats.official_members || 0,
           color: "bg-white border-gray-200",
         },
-        // Requests / performance quick stats
         {
-          icon: <FileText className="text-indigo-600" />,
+          icon: <FileText className="text-indigo-600" />, 
           label: "Total Requests",
           value: requestsStats?.total || 0,
           color: "bg-white border-gray-200",
         },
         {
-          icon: <TrendingUp className="text-emerald-600" />,
+          icon: <TrendingUp className="text-emerald-600" />, 
           label: "Completion Rate",
           value: performanceMetrics?.completion_rate ? (performanceMetrics.completion_rate + '%') : '0%',
           color: "bg-white border-gray-200",
         },
         {
-          icon: <Users className="text-blue-600" />,
+          icon: <Users className="text-blue-600" />, 
           label: "Total Users",
           value: usersStats?.total || overviewStats.total_population || 0,
+          color: "bg-white border-gray-200",
+        },
+        // Performance Metrics
+        {
+          icon: <BarChart3 className="text-gray-600" />,
+          label: "Average Processing Time",
+          value:
+            performanceMetrics?.average_processing_time != null
+              ? performanceMetrics.average_processing_time + " minute"
+              : performanceMetrics?.average_total_time != null
+                ? performanceMetrics.average_total_time + " minute"
+                : '—',
+          color: "bg-white border-gray-200",
+        },
+        {
+          icon: <TrendingUp className="text-emerald-600" />,
+          label: "Request Document Completion Rate ",
+          value: performanceMetrics?.completion_rate ? (performanceMetrics.completion_rate + '%') : '—',
+          color: "bg-white border-gray-200",
+        },
+        {
+          icon: <FileText className="text-indigo-600" />,
+          label: "Pending Requests",
+          value: performanceMetrics?.pending_requests ?? '—',
           color: "bg-white border-gray-200",
         },
       ]
@@ -336,31 +359,6 @@ const AdminDashboard = () => {
                 label: "View Residents",
                 color: "border-purple-200 text-purple-700 hover:bg-purple-50",
                 onClick: () => navigate('/admin/resident-management/all-resident')
-              },
-              // new quick actions
-              {
-                icon: <UserPlus className="w-4 h-4" />,
-                label: "Add Staff",
-                color: "border-green-200 text-green-700 hover:bg-green-50",
-                onClick: () => navigate('/admin/staff-management/new')
-              },
-              {
-                icon: <Users className="w-4 h-4" />,
-                label: "View Staff",
-                color: "border-purple-200 text-purple-700 hover:bg-purple-50",
-                onClick: () => navigate('/admin/staff-management/all-staff')
-              },
-              {
-                icon: <Bell className="w-4 h-4" />,
-                label: "Create Announcement",
-                color: "border-yellow-200 text-yellow-700 hover:bg-yellow-50",
-                onClick: () => navigate('/admin/announcements/new')
-              },
-              {
-                icon: <FileText className="w-4 h-4" />,
-                label: "Create Blotter",
-                color: "border-red-200 text-red-700 hover:bg-red-50",
-                onClick: () => navigate('/admin/blotter/create')
               },
             ].map((action, idx) => (
               <button
@@ -515,37 +513,7 @@ const AdminDashboard = () => {
 
         {/* Performance & Monthly Comparison */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900">Performance Metrics</h3>
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {dateFrom} - {dateTo}
-              </div>
-            </div>
-
-            {statsLoading ? (
-              <div className="h-40 flex items-center justify-center">
-                <div className="h-8 w-8 rounded-full border-b-2 animate-spin border-red-900"></div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-3 bg-gray-50 rounded border">
-                  <div className="text-xs text-gray-600">Average Processing Time</div>
-                  <div className="text-xl font-semibold text-gray-900">{performanceMetrics?.average_processing_time ?? performanceMetrics?.average_total_time ?? '—'} days</div>
-                </div>
-                <div className="p-3 bg-gray-50 rounded border">
-                  <div className="text-xs text-gray-600">Completion Rate</div>
-                  <div className="text-xl font-semibold text-gray-900">{performanceMetrics?.completion_rate ? performanceMetrics.completion_rate + '%' : '—'}</div>
-                </div>
-                <div className="p-3 bg-gray-50 rounded border">
-                  <div className="text-xs text-gray-600">Pending Requests</div>
-                  <div className="text-xl font-semibold text-gray-900">{performanceMetrics?.pending_requests ?? '—'}</div>
-                </div>
-              </div>
-            )}
-          </div>
-
+          {/* Only Monthly Comparison remains here */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm sm:text-base font-semibold text-gray-900">Monthly Comparison (Requests)</h3>
