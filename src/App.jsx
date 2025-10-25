@@ -6,6 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
+import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import RegisterPage from "./pages/RegisterPage";
 import Layout from "./components/Layout/Layout";
@@ -167,6 +168,7 @@ function App() {
                     <Route path="reports" element={<Reports />} />
                     <Route path="profile" element={<MyProfile />} />
                     <Route path="requests" element={<RequestManagement />} />
+                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </ProtectedRoute>
               } />
@@ -193,6 +195,7 @@ function App() {
                     <Route path="sumbong/new" element={<Blotter />} />
                     <Route path="sumbong" element={<Blotter />} />
                     <Route path="profile" element={<MyProfile />} />
+                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </ProtectedRoute>
               } />
@@ -233,9 +236,12 @@ function App() {
                     />
                     
                     <Route path="sumbong/my-cases" element={<MyCases />} />
+                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </ProtectedRoute>
               } />
+              {/* Catch-all route for any undefined paths */}
+              <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
 
