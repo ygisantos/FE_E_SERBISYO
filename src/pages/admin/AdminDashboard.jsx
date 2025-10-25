@@ -303,43 +303,53 @@ const AdminDashboard = () => {
   };
 
   return (
+
     <div className="max-w-7xl mx-auto">
       {/* Header Section */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <div>
-              <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                Admin Dashboard
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                Barangay management overview
-              </p>
-            </div>
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div>
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
+              Admin Dashboard
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
+              Barangay management overview
+            </p>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-gray-600">From</label>
+          {/* Improved Date Range UI */}
+          <div className="bg-white/80 border border-gray-200 rounded-lg shadow-sm px-4 py-2 flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4 text-blue-500 mr-1" />
+              <label className="text-xs text-gray-600 mr-1">From</label>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="border rounded px-2 py-1 text-sm"
+                className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
               />
-              <label className="text-xs text-gray-600">To</label>
+            </div>
+            <span className="text-gray-400 text-xs font-medium">—</span>
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4 text-blue-500 mr-1" />
+              <label className="text-xs text-gray-600 mr-1">To</label>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="border rounded px-2 py-1 text-sm"
+                className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none transition"
               />
-              <button
-                onClick={() => fetchAllDashboardStats()}
-                className="ml-2 bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-700"
-              >
-                Apply
-              </button>
             </div>
+            <button
+              onClick={() => fetchAllDashboardStats()}
+              className="flex items-center gap-1 ml-0 sm:ml-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-semibold px-4 py-1.5 rounded-lg shadow hover:from-blue-700 hover:to-blue-600 transition"
+            >
+              <Filter className="w-4 h-4" />
+              Apply
+            </button>
           </div>
         </div>
+      </div>
 
             {/* Quick Actions */}
         <div className="bg-white rounded-lg shadow-sm mb-4 border border-gray-200 p-4 sm:p-6">
