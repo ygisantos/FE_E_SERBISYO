@@ -61,68 +61,46 @@ const ChatbotWidget = () => {
     saveChatMessages(messages);
   }, [messages]);
 
-  // Effect to detect overlapping modals or dropdowns
+  // Remove or modify the overlap detection effect
   useEffect(() => {
     const checkOverlap = () => {
-      // Check for modals, dropdowns, or other overlaying elements
-      const overlappingElements = document.querySelectorAll('.modal-overlay, .modal, [role="listbox"], [role="dialog"]');
+      // Only check for actual modals, ignore confirmation modals
+      const overlappingElements = document.querySelectorAll('.modal:not(.confirmation-modal)');
       const hasOverlap = overlappingElements.length > 0;
       
       if (hasOverlap) {
-        setIsMinimized(true);
         setIsBlocked(true);
       } else {
         setIsBlocked(false);
       }
     };
 
-    //   mutation observer
     const observer = new MutationObserver(checkOverlap);
-    
-    // Start observing with appropriate options
     observer.observe(document.body, {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['class', 'style']
+      attributeFilter: ['class']
     });
 
-    // Initial check
-    checkOverlap();
-
-    // Cleanup
     return () => observer.disconnect();
   }, []);
 
 
   function handleClose() {
-
-    if (window.innerWidth < 768 && !isMinimized) {
-      setIsMinimized(true);
-
-      setTimeout(() => {
-        setShowEndChatModal(true);
-      }, 250);
-      return;
-    }
-    // otherwise show confirmation immediately
-    setShowEndChatModal(true);
+    setShowEndChatModal(true); // Remove minimize logic, just show modal
   }
 
   // End chat and reset everything
   const handleEndChat = () => {
-    saveChatMessages([]); // Clear saved messages
+    // Update state in single batch
     setMessages([]);
     setIsOpen(false);
-    setIsMinimized(false);
+    setIsMinimized(true); // Set minimized first before closing
     setShowEndChatModal(false);
+    saveChatMessages([]); // Clear saved messages last
   };
 
-
-  const getModalZIndex = () => {
-
-    return 999;
-  };
 
   // Initialize messages with welcome message and FAQs
   const initialMessage = {
@@ -168,7 +146,7 @@ const ChatbotWidget = () => {
       {(!isOpen || isMinimized) && !isBlocked && (
         <button
           onClick={handleChatButtonClick}
-          className="fixed bottom-6 right-6 z-[999] bg-red-900 text-white rounded-full shadow-lg hover:bg-red-800 transition-all duration-200 flex items-center gap-3 group px-5 py-4"
+          className="fixed bottom-6 right-6 z-[40] bg-red-900 text-white rounded-full shadow-lg hover:bg-red-800 transition-all duration-200 flex items-center gap-3 group px-5 py-4"
         >
           <FiMessageSquare className="w-6 h-6" />
           <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-base">
@@ -177,12 +155,12 @@ const ChatbotWidget = () => {
         </button>
       )}
 
-      {/* Only show chat window when not overlapped */}
+      {/* Lower chat window z-index */}
       {!isBlocked && (
         <div
           ref={chatContainerRef}
           className={`
-            fixed z-[998] transition-all duration-300 transform
+            fixed z-[30] transition-all duration-300 transform
             ${isOpen && !isMinimized ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0 pointer-events-none'}
             bottom-0 right-0 w-full h-[100dvh]
             md:bottom-4 md:right-4 md:w-[400px] md:h-[600px] 
@@ -224,8 +202,8 @@ const ChatbotWidget = () => {
         </div>
       )}
 
-      {/* Modified Modal Component */}
-      <div style={{ position: 'relative', zIndex: getModalZIndex() }}>
+      {/* Lower confirmation modal z-index */}
+      <div className="relative z-[35]">
         <ConfirmationModal
           isOpen={showEndChatModal}
           onClose={() => setShowEndChatModal(false)}
@@ -238,10 +216,10 @@ const ChatbotWidget = () => {
         />
       </div>
 
-      {/* Mobile Backdrop with lower z-index */}
+      {/* Lower backdrop z-index */}
       {isOpen && !isMinimized && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[50] md:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[20] md:hidden"
           onClick={handleBackdropClick}
         />
       )}

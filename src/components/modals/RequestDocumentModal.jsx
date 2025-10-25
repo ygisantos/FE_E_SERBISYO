@@ -5,7 +5,8 @@ import { showCustomToast } from '../Toast/CustomToast';
 import ConfirmationModal from './ConfirmationModal';
 import { FaUpload, FaTimes, FaSpinner } from 'react-icons/fa';
 import { extractPlaceholders } from '../../api/documentApi';
-import { isSystemKeyword, SYSTEM_KEYWORDS, CHECKBOX_GROUPS } from '../../utils/documentKeywords';
+import { isSystemKeyword, SYSTEM_KEYWORDS, CHECKBOX_GROUPS, TITLE_OPTIONS } from '../../utils/documentKeywords';
+import Select from '../reusable/Select';
 
 const RequestDocumentModal = ({ 
   isOpen, 
@@ -75,7 +76,6 @@ const RequestDocumentModal = ({
     }
 
     if (event?.target?.type === 'checkbox') {
-      // Clear all checkboxes in the same group first
       const group = Object.entries(CHECKBOX_GROUPS).find(([_, g]) => 
         Object.keys(g.checkboxes).includes(placeholder)
       );
@@ -114,8 +114,10 @@ const RequestDocumentModal = ({
   };
 
   const formatPlaceholderLabel = (placeholder) => {
-    // Convert snake_case to Title Case
-    return placeholder
+    // Hide _TL suffix from labels
+    const baseName = placeholder.replace('_TL', '');
+    
+    return baseName
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
@@ -153,6 +155,26 @@ const RequestDocumentModal = ({
   };
 
   const validateForm = () => {
+    // Add birth date validation
+    const birthDateFields = Object.entries(formData.placeholders)
+      .filter(([key]) => key.includes('BIRTH_DATE'));
+
+    for (const [key, value] of birthDateFields) {
+      const date = new Date(value);
+      const today = new Date();
+      const age = today.getFullYear() - date.getFullYear();
+
+      if (date > today) {
+        showCustomToast('Birth date cannot be in the future', 'error');
+        return false;
+      }
+
+      if (age > 120) {
+        showCustomToast('Please enter a valid birth date', 'error');
+        return false;
+      }
+    }
+
     // Check if all required documents are uploaded
     const missingRequirements = document?.requirements?.filter(
       req => !formData.requirements.find(r => r.requirement_id === req.id)
@@ -197,12 +219,29 @@ const RequestDocumentModal = ({
       const requestFormData = new FormData();
       requestFormData.append('document', document.id);
 
-      // Process placeholders including system keywords
       const processedPlaceholders = {};
       for (const [key, value] of Object.entries(formData.placeholders)) {
-        processedPlaceholders[key] = isSystemKeyword(key) ? 
-          SYSTEM_KEYWORDS[key]() : value;
+        if (key.includes('BIRTH_DATE')) {
+          const date = new Date(value);
+          if (!isNaN(date.getTime())) {
+            processedPlaceholders[key] = key.endsWith('_TL') 
+              ? SYSTEM_KEYWORDS['BIRTH_DATE_TL'](value)
+              : SYSTEM_KEYWORDS['BIRTH_DATE'](value);
+              
+            // Set age when processing birth date
+            const agePlaceholder = key.endsWith('_TL') ? 'AGE_TL' : 'AGE';
+            processedPlaceholders[agePlaceholder] = key.endsWith('_TL') 
+              ? SYSTEM_KEYWORDS['AGE_TL'](null, { BIRTH_DATE: value })
+              : SYSTEM_KEYWORDS['AGE'](null, { BIRTH_DATE: value });
+          }
+        } else if (!key.startsWith('AGE')) { // Skip AGE fields as they're handled with BIRTH_DATE
+          processedPlaceholders[key] = isSystemKeyword(key) 
+            ? SYSTEM_KEYWORDS[key]()
+            : value;
+        }
       }
+
+      console.log('Submitting with placeholders:', processedPlaceholders); // Debug log
 
       requestFormData.append('information', JSON.stringify(processedPlaceholders));
 
@@ -272,6 +311,123 @@ const RequestDocumentModal = ({
   };
 
   const renderPlaceholderInput = (placeholder) => {
+    if (placeholder === 'SELECT_TITLE') {
+      return (
+        <div key={placeholder} className="space-y-1">
+          <Select
+            label={formatPlaceholderLabel(placeholder)}
+            options={TITLE_OPTIONS}
+            value={TITLE_OPTIONS.find(opt => opt.value === formData.placeholders[placeholder])}
+            onChange={(selected) => handlePlaceholderChange(placeholder, selected?.value || '')}
+            placeholder="Select title"
+            isClearable={false}
+            className="w-full"
+          />
+        </div>
+      );
+    }
+
+    if (placeholder.includes('BIRTH_DATE')) {
+      // Calculate date limits
+      const today = new Date();
+      const maxDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1); // Yesterday
+      const minDate = new Date(today.getFullYear() - 75, today.getMonth(), today.getDate()); // 75 years ago
+      const minAgeDate = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate()); // 1 month ago
+
+      const handleDateChange = (e) => {
+        const selectedDate = new Date(e.target.value);
+        
+        if (selectedDate > maxDate) {
+          showCustomToast('Birth date cannot be in the future or today', 'error');
+          return;
+        }
+
+        if (selectedDate > minAgeDate) {
+          showCustomToast('Age must be at least 1 month old', 'error');
+          return;
+        }
+
+        if (selectedDate < minDate) {
+          showCustomToast('Birth date cannot be more than 75 years ago', 'error');
+          return;
+        }
+
+        // Set birth date
+        handlePlaceholderChange(placeholder, e.target.value);
+        
+        // Also update AGE fields with computed age value
+        if (placeholder.includes('BIRTH_DATE')) {
+          const age = placeholder.endsWith('_TL') 
+            ? SYSTEM_KEYWORDS['AGE_TL'](null, { BIRTH_DATE: e.target.value })
+            : SYSTEM_KEYWORDS['AGE'](null, { BIRTH_DATE: e.target.value });
+          
+          const agePlaceholder = placeholder.endsWith('_TL') ? 'AGE_TL' : 'AGE';
+          if (formData.placeholders.hasOwnProperty(agePlaceholder)) {
+            handlePlaceholderChange(agePlaceholder, age);
+          }
+        }
+      };
+
+      return (
+        <div key={placeholder} className="space-y-1">
+          <label className="text-sm font-medium text-gray-700">
+            {formatPlaceholderLabel(placeholder)}
+          </label>
+          <div className="relative flex items-center">
+            <input
+              type="date"
+              className="w-full pl-3 pr-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white cursor-pointer"
+              value={formData.placeholders[placeholder] || ''}
+              onChange={handleDateChange}
+              max={maxDate.toISOString().split('T')[0]}
+              min={minDate.toISOString().split('T')[0]}
+              onKeyDown={(e) => e.preventDefault()}
+              placeholder="Select birth date"
+            />
+          </div>
+          {formData.placeholders[placeholder] && (
+            <div className="mt-1.5 space-y-1 p-2 bg-gray-50 rounded-md border border-gray-100">
+              <p className="text-xs text-gray-600">
+                Date: {placeholder.endsWith('_TL') 
+                  ? SYSTEM_KEYWORDS['BIRTH_DATE_TL'](formData.placeholders[placeholder])
+                  : SYSTEM_KEYWORDS['BIRTH_DATE'](formData.placeholders[placeholder])}
+              </p>
+              <p className="text-xs text-gray-600 font-medium">
+                Age: {placeholder.endsWith('_TL') 
+                  ? SYSTEM_KEYWORDS['AGE_TL'](null, { BIRTH_DATE: formData.placeholders[placeholder] })
+                  : SYSTEM_KEYWORDS['AGE'](null, { BIRTH_DATE: formData.placeholders[placeholder] })}
+              </p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (placeholder.startsWith('AGE')) {
+      // For AGE fields, show preview and store value from birthdate
+      return (
+        <div key={placeholder} className="space-y-1">
+          <label className="text-sm font-medium text-gray-700">
+            {formatPlaceholderLabel(placeholder)}
+          </label>
+          <div className="mt-1.5 p-2 bg-gray-50 rounded-md border border-gray-100">
+            <input 
+              type="hidden" 
+              value={formData.placeholders[placeholder] || ''}
+            />
+            <p className="text-xs text-gray-600">
+              {formData.placeholders['BIRTH_DATE'] ? 
+                (placeholder.endsWith('_TL') 
+                  ? SYSTEM_KEYWORDS['AGE_TL'](null, { BIRTH_DATE: formData.placeholders['BIRTH_DATE'] })
+                  : SYSTEM_KEYWORDS['AGE'](null, { BIRTH_DATE: formData.placeholders['BIRTH_DATE'] }))
+                : 'Will be calculated from birth date'
+              }
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     if (placeholder.startsWith('CHECK_')) {
       const group = Object.entries(CHECKBOX_GROUPS).find(([_, g]) => 
         Object.keys(g.checkboxes).includes(placeholder)

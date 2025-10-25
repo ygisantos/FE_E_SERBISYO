@@ -7,7 +7,7 @@ import ConfirmationModal from '../../../components/modals/ConfirmationModal';
 import ViewDocumentModal from '../../../components/modals/ViewDocumentModal';
 import { showCustomToast } from '../../../components/Toast/CustomToast';
 import { getAllDocuments, deleteDocument, getDocumentById, uploadDocumentTemplate, getDocumentTemplate } from '../../../api/documentApi';
-import { FaTrash, FaFileWord, FaUpload } from 'react-icons/fa';
+import { FaTrash, FaFileWord, FaUpload, FaDownload } from 'react-icons/fa';
 import Modal from '../../../components/Modal/Modal'; 
 
 
@@ -40,6 +40,8 @@ const CertificateManagement = () => {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [templateUrl, setTemplateUrl] = useState(null);
+  const [showUploadConfirm, setShowUploadConfirm] = useState(false);
+  const [selectedUpload, setSelectedUpload] = useState(null);
 
   // Table columns configuration
   const columns = [
@@ -272,6 +274,17 @@ const CertificateManagement = () => {
   };
 
   const handleUploadTemplate = async (doc) => {
+    if (doc.template_path) {
+      setSelectedUpload(doc);
+      setShowUploadConfirm(true);
+      return;
+    }
+
+    // If no template exists, proceed with upload
+    openFileUpload(doc);
+  };
+
+  const openFileUpload = (doc) => {
     const input = window.document.createElement('input');
     input.type = 'file';
     input.accept = '.docx,.doc';
@@ -282,10 +295,13 @@ const CertificateManagement = () => {
         try {
           const formData = new FormData();
           formData.append('template', file);
-          formData.append('document_id', doc.id); // Add document_id to formData
+          formData.append('document_id', doc.id);
           
-          await uploadDocumentTemplate(doc.id, file); // Pass file directly instead of formData
-          showCustomToast('Template uploaded successfully', 'success');
+          await uploadDocumentTemplate(doc.id, file);
+          showCustomToast(
+            doc.template_path ? 'Template updated successfully' : 'Template uploaded successfully', 
+            'success'
+          );
           fetchDocuments();
         } catch (error) {
           console.error('Upload error:', error);
@@ -298,31 +314,19 @@ const CertificateManagement = () => {
 
   const actions = [
     {
-      icon: <FileText className="h-3.5 w-3.5 text-gray-400" />,
+      icon: <FileText className="h-3.5 w-3.5 text-gray-500" />,
       label: "View Details",
       onClick: handleView,
     },
     {
-      icon: <Clock className="h-3.5 w-3.5 text-gray-400" />,
+      icon: <Clock className="h-3.5 w-3.5 text-gray-500" />,
       label: "Edit",
       onClick: handleEdit,
     },
     {
-      renderIf: (doc) => !doc.template_path,
-      icon: <FaUpload className="h-3.5 w-3.5 text-green-500" />,
-      label: "Upload Template",
+      icon: <FaUpload className="h-3.5 w-3.5 text-gray-500" />,
+      label: "Upload/Update", // Simplified label
       onClick: handleUploadTemplate,
-    },
-    {
-      renderIf: (doc) => doc.template_path,
-      icon: <FaFileWord className="h-3.5 w-3.5 text-blue-500" />,
-      label: "Download Template", // Changed from "View Template" to "Download Template"
-      onClick: handleViewTemplate,
-    },
-    {
-      icon: <FaTrash className="h-3.5 w-3.5 text-red-500" />,
-      label: "Delete",
-      onClick: handleDelete,
     }
   ];
 
@@ -439,6 +443,24 @@ const CertificateManagement = () => {
             )}
           </div>
         </Modal>
+
+        <ConfirmationModal
+          isOpen={showUploadConfirm}
+          onClose={() => {
+            setShowUploadConfirm(false);
+            setSelectedUpload(null);
+          }}
+          onConfirm={() => {
+            openFileUpload(selectedUpload);
+            setShowUploadConfirm(false);
+            setSelectedUpload(null);
+          }}
+          title="Update Template"
+          message="This document already has a template. Do you want to update it?"
+          confirmText="Update"
+          cancelText="Cancel"
+          type="warning"
+        />
       </div>
     </>
   );
