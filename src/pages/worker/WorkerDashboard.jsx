@@ -145,6 +145,8 @@ const WorkerDashboard = () => {
           new_accounts: d.new_accounts ?? 0,
           new_accounts_male: d.new_accounts_male ?? 0,
           new_accounts_female: d.new_accounts_female ?? 0,
+          active_users: d.active_users ?? d.active ?? 0,
+          inactive_users: d.inactive_users ?? d.inactive ?? 0,
         });
 
         setDocTypeStats((d.document_type_distribution || []).map(item => ({
