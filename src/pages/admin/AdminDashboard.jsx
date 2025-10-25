@@ -75,8 +75,7 @@ const stats = [
 ];
 
 const pieChartData = [
-  { label: "Registered Voters", value: 900, color: "#7A0000" },
-  { label: "Non-Voters", value: 340, color: "#F7DB9F" },
+  { label: "NONE", value: 1, color: "#7A0000" },
 ];
 
 const topRequest = {
@@ -256,15 +255,15 @@ const AdminDashboard = () => {
     : stats;
 
   // Pie chart from docTypeStats
-  const dynamicPieChartData = docTypeStats.length
+  const dynamicPieChartData = Array.isArray(docTypeStats) && docTypeStats.length
     ? docTypeStats
-        .filter(item => (item.type || item.label) && (item.count || item.value))
+        .filter(item => (item?.type || item?.label) && (item?.count || item?.value))
         .map((item, idx) => ({
           label: item.type || item.label || `Type ${idx + 1}`,
           value: item.count || item.value || 0,
           color: ["#7A0000", "#F7DB9F", "#4F8A8B", "#F9B208", "#6A0572", "#2E8B57", "#FF6347", "#4682B4"][idx % 8],
         }))
-    : pieChartData;
+    : (Array.isArray(pieChartData) ? pieChartData : []);
 
   // Render document type breakdown grid
   const renderDocTypeDetails = () => (
