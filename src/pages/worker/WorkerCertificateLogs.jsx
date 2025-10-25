@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/reusable/DataTable';
 import { getAllCertificateLogs } from '../../api/certificateLogApi';
 import { showCustomToast } from '../../components/Toast/CustomToast';
+import { useAuth } from '../../contexts/AuthContext';
 
 const WorkerCertificateLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -13,25 +14,23 @@ const WorkerCertificateLogs = () => {
     order: 'desc'
   });
 
+  const { user } = useAuth(); // Get current logged in user
+
   useEffect(() => {
     const fetchLogs = async () => {
       try {
         setLoading(true);
-        const userData = JSON.parse(localStorage.getItem('userData'));
-        
-        console.log('Fetching logs for staff:', userData?.id); // Debug log
-
         const response = await getAllCertificateLogs({
           page: currentPage,
           per_page: 10,
-          staff: userData?.id,
+          staff: user?.id, // Filter by current staff ID
+          sort_by: sortConfig.sort_by,
+          order: sortConfig.order
         });
-
-        console.log('API Response:', response); // Debug log
 
         if (response?.data) {
           setLogs(response.data);
-          setTotalItems(response.total || 0);
+          setTotalItems(response.pagination?.total || 0);
         }
       } catch (error) {
         console.error('Error fetching logs:', error);
@@ -41,8 +40,10 @@ const WorkerCertificateLogs = () => {
       }
     };
 
-    fetchLogs();
-  }, [currentPage]);
+    if (user?.id) { // Only fetch if we have user ID
+      fetchLogs();
+    }
+  }, [currentPage, user?.id, sortConfig]);
 
   const columns = [
     {
