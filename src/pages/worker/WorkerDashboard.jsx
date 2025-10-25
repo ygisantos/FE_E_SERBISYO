@@ -86,8 +86,8 @@ const WorkerDashboard = () => {
   const [requestsStats, setRequestsStats] = useState(null);
   const [monthlyComparison, setMonthlyComparison] = useState([]);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [dateFrom, setDateFrom] = useState(() => new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().slice(0,10));
-  const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0,10));
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -104,8 +104,8 @@ const WorkerDashboard = () => {
     setStatsLoading(true);
     try {
       const params = {
-        date_from: dateFrom,
-        date_to: dateTo,
+        ...(dateFrom && { date_from: dateFrom }),
+        ...(dateTo && { date_to: dateTo }),
         ...overrideParams,
       };
 
