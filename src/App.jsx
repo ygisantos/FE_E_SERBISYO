@@ -9,6 +9,7 @@ import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import RegisterPage from "./pages/RegisterPage";
+import ForgotPassword from "./pages/ForgotPassword";
 import Layout from "./components/Layout/Layout";
 import { useLoading } from "./components/LoadingContext";
 import LoadingSpinner from "./components/Loading";
@@ -108,6 +109,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/track-document" element={<TrackDocument />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Admin Routes */}
             <Route element={<Layout />}>
