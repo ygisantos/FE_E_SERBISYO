@@ -19,9 +19,17 @@ import {
 import PieChart from "../../components/charts/PieChart";
 import BarChart from "../../components/charts/BarChart";
 import StatCard from "../../components/reusable/StatCard";
-import { getAllBlotters } from '../../api/blotterApi';
-import Select from '../../components/reusable/Select';
-import { getDashboardOverview, getDashboardDocumentTypes, getDashboardTopDocuments } from '../../api/dashboardApi';
+// Select removed — not needed when using system-stat monthly data
+import {
+  getDashboardOverview,
+  getDashboardDocumentTypes,
+  getDashboardTopDocuments,
+  getDashboardDocumentRequests,
+  getDashboardUsers,
+  getDashboardPerformance,
+  getDashboardMonthlyComparison,
+  getSystemStats,
+} from '../../api/dashboardApi';
 
 const stats = [
   {
@@ -80,13 +88,17 @@ const topRequest = {
 
 const AdminDashboard = () => {
   const scrollRef = React.useRef(null);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [blotterStats, setBlotterStats] = useState(null);
-  const [loading, setLoading] = useState(false);
+  // blotterStats removed: use monthlyComparison from system-stat instead
   const [overviewStats, setOverviewStats] = useState(null);
   const [docTypeStats, setDocTypeStats] = useState([]);
   const [topDocument, setTopDocument] = useState(null);
+  const [performanceMetrics, setPerformanceMetrics] = useState(null);
+  const [usersStats, setUsersStats] = useState(null);
+  const [requestsStats, setRequestsStats] = useState(null);
+  const [monthlyComparison, setMonthlyComparison] = useState([]);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [dateFrom, setDateFrom] = useState(() => new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().slice(0,10));
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0,10));
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -99,98 +111,123 @@ const AdminDashboard = () => {
   };
 
   const navigate = useNavigate();  
+  // Extracted fetch function so it can be reused on Apply
+  const fetchAllDashboardStats = async (overrideParams = {}) => {
+    setStatsLoading(true);
+    try {
+      const params = {
+        date_from: dateFrom,
+        date_to: dateTo,
+        ...overrideParams,
+      };
 
-  useEffect(() => {
-    const fetchBlotterStats = async () => {
-      try {
-        setLoading(true);
-        const response = await getAllBlotters({
-          from_date: `${selectedYear}-01-01`,
-          to_date: `${selectedYear}-12-31`,
-          per_page: 999999
+      // Use the combined system-stat endpoint exclusively and map its values
+      const systemRes = await getSystemStats(params).catch((e) => ({ success: false, error: e }));
+      if (systemRes && systemRes.success && systemRes.data) {
+        const d = systemRes.data;
+
+        // Map overview-like fields to the existing overviewStats shape used by UI
+        setOverviewStats({
+          total_population: d.total_users || 0,
+          official_members: d.officials || 0,
+          senior_citizens: d.senior_citizen_60_plus || 0,
+          pwd: d.total_pwd || 0,
+          single_parents: d.total_single_parent || 0,
+          average_age: d.average_age ?? null,
+          male_count: d.male_count ?? null,
+          female_count: d.female_count ?? null,
+          // user_type may come as an object with counts per role
+          user_type_admin: (d.user_type && d.user_type.admin) ?? 0,
+          user_type_staff: (d.user_type && d.user_type.staff) ?? 0,
+          user_type_residence: (d.user_type && d.user_type.residence) ?? (d.user_type && d.user_type.residence_count) ?? 0,
         });
 
-        if (response.success) {
-          // Initialize monthly data with zeros
-          const monthlyData = Array(12).fill(0).map((_, index) => ({
-            label: new Date(0, index).toLocaleString('default', { month: 'short' }),
-            value: 0
-          }));
+        // Document types
+        setDocTypeStats((d.document_type_distribution || []).map(item => ({
+          type: item.document_name || item.label || item.name,
+          count: item.count || item.value || 0,
+        })));
 
-          // Only process if there is data
-          if (response.data && response.data.length > 0) {
-            response.data.forEach(blotter => {
-              const date = new Date(blotter.date_filed);
-              // Make sure the date is valid and matches the selected year
-              if (!isNaN(date) && date.getFullYear() === selectedYear) {
-                const monthIndex = date.getMonth();
-                monthlyData[monthIndex].value++;
-              }
-            });
-          }
-
-          const totalCases = monthlyData.reduce((sum, month) => sum + month.value, 0);
-          const averagePerMonth = totalCases / 12;
-
-          setBlotterStats({
-            monthlyData,
-            totalCases,
-            averagePerMonth
+        // Top document
+        if (d.most_requested_document) {
+          setTopDocument({
+            name: d.most_requested_document.document_name || d.most_requested_document.label,
+            count: d.most_requested_document.count || d.most_requested_document.total || 0,
           });
         }
-      } catch (error) {
-        console.error('Failed to fetch blotter stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchBlotterStats();
-  }, [selectedYear]);
+        // Performance
+        setPerformanceMetrics({
+          completion_rate: d.completion_rate_percent ?? d.completion_rate ?? null,
+          average_processing_time: d.average_processing_time_days ?? d.average_processing_time ?? null,
+          median_processing_time: d.median_processing_time ?? null,
+          pending_requests: d.pending_document_requests ?? d.pending_requests ?? null,
+        });
+
+        // Users and requests
+        setUsersStats({ total: d.total_users || 0 });
+        setRequestsStats({ total: d.total_requests || 0 });
+
+        // Monthly comparison mapping
+        setMonthlyComparison((d.monthly_blotter_and_request || []).map(m => ({
+          month: m.month,
+          label: m.month,
+          blotter_count: m.blotter_count ?? m.blotters ?? 0,
+          total_requests: m.request_count ?? m.requests ?? m.total ?? 0,
+        })));
+      } else {
+        // if system-stat fails, clear states to avoid stale UI
+        setOverviewStats({});
+        setDocTypeStats([]);
+        setTopDocument(null);
+        setPerformanceMetrics({});
+        setUsersStats({});
+        setRequestsStats({});
+        setMonthlyComparison([]);
+        console.error('system-stat fetch failed', systemRes && systemRes.error);
+      }
+    } catch (err) {
+      console.error('Failed to fetch dashboard stats', err);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  // blotter-specific fetching removed; monthly data comes from system-stat
 
   useEffect(() => {
-    const fetchDashboardStats = async () => {
-      setStatsLoading(true);
-      try {
-        const [overviewRes, docTypeRes, topDocRes] = await Promise.all([
-          getDashboardOverview(),
-          getDashboardDocumentTypes(),
-          getDashboardTopDocuments(),
-        ]);
-        setOverviewStats(overviewRes.data || {});
-        setDocTypeStats(docTypeRes.data || []);
-        setTopDocument((topDocRes.data && topDocRes.data[0]) || null);
-      } catch {
-        // handle error
-      } finally {
-        setStatsLoading(false);
-      }
-    };
-    fetchDashboardStats();
+    fetchAllDashboardStats();
   }, []);
 
-  const yearOptions = Array.from({ length: 5 }, (_, i) => ({
-    value: new Date().getFullYear() - i,
-    label: (new Date().getFullYear() - i).toString()
-  }));
+  // yearOptions removed — we use system-stat monthly data instead
 
   // Dynamic stats cards
   const dynamicStats = overviewStats
     ? [
         {
-          icon: <Users className="text-blue-600" />, label: "Total Population", value: overviewStats.total_population || 0, color: "bg-white border-gray-200", trend: 1, percentage: overviewStats.population_growth || 0,
+          icon: <UserCheck className="text-green-600" />,
+          label: "Official Members",
+          value: overviewStats.official_members || 0,
+          color: "bg-white border-gray-200",
+        },
+        // Requests / performance quick stats
+        {
+          icon: <FileText className="text-indigo-600" />,
+          label: "Total Requests",
+          value: requestsStats?.total || 0,
+          color: "bg-white border-gray-200",
         },
         {
-          icon: <UserCheck className="text-green-600" />, label: "Official Members", value: overviewStats.official_members || 0, color: "bg-white border-gray-200", trend: 1, percentage: overviewStats.official_growth || 0,
+          icon: <TrendingUp className="text-emerald-600" />,
+          label: "Completion Rate",
+          value: performanceMetrics?.completion_rate ? (performanceMetrics.completion_rate + '%') : '0%',
+          color: "bg-white border-gray-200",
         },
         {
-          icon: <Users className="text-purple-600" />, label: "Senior Citizens", value: overviewStats.senior_citizens || 0, color: "bg-white border-gray-200", trend: 1, percentage: overviewStats.senior_growth || 0,
-        },
-        {
-          icon: <Shield className="text-orange-600" />, label: "PWD", value: overviewStats.pwd || 0, color: "bg-white border-gray-200", trend: 1, percentage: overviewStats.pwd_growth || 0,
-        },
-        {
-          icon: <Heart className="text-pink-600" />, label: "Single Parents", value: overviewStats.single_parents || 0, color: "bg-white border-gray-200", trend: 1, percentage: overviewStats.single_parents_growth || 0,
+          icon: <Users className="text-blue-600" />,
+          label: "Total Users",
+          value: usersStats?.total || overviewStats.total_population || 0,
+          color: "bg-white border-gray-200",
         },
       ]
     : stats;
@@ -206,7 +243,7 @@ const AdminDashboard = () => {
         }))
     : pieChartData;
 
-  // Add more data display for document types
+  // Render document type breakdown grid
   const renderDocTypeDetails = () => (
     <div className="mt-4">
       <h4 className="text-xs font-semibold text-gray-700 mb-2">Document Type Breakdown</h4>
@@ -222,7 +259,7 @@ const AdminDashboard = () => {
     </div>
   );
 
-  // Top request from topDocument
+  // Top request card (used after the scrollable)
   const dynamicTopRequest = topDocument
     ? {
         icon: <FileText className="text-indigo-600" />,
@@ -231,6 +268,16 @@ const AdminDashboard = () => {
         color: "bg-white border-gray-200",
       }
     : topRequest;
+
+  // helper: format month strings like '2025-10' -> 'Oct'
+  const formatMonth = (ym) => {
+    try {
+      const d = new Date((ym || '').toString().includes('-') ? ym + '-01' : ym);
+      return d.toLocaleString('default', { month: 'short' });
+    } catch (e) {
+      return ym;
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -245,8 +292,29 @@ const AdminDashboard = () => {
                 Barangay management overview
               </p>
             </div>
-          
-          
+
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-600">From</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="border rounded px-2 py-1 text-sm"
+              />
+              <label className="text-xs text-gray-600">To</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="border rounded px-2 py-1 text-sm"
+              />
+              <button
+                onClick={() => fetchAllDashboardStats()}
+                className="ml-2 bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-700"
+              >
+                Apply
+              </button>
+            </div>
           </div>
         </div>
 
@@ -322,6 +390,40 @@ const AdminDashboard = () => {
           </button>
         </div>
 
+        {/* Grouped Summary Stats (moved below the scrollable) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Column 1: Population */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            <h4 className="text-sm font-semibold text-gray-900">Population</h4>
+            <div className="mt-3 grid">
+              <StatCard icon={<Users className="text-blue-600" />} label="Total Population" value={overviewStats?.total_population || 0} color="bg-white border-gray-100" />
+              <StatCard icon={<UserPlus className="text-teal-600" />} label="Male" value={overviewStats?.male_count ?? 0} color="bg-white border-gray-100" />
+              <StatCard icon={<UserPlus className="text-pink-600" />} label="Female" value={overviewStats?.female_count ?? 0} color="bg-white border-gray-100" />
+            </div>
+          </div>
+
+          {/* Column 2: Age & Special Groups */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            <h4 className="text-sm font-semibold text-gray-900">Age & Groups</h4>
+            <div className="mt-3 grid">
+              <StatCard icon={<BarChart3 className="text-gray-600" />} label="Average Age" value={overviewStats?.average_age ? Math.ceil(overviewStats.average_age) : '—'} color="bg-white border-gray-100" />
+              <StatCard icon={<Users className="text-purple-600" />} label="Senior Citizens" value={overviewStats?.senior_citizens ?? 0} color="bg-white border-gray-100" />
+              <StatCard icon={<Shield className="text-orange-600" />} label="PWD" value={overviewStats?.pwd ?? 0} color="bg-white border-gray-100" />
+              <StatCard icon={<Heart className="text-pink-600" />} label="Single Parents" value={overviewStats?.single_parents ?? 0} color="bg-white border-gray-100" />
+            </div>
+          </div>
+
+          {/* Column 3: User Types */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            <h4 className="text-sm font-semibold text-gray-900">User Types</h4>
+            <div className="mt-3 grid">
+              <StatCard icon={<UserCheck className="text-indigo-600" />} label="Admins" value={overviewStats?.user_type_admin ?? 0} color="bg-white border-gray-100" />
+              <StatCard icon={<Users className="text-teal-600" />} label="Staff" value={overviewStats?.user_type_staff ?? 0} color="bg-white border-gray-100" />
+              <StatCard icon={<UserPlus className="text-gray-600" />} label="Residents" value={overviewStats?.user_type_residence ?? 0} color="bg-white border-gray-100" />
+            </div>
+          </div>
+        </div>
+
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Voters Chart / Document Types Chart */}
@@ -364,40 +466,89 @@ const AdminDashboard = () => {
               <h3 className="text-sm sm:text-base font-semibold text-gray-900">
                 Blotter Cases
               </h3>
-              <div className="flex items-center gap-3">
-                <Select
-                  value={yearOptions.find(opt => opt.value === selectedYear)}
-                  onChange={(option) => setSelectedYear(option.value)}
-                  options={yearOptions}
-                  isClearable={false}
-                  className="w-32"
-                />
-                <div className="text-xs text-gray-500 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  Monthly
-                </div>
-              </div>
+                  <div className="text-xs text-gray-500 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    Monthly
+                  </div>
             </div>
             <div className="mb-4">
-              {loading ? (
-                <div className="flex items-center justify-center h-[200px]">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-900"></div>
+                  {/* Render blotter monthly data from system-stat monthlyComparison */}
+                  {statsLoading ? (
+                    <div className="flex items-center justify-center h-[200px]">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-900"></div>
+                    </div>
+                  ) : (
+                    <BarChart data={(monthlyComparison || []).map((m, idx) => ({ label: formatMonth(m.month || m.label || `M${idx+1}`), value: m.blotter_count ?? 0 }))} />
+                  )}
+            </div>
+                <div className="flex justify-between text-xs text-gray-600 pt-3 border-t border-gray-100">
+                  <span>Total Cases: {(monthlyComparison || []).reduce((s, m) => s + (m.blotter_count ?? 0), 0)}</span>
+                  <span>
+                    Average: {(((monthlyComparison || []).reduce((s, m) => s + (m.blotter_count ?? 0), 0)) / Math.max(1, (monthlyComparison || []).length)).toFixed(1)}/month
+                  </span>
+                </div>
+          </div>
+        </div>
+
+        {/* Performance & Monthly Comparison */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900">Performance Metrics</h3>
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {dateFrom} - {dateTo}
+              </div>
+            </div>
+
+            {statsLoading ? (
+              <div className="h-40 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-full border-b-2 animate-spin border-red-900"></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 rounded border">
+                  <div className="text-xs text-gray-600">Average Processing Time</div>
+                  <div className="text-xl font-semibold text-gray-900">{performanceMetrics?.average_processing_time ?? performanceMetrics?.average_total_time ?? '—'} days</div>
+                </div>
+                <div className="p-3 bg-gray-50 rounded border">
+                  <div className="text-xs text-gray-600">Completion Rate</div>
+                  <div className="text-xl font-semibold text-gray-900">{performanceMetrics?.completion_rate ? performanceMetrics.completion_rate + '%' : '—'}</div>
+                </div>
+                <div className="p-3 bg-gray-50 rounded border">
+                  <div className="text-xs text-gray-600">Pending Requests</div>
+                  <div className="text-xl font-semibold text-gray-900">{performanceMetrics?.pending_requests ?? '—'}</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900">Monthly Comparison (Requests)</h3>
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                Year-to-date
+              </div>
+            </div>
+
+            <div style={{ height: 220 }}>
+              {statsLoading ? (
+                <div className="h-40 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-full border-b-2 animate-spin border-red-900"></div>
                 </div>
               ) : (
-                <BarChart data={blotterStats?.monthlyData || []} />
+                <BarChart data={(monthlyComparison || []).map((m, idx) => ({
+                  label: m.label || m.month || m.name || `M${idx+1}`,
+                  value: m.total_requests ?? m.total ?? m.count ?? m.requests ?? m.value ?? 0
+                }))} />
               )}
-            </div>
-            <div className="flex justify-between text-xs text-gray-600 pt-3 border-t border-gray-100">
-              <span>Total Cases: {blotterStats?.totalCases || 0}</span>
-              <span>
-                Average: {blotterStats?.averagePerMonth?.toFixed(1) || 0}/month
-              </span>
             </div>
           </div>
         </div>
 
     
-      </div>
+    </div>
   );
 };
 

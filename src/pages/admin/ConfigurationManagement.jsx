@@ -233,12 +233,12 @@ const ConfigurationManagement = () => {
                 onClick: openDeleteModal,
               }
             ]}
-            actionButton={{
-              label: "Add Configuration",
-              icon: <FaPlus className="w-3.5 h-3.5" />,
-              onClick: () => setShowCreateModal(true),
-              className: "bg-red-900 text-white hover:bg-red-800"
-            }}
+            // actionButton={{
+            //   label: "Add Configuration",
+            //   icon: <FaPlus className="w-3.5 h-3.5" />,
+            //   onClick: () => setShowCreateModal(true),
+            //   className: "bg-red-900 text-white hover:bg-red-800"
+            // }}
           />
         </div>
       </div>
