@@ -86,8 +86,25 @@ const WorkerDashboard = () => {
   const [requestsStats, setRequestsStats] = useState(null);
   const [monthlyComparison, setMonthlyComparison] = useState([]);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [dateFrom, setDateFrom] = useState(() => new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().slice(0,10));
-  const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0,10));
+  // Set Philippine date (UTC+8) for date pickers
+  const getPHDateISO = (offsetDays = 0) => {
+    const now = new Date();
+    // Convert to UTC+8 (Philippine Time)
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const phTime = new Date(utc + (8 * 60 * 60000));
+    if (offsetDays !== 0) phTime.setDate(phTime.getDate() + offsetDays);
+    return phTime.toISOString().slice(0, 10);
+  };
+  const getPHDateMinusMonth = () => {
+    const now = new Date();
+    // Convert to UTC+8 (Philippine Time)
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const phTime = new Date(utc + (8 * 60 * 60000));
+    phTime.setMonth(phTime.getMonth() - 1);
+    return phTime.toISOString().slice(0, 10);
+  };
+  const [dateFrom, setDateFrom] = useState(getPHDateMinusMonth());
+  const [dateTo, setDateTo] = useState(getPHDateISO(1));
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -122,6 +139,12 @@ const WorkerDashboard = () => {
           average_age: d.average_age ?? null,
           male_count: d.male_count ?? null,
           female_count: d.female_count ?? null,
+          user_type_admin: (d.user_type && d.user_type.admin) ?? 0,
+          user_type_staff: (d.user_type && d.user_type.staff) ?? 0,
+          user_type_residence: (d.user_type && d.user_type.residence) ?? (d.user_type && d.user_type.residence_count) ?? 0,
+          new_accounts: d.new_accounts ?? 0,
+          new_accounts_male: d.new_accounts_male ?? 0,
+          new_accounts_female: d.new_accounts_female ?? 0,
         });
 
         setDocTypeStats((d.document_type_distribution || []).map(item => ({
@@ -387,19 +410,29 @@ const WorkerDashboard = () => {
         </button>
       </div>
 
-      {/* Grouped Summary Stats (no User Types column) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Column 1: Population */}
+      {/* Grouped Summary Stats (AdminDashboard style, no User Types) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Column 1: Total Users */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-          <h4 className="text-sm font-semibold text-gray-900">Population</h4>
+          <h4 className="text-sm font-semibold text-gray-900">Total Users</h4>
           <div className="mt-3 grid">
-            <StatCard icon={<Users className="text-blue-600" />} label="Total Population" value={overviewStats?.total_population || 0} color="bg-white border-gray-100" />
-            <StatCard icon={<UserPlus className="text-teal-600" />} label="Male" value={overviewStats?.male_count ?? 0} color="bg-white border-gray-100" />
-            <StatCard icon={<UserPlus className="text-pink-600" />} label="Female" value={overviewStats?.female_count ?? 0} color="bg-white border-gray-100" />
+            <StatCard icon={<Users className="text-blue-600" />} label="Total" value={overviewStats?.total_population ?? 0} color="bg-white border-gray-100" />
+            <StatCard icon={<UserCheck className="text-green-600" />} label="Active" value={overviewStats?.active_users ?? 0} color="bg-white border-gray-100" />
+            <StatCard icon={<UserPlus className="text-gray-400" />} label="Inactive" value={overviewStats?.inactive_users ?? 0} color="bg-white border-gray-100" />
           </div>
         </div>
 
-        {/* Column 2: Age & Special Groups */}
+        {/* Column 2: New Users */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h4 className="text-sm font-semibold text-gray-900">New Users</h4>
+          <div className="mt-3 grid">
+            <StatCard icon={<Users className="text-blue-600" />} label="Users" value={overviewStats?.new_accounts || 0} color="bg-white border-gray-100" />
+            <StatCard icon={<UserPlus className="text-teal-600" />} label="Male" value={overviewStats?.new_accounts_male ?? 0} color="bg-white border-gray-100" />
+            <StatCard icon={<UserPlus className="text-pink-600" />} label="Female" value={overviewStats?.new_accounts_female ?? 0} color="bg-white border-gray-100" />
+          </div>
+        </div>
+
+        {/* Column 3: Age & Special Groups */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
           <h4 className="text-sm font-semibold text-gray-900">Age & Groups</h4>
           <div className="mt-3 grid">
