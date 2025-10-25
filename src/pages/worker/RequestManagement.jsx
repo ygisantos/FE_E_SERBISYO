@@ -380,12 +380,12 @@ const RequestManagement = () => {
               }}
               actions={[
                 {
-                  icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
+                  icon: <FaEye className="h-3 w-3 text-gray-500" />,
                   label: 'View Details',
                   onClick: handleViewDetails,
                 },
                 {
-                  icon: <FaFileWord className="h-3.5 w-3.5 text-blue-400" />,
+                  icon: <FaFileWord className="h-3 w-3 text-gray-500" />,
                   label: 'Download Filled Document',
                   onClick: (row) => handleDownloadFilledDocument(row.id),
                   show: (row) => ['processing', 'ready to pickup', 'released', 'approved'].includes(row.status)
