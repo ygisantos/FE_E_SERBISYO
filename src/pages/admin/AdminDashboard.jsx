@@ -21,6 +21,7 @@ import BarChart from "../../components/charts/BarChart";
 import StatCard from "../../components/reusable/StatCard";
 import { getAllBlotters } from '../../api/blotterApi';
 import Select from '../../components/reusable/Select';
+import { getDashboardOverview, getDashboardDocumentTypes, getDashboardTopDocuments } from '../../api/dashboardApi';
 
 const stats = [
   {
@@ -70,21 +71,6 @@ const pieChartData = [
   { label: "Non-Voters", value: 340, color: "#F7DB9F" },
 ];
 
-const barChartData = [
-  { label: "Jan", value: 12 },
-  { label: "Feb", value: 8 },
-  { label: "Mar", value: 15 },
-  { label: "Apr", value: 6 },
-  { label: "May", value: 9 },
-  { label: "Jun", value: 4 },
-  { label: "Jul", value: 7 },
-  { label: "Aug", value: 11 },
-  { label: "Sep", value: 5 },
-  { label: "Oct", value: 8 },
-  { label: "Nov", value: 3 },
-  { label: "Dec", value: 6 },
-];
-
 const topRequest = {
   icon: <FileText className="text-indigo-600" />,
   label: "Most Requested Document",
@@ -94,10 +80,13 @@ const topRequest = {
 
 const AdminDashboard = () => {
   const scrollRef = React.useRef(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [blotterStats, setBlotterStats] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [overviewStats, setOverviewStats] = useState(null);
+  const [docTypeStats, setDocTypeStats] = useState([]);
+  const [topDocument, setTopDocument] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -159,10 +148,89 @@ const AdminDashboard = () => {
     fetchBlotterStats();
   }, [selectedYear]);
 
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      setStatsLoading(true);
+      try {
+        const [overviewRes, docTypeRes, topDocRes] = await Promise.all([
+          getDashboardOverview(),
+          getDashboardDocumentTypes(),
+          getDashboardTopDocuments(),
+        ]);
+        setOverviewStats(overviewRes.data || {});
+        setDocTypeStats(docTypeRes.data || []);
+        setTopDocument((topDocRes.data && topDocRes.data[0]) || null);
+      } catch {
+        // handle error
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    fetchDashboardStats();
+  }, []);
+
   const yearOptions = Array.from({ length: 5 }, (_, i) => ({
     value: new Date().getFullYear() - i,
     label: (new Date().getFullYear() - i).toString()
   }));
+
+  // Dynamic stats cards
+  const dynamicStats = overviewStats
+    ? [
+        {
+          icon: <Users className="text-blue-600" />, label: "Total Population", value: overviewStats.total_population || 0, color: "bg-white border-gray-200", trend: 1, percentage: overviewStats.population_growth || 0,
+        },
+        {
+          icon: <UserCheck className="text-green-600" />, label: "Official Members", value: overviewStats.official_members || 0, color: "bg-white border-gray-200", trend: 1, percentage: overviewStats.official_growth || 0,
+        },
+        {
+          icon: <Users className="text-purple-600" />, label: "Senior Citizens", value: overviewStats.senior_citizens || 0, color: "bg-white border-gray-200", trend: 1, percentage: overviewStats.senior_growth || 0,
+        },
+        {
+          icon: <Shield className="text-orange-600" />, label: "PWD", value: overviewStats.pwd || 0, color: "bg-white border-gray-200", trend: 1, percentage: overviewStats.pwd_growth || 0,
+        },
+        {
+          icon: <Heart className="text-pink-600" />, label: "Single Parents", value: overviewStats.single_parents || 0, color: "bg-white border-gray-200", trend: 1, percentage: overviewStats.single_parents_growth || 0,
+        },
+      ]
+    : stats;
+
+  // Pie chart from docTypeStats
+  const dynamicPieChartData = docTypeStats.length
+    ? docTypeStats
+        .filter(item => (item.type || item.label) && (item.count || item.value))
+        .map((item, idx) => ({
+          label: item.type || item.label || `Type ${idx + 1}`,
+          value: item.count || item.value || 0,
+          color: ["#7A0000", "#F7DB9F", "#4F8A8B", "#F9B208", "#6A0572", "#2E8B57", "#FF6347", "#4682B4"][idx % 8],
+        }))
+    : pieChartData;
+
+  // Add more data display for document types
+  const renderDocTypeDetails = () => (
+    <div className="mt-4">
+      <h4 className="text-xs font-semibold text-gray-700 mb-2">Document Type Breakdown</h4>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+        {dynamicPieChartData.map((item, idx) => (
+          <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-100">
+            <span className="inline-block w-3 h-3 rounded-full" style={{ background: item.color }}></span>
+            <span className="text-xs text-gray-700 flex-1">{item.label}</span>
+            <span className="text-xs font-semibold text-gray-900">{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Top request from topDocument
+  const dynamicTopRequest = topDocument
+    ? {
+        icon: <FileText className="text-indigo-600" />,
+        label: "Most Requested Document",
+        value: topDocument.name || topDocument.label,
+        color: "bg-white border-gray-200",
+      }
+    : topRequest;
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -237,10 +305,12 @@ const AdminDashboard = () => {
             }}
           >
             <div className="grid grid-flow-col auto-cols-[minmax(200px,1fr)] sm:auto-cols-[minmax(240px,1fr)] gap-4 min-w-max px-0 sm:px-8">
-              {stats.map((stat, idx) => (
-                <StatCard key={idx} {...stat} />
-              ))}
-              <StatCard {...topRequest} />
+              {statsLoading
+                ? Array(5).fill(0).map((_, idx) => (
+                    <div key={idx} className="h-24 bg-gray-100 animate-pulse rounded-lg" />
+                  ))
+                : dynamicStats.map((stat, idx) => <StatCard key={idx} {...stat} />)}
+              {!statsLoading && <StatCard {...dynamicTopRequest} />}
             </div>
           </div>
           <button
@@ -254,30 +324,38 @@ const AdminDashboard = () => {
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Voters Chart */}
+          {/* Voters Chart / Document Types Chart */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm sm:text-base font-semibold text-gray-900">
-                Voter Distribution
+                Document Type Distribution
               </h3>
               <div className="text-xs text-gray-500 flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
-                2024
+                {new Date().getFullYear()}
               </div>
             </div>
             <div className="flex justify-center mb-4">
-              <PieChart data={pieChartData} />
+              {statsLoading ? (
+                <div className="h-32 w-32 bg-gray-100 animate-pulse rounded-full" />
+              ) : (
+                <PieChart data={dynamicPieChartData} />
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="text-lg font-semibold text-blue-600">900</div>
-                <div className="text-xs text-gray-600">Registered</div>
-              </div>
-              <div className="text-center p-3 bg-amber-50 rounded-lg border border-amber-100">
-                <div className="text-lg font-semibold text-amber-600">340</div>
-                <div className="text-xs text-gray-600">Non-Voters</div>
-              </div>
+              {dynamicPieChartData.slice(0, 2).map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`text-center p-3 rounded-lg border`}
+                  style={{ background: item.color + '22', borderColor: item.color + '44' }}
+                >
+                  <div className="text-lg font-semibold" style={{ color: item.color }}>{item.value}</div>
+                  <div className="text-xs text-gray-600">{item.label}</div>
+                </div>
+              ))}
             </div>
+            {/* More document type data */}
+            {!statsLoading && renderDocTypeDetails()}
           </div>
 
           {/* Blotter Chart */}
