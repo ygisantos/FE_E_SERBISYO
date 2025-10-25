@@ -60,12 +60,19 @@ const adminMenu = [
       { to: "/admin/requests", label: "View All Requests", icon: FaFileAlt },
      ],
   },
-   { to: "/admin/sumbong", label: "View Sumbong Cases", icon: FaBook },
+  {
+    label: "System",
+    icon: FaCog,
+    subMenu: [
+      { to: "/admin/reports", label: "Reports & Analytics", icon: FaChartBar },
+      { to: "/admin/activity-logs", label: "Activity Logs", icon: FaChartBar },
+      { to: "/admin/configurations", label: "System Configuration", icon: FaCog },
+    ],
+  },
+  { to: "/admin/sumbong", label: "View Sumbong Cases", icon: FaBook },
   { to: "/admin/announcements", label: "Announcement Management", icon: FaCommentDots },
   { to: "/admin/feedback", label: "Feedback Reports", icon: FaCommentDots },
-  { to: "/admin/configurations", label: "System Configuration", icon: FaCog },
-  { to: "/admin/activity-logs", label: "Activity Logs", icon: FaChartBar },
-  { to: "/admin/reports", label: "Reports & Analytics", icon: FaChartBar },
+  
 ];
 
 // Worker menu with limited permissions - no user management, no archiving

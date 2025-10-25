@@ -181,11 +181,34 @@ const UserSidebar = ({
   const location = useLocation();
   const navigate = useNavigate();
   const auth = useAuth();
-  
+
   // If AuthContext is not available, fall back to localStorage
   const userData = auth?.user || JSON.parse(localStorage.getItem("userData") || "{}");
   const role = userData?.type || "resident";
   const navLinks = menuItems[role] || [];
+
+  // PH Date/Time state with day of week, split for display
+  const getPhDateTimeParts = () => {
+    const now = new Date();
+    const day = now.toLocaleString("en-PH", { weekday: "long", timeZone: "Asia/Manila" });
+    const dateTime = now.toLocaleString("en-PH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Manila",
+    });
+    return { day, dateTime };
+  };
+  const [phDateTime, setPhDateTime] = useState(getPhDateTimeParts);
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setPhDateTime(getPhDateTimeParts());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Use onLogout prop for logout
   const handleLogout = () => {
@@ -253,6 +276,7 @@ const UserSidebar = ({
       </div>
 
       <div className={`flex-shrink-0 ${isCollapsed ? "px-2" : "px-4"}`}>
+        
         <SidebarHeader 
           isCollapsed={isCollapsed} 
           user={{
@@ -302,6 +326,12 @@ const UserSidebar = ({
               />
             );
           })}
+        </div>
+        {/* PH Date/Time Display moved above user info */}
+        {/* PH Date/Time Display - above user info */}
+        <div className={`text-center text-xs text-gray-200 mt-2 mb-3 transition-all duration-300 ${isCollapsed ? "opacity-0 h-0" : "opacity-100 h-auto"}`} style={{ minHeight: isCollapsed ? 0 : 32 }}>
+          <div className="font-bold">{phDateTime.day}</div>
+          <div>{phDateTime.dateTime}</div>
         </div>
         </div>
       </aside>
