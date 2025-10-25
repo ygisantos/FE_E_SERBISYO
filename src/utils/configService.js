@@ -2,7 +2,7 @@ import axios from '../axios';
 
 const CONFIG_STORAGE_KEY = 'app_configurations';
 const CONFIG_TIMESTAMP_KEY = 'app_configurations_timestamp';
-const COOLDOWN_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+const COOLDOWN_DURATION = 1 * 60 * 1000; // 1 minutes in milliseconds
 
 class ConfigService {
   async getConfigurations() {

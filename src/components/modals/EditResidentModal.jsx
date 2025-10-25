@@ -339,22 +339,38 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSuccess }) => {
             Additional Information
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <InputField
-              label="PWD ID Number"
-              name="pwd_number"
-              value={formData.pwd_number}
-              onChange={handleChange}
-              placeholder="Enter PWD ID number if applicable"
-              className="text-xs"
-            />
-            <InputField
-              label="Single Parent ID"
-              name="single_parent_number"
-              value={formData.single_parent_number}
-              onChange={handleChange}
-              placeholder="Enter Single Parent ID if applicable"
-              className="text-xs"
-            />
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="pwd_number"
+                name="pwd_number"
+                checked={formData.pwd_number === '0000000000'}
+                onChange={e => handleChange({
+                  target: {
+                    name: 'pwd_number',
+                    value: e.target.checked ? '0000000000' : ''
+                  }
+                })}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="pwd_number" className="text-xs font-medium text-gray-700 mb-0">PWD</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="single_parent_number"
+                name="single_parent_number"
+                checked={formData.single_parent_number === '0000000000'}
+                onChange={e => handleChange({
+                  target: {
+                    name: 'single_parent_number',
+                    value: e.target.checked ? '0000000000' : ''
+                  }
+                })}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="single_parent_number" className="text-xs font-medium text-gray-700 mb-0">Single Parent</label>
+            </div>
           </div>
         </div>
       </form>

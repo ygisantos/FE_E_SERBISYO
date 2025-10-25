@@ -20,9 +20,9 @@ const PieChart = ({ title, data, height = 300 }) => {
         position: "bottom",
         labels: {
           usePointStyle: true,
-          padding: 20,
+          padding: 5,
           font: {
-            size: 12,
+            size: 8,
           },
         },
       },
