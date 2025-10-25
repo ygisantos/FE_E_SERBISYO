@@ -121,8 +121,8 @@ const WorkerDashboard = () => {
     setStatsLoading(true);
     try {
       const params = {
-        date_from: dateFrom,
-        date_to: dateTo,
+        ...(dateFrom && { date_from: dateFrom }),
+        ...(dateTo && { date_to: dateTo }),
         ...overrideParams,
       };
 
