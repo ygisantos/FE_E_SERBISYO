@@ -40,6 +40,7 @@ const DataTable = ({
   onSelectionChange = () => {},
   bulkActions = [], // Array of { label, icon, handler }
   comboBoxFilter = null, // { label, options, value, onChange }
+  extraFilters = null, // array of { label, options, value, onChange }
   actionButton = null, // { label, icon, onClick, show, className }
   totalItems,
   currentPage,
@@ -434,6 +435,28 @@ const DataTable = ({
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+            {extraFilters && Array.isArray(extraFilters) && extraFilters.length > 0 && (
+              <div className="flex items-center gap-2">
+                {extraFilters.map((filter) => (
+                  <div className="flex items-center gap-1" key={filter.label}>
+                    <label className="text-xs text-gray-600 font-medium">
+                      {filter.label}:
+                    </label>
+                    <select
+                      value={filter.value}
+                      onChange={(e) => filter.onChange(e.target.value)}
+                      className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 bg-white cursor-pointer transition-all duration-200"
+                    >
+                      {filter.options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
               </div>
             )}
             {dateFilter && (
