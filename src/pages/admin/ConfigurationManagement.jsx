@@ -226,11 +226,6 @@ const ConfigurationManagement = () => {
                 icon: <FaEdit className="h-3.5 w-3.5 text-gray-400" />,
                 label: 'Edit',
                 onClick: openEditModal,
-              },
-              {
-                icon: <FaTrash className="h-3.5 w-3.5 text-gray-400" />,
-                label: 'Delete',
-                onClick: openDeleteModal,
               }
             ]}
             // actionButton={{
@@ -301,6 +296,7 @@ const ConfigurationManagement = () => {
             name="name"
             value={formData.name}
             onChange={handleChange}
+            readOnly
             placeholder="Configuration name"
             error={errors.name}
             required

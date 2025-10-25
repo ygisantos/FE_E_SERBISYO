@@ -28,7 +28,7 @@ const InputField = ({
       : 'border-gray-300 focus:border-gray-200'
   } ${
     disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
-  } ${readOnly ? 'bg-gray-50' : ''}`;
+  } ${readOnly ? '!bg-gray-50 text-gray-400 cursor-not-allowed' : ''}`;
 
   return (
     <div className={`space-y-1 ${className}`}>
