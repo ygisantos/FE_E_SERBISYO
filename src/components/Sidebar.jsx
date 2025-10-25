@@ -6,35 +6,39 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { FaChevronDown, FaBars, FaTimes } from "react-icons/fa";
 import { useAuth } from "../contexts/AuthContext";
 import logo from "../assets/logo/santol_logo.png";
+import { useConfig } from '../hooks/useConfig';
 import menuItems from "../constants/menuItems";
 
-const SidebarHeader = ({ isCollapsed, user, role }) => (
-  <div
-    className={`flex flex-col items-center mb-8 transition-all duration-300 ${
-      isCollapsed ? "mb-4" : ""
-    }`}
-  >
-    <img
-      src={user?.profilePicture || logo}
-      alt={user?.name || "User"}
-      className={`rounded-full object-cover bg-white border-2 border-white shadow mb-2 transition-all duration-300 ${
-        isCollapsed ? "h-10 w-10" : "h-16 w-16"
+const SidebarHeader = ({ isCollapsed, user, role }) => {
+  const logoUrl = useConfig('logo_url') || logo;
+  return (
+    <div
+      className={`flex flex-col items-center mb-8 transition-all duration-300 ${
+        isCollapsed ? "mb-4" : ""
       }`}
-    />
-    {!isCollapsed && (
-      <>
-        <span className="text-white text-sm font-medium tracking-wide transition-opacity duration-300">
-          {user?.name || "Welcome"}
-        </span>
-        {role && (
-          <span className="text-gray-200 text-xs mt-1 transition-opacity duration-300">
-            {role.charAt(0).toUpperCase() + role.slice(1)}
+    >
+      <img
+  src={user?.profilePicture || logoUrl}
+        alt={user?.name || "User"}
+        className={`rounded-full object-cover bg-white border-2 border-white shadow mb-2 transition-all duration-300 ${
+          isCollapsed ? "h-10 w-10" : "h-16 w-16"
+        }`}
+      />
+      {!isCollapsed && (
+        <>
+          <span className="text-white text-sm font-medium tracking-wide transition-opacity duration-300">
+            {user?.name || "Welcome"}
           </span>
-        )}
-      </>
-    )}
-  </div>
-);
+          {role && (
+            <span className="text-gray-200 text-xs mt-1 transition-opacity duration-300">
+              {role.charAt(0).toUpperCase() + role.slice(1)}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 const NavItem = ({
   item,
