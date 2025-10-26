@@ -95,12 +95,12 @@ const RequestManagement = () => {
       // Update request status
       await updateRequestStatus(requestId, newStatus);
 
-      // Create certificate log
-      await createCertificateLog({
-        document_request: requestId,
-        staff: user.id,
-        remark: `Status changed to ${newStatus}`
-      });
+      // // Create certificate log
+      // await createCertificateLog({
+      //   document_request: requestId,
+      //   staff: user.id,
+      //   remark: `Status changed to ${newStatus}`
+      // });
 
       // After status update, refresh the specific request
       const updatedRequest = await getRequestById(requestId);

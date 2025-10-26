@@ -1,48 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../../components/reusable/DataTable';
-import { FaEye } from 'react-icons/fa';
+import { getAllCertificateLogs } from '../../../api/certificateLogApi';
 import { showCustomToast } from '../../../components/Toast/CustomToast';
-import ViewRequestModal from '../../../components/modals/ViewRequestModal';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const CertificateLogs = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [search, setSearch] = useState('');
-  const [selectedLog, setSelectedLog] = useState(null);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [filters, setFilters] = useState({
-    status: '',
-    from_date: '',
-    to_date: ''
+  const [totalItems, setTotalItems] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState({
+    sort_by: 'created_at',
+    order: 'desc'
   });
-
-  const statusOptions = [
-    { value: '', label: 'All Status' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'processing', label: 'Processing' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'rejected', label: 'Rejected' }
-  ];
-
-  const handleFilterChange = (name, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    setPage(1);
-  };
+  const [search, setSearch] = useState('');
+  const { user } = useAuth(); // Get current logged in user
 
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await fetchCertificateLogs({ page, search, ...filters });
-      // setLogs(response.data);
-      // setTotal(response.total);
+      const response = await getAllCertificateLogs({
+        page: currentPage,
+        per_page: 10,
+        // No staff filter for admin to get all logs
+        sort_by: sortConfig.sort_by,
+        order: sortConfig.order,
+        search: search
+      });
+
+      if (response?.success && Array.isArray(response.data)) {
+        setLogs(response.data);
+        setTotalItems(response.total || 0);
+      }
     } catch (error) {
-      showCustomToast('Failed to fetch certificate logs', 'error');
+      console.error('Error fetching logs:', error);
+      showCustomToast('Failed to fetch logs', 'error');
+      setLogs([]);
     } finally {
       setLoading(false);
     }
@@ -50,52 +43,94 @@ const CertificateLogs = () => {
 
   useEffect(() => {
     fetchLogs();
-  }, [page, search, filters]);
+  }, [currentPage, sortConfig, search]); 
 
-  const handleView = (log) => {
-    setSelectedLog(log);
-    setShowViewModal(true);
+  const handleSearch = (value) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleSort = ({ column, direction }) => {
+    setSortConfig({
+      sort_by: column,
+      order: direction.toLowerCase()
+    });
   };
 
   const columns = [
     {
-      label: 'Certificate',
-      accessor: 'certificate',
-      sortable: true
-    },
-    {
-      label: 'Resident',
-      accessor: 'resident',
-      sortable: true
-    },
-    {
-      label: 'Request Date',
-      accessor: 'requestDate',
+      label: 'Transaction ID',
+      accessor: 'document_request.transaction_id',
       sortable: true,
-      render: (value) => new Date(value).toLocaleDateString()
+      render: (_, row) => (
+        <span className="text-sm font-medium text-gray-800">
+          {row.document_request?.transaction_id || 'N/A'}
+        </span>
+      )
     },
     {
-      label: 'Status',
-      accessor: 'status',
+      label: 'Staff',
+      accessor: 'staff_account',
       sortable: true,
-      type: 'badge',
-      badgeColors: {
-        completed: 'green',
-        pending: 'yellow',
-        processing: 'blue',
-        rejected: 'red'
-      }
+      render: (staff) => (
+        <div className="text-xs">
+          <p className="font-medium text-gray-800">
+            {staff ? `${staff.first_name} ${staff.last_name}` : 'N/A'}
+          </p>
+          <p className="text-gray-600">{staff?.type || ''}</p>
+        </div>
+      )
     },
     {
-      label: 'Processed By',
-      accessor: 'processedBy',
-      sortable: true
-    },
-    {
-      label: 'Completion Date',
-      accessor: 'completionDate',
+      label: 'Requestor',
+      accessor: 'document_request.account',
       sortable: true,
-      render: (value) => value ? new Date(value).toLocaleDateString() : '-'
+      render: (_, row) => (
+        <div className="text-xs">
+          <p className="font-medium text-gray-800">
+            {row.document_request?.account ? 
+              `${row.document_request.account.first_name} ${row.document_request.account.last_name}` 
+              : 'N/A'}
+          </p>
+          <p className="text-gray-600">{row.document_request?.account?.email || ''}</p>
+        </div>
+      )
+    },
+    {
+      label: 'Document',
+      accessor: 'document_request',
+      sortable: true,
+      render: (value) => (
+        <span className="text-sm font-medium text-gray-800">
+          {value?.document_details?.document_name || 'N/A'}
+        </span>
+      )
+    },
+    {
+      label: 'Action',
+      accessor: 'remark',
+      sortable: true,
+      render: (value) => (
+        <span className="text-sm text-gray-600">
+          {value || 'N/A'}
+        </span>
+      )
+    },
+    {
+      label: 'Date & Time',
+      accessor: 'created_at',
+      sortable: true,
+      render: (value) => (
+        <span className="text-xs text-gray-600">
+          {new Date(value).toLocaleString('en-PH', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </span>
+      )
     }
   ];
 
@@ -103,57 +138,35 @@ const CertificateLogs = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Certificate Logs</h3>
-          <p className="mt-1 text-sm text-gray-500">View all certificate request history</p>
+          <h3 className="text-lg font-medium text-gray-900">Certificate Processing Logs</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            View complete history of all certificate processing activities
+          </p>
         </div>
-        
+
         <div className="p-6">
           <DataTable
             columns={columns}
             data={logs}
             loading={loading}
+            enablePagination={true}
+            enableSelection={false}
+            totalItems={totalItems}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+            itemsPerPage={10}
             enableSearch={true}
             searchValue={search}
-            onSearchChange={setSearch}
-            enablePagination={true}
-            onPageChange={setPage}
-            totalItems={total}
-            currentPage={page}
-            searchPlaceholder="Search certificates..."
-            comboBoxFilter={{
-              label: "Status",
-              value: filters.status,
-              onChange: (value) => handleFilterChange("status", value),
-              options: statusOptions
+            onSearchChange={handleSearch}
+            searchPlaceholder="Search by transaction ID, staff, or action..."
+            onSort={handleSort}
+            sortConfig={{
+              field: sortConfig.sort_by,
+              direction: sortConfig.order
             }}
-            dateFilter={{
-              label: "Date Range",
-              startDate: filters.from_date,
-              endDate: filters.to_date,
-              onStartDateChange: (value) => handleFilterChange("from_date", value),
-              onEndDateChange: (value) => handleFilterChange("to_date", value)
-            }}
-            actions={[
-              {
-                icon: <FaEye className="h-3.5 w-3.5 text-gray-400" />,
-                label: "View Details",
-                onClick: handleView
-              }
-            ]}
           />
         </div>
       </div>
-
-      {showViewModal && (
-        <ViewRequestModal
-          isOpen={showViewModal}
-          onClose={() => {
-            setShowViewModal(false);
-            setSelectedLog(null);
-          }}
-          request={selectedLog}
-        />
-      )}
     </div>
   );
 };
