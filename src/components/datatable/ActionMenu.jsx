@@ -1,84 +1,57 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
+// Track current open menu
+let currentOpenMenu = null;
+const closeCurrentMenu = () => {
+  if (currentOpenMenu) {
+    currentOpenMenu();
+    currentOpenMenu = null;
+  }
+};
+
 const ActionMenu = ({ row, index, actions }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef(null);
   const buttonRef = useRef(null);
+  const menuRef = useRef(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
-  const updatePosition = useCallback(() => {
-    if (!isOpen || !buttonRef.current) return;
-
-    const buttonRect = buttonRef.current.getBoundingClientRect();
-    const menuWidth = 192;
-    const menuHeight = 200;
-    const padding = 8;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    let left = buttonRect.right - menuWidth;
-    let top = buttonRect.bottom + padding + window.scrollY;
-    let position = 'bottom';
-
-    if (left < padding) {
-      left = buttonRect.left;
-    } else if (left + menuWidth > viewportWidth - padding) {
-      left = viewportWidth - menuWidth - padding;
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!isOpen) {
+      closeCurrentMenu();
+      // Calculate position when opening
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.right - 192 // Menu width is 192px (w-48)
+      });
     }
-
-    if (buttonRect.bottom + menuHeight > viewportHeight - padding) {
-      top = buttonRect.top - menuHeight - padding + window.scrollY;
-      position = 'top';
-    }
-
-    setMenuPosition({ top, left, position });
-  }, [isOpen]);
+    setIsOpen(!isOpen);
+    currentOpenMenu = () => setIsOpen(false);
+  };
 
   useEffect(() => {
-    if (!isOpen) return;
-
-    const handleScroll = (e) => {
-      if (e.target.contains(buttonRef.current)) {
-        updatePosition();
-      }
-    };
-
-    updatePosition();
-    window.addEventListener('resize', updatePosition);
-    document.addEventListener('scroll', handleScroll, true);
-
-    return () => {
-      window.removeEventListener('resize', updatePosition);
-      document.removeEventListener('scroll', handleScroll, true);
-    };
-  }, [isOpen, updatePosition]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target) &&
-          buttonRef.current && !buttonRef.current.contains(e.target)) {
+      if (buttonRef.current && !buttonRef.current.contains(e.target)) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
   const filteredActions = actions.filter(action => !action.show || action.show(row));
 
   return (
-    <div className="relative inline-block text-left">
+    <>
       <button
         ref={buttonRef}
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
+        onClick={handleToggle}
         className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
       >
         <MoreVertical className="w-4 h-4" />
@@ -91,13 +64,9 @@ const ActionMenu = ({ row, index, actions }) => {
             position: 'absolute',
             top: `${menuPosition.top}px`,
             left: `${menuPosition.left}px`,
+            zIndex: 50
           }}
-          className={`
-            fixed z-[9999] w-48 py-1
-            bg-white rounded-lg shadow-lg border border-gray-200
-            transform opacity-100 scale-100
-            transition-all duration-200 ease-out
-          `}
+          className="w-48 py-1 bg-white rounded-lg shadow-lg border border-gray-200"
         >
           {filteredActions.map((action, i) => (
             <button
@@ -125,7 +94,7 @@ const ActionMenu = ({ row, index, actions }) => {
         </div>,
         document.body
       )}
-    </div>
+    </>
   );
 };
 
