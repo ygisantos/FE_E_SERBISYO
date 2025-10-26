@@ -95,8 +95,25 @@ const AdminDashboard = () => {
   const [requestsStats, setRequestsStats] = useState(null);
   const [monthlyComparison, setMonthlyComparison] = useState([]);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  // Set Philippine date (UTC+8) for date pickers
+  const getPHDateISO = (offsetDays = 0) => {
+    const now = new Date();
+    // Convert to UTC+8 (Philippine Time)
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const phTime = new Date(utc + (8 * 60 * 60000));
+    if (offsetDays !== 0) phTime.setDate(phTime.getDate() + offsetDays);
+    return phTime.toISOString().slice(0, 10);
+  };
+  const getPHDateMinusMonth = () => {
+    const now = new Date();
+    // Convert to UTC+8 (Philippine Time)
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const phTime = new Date(utc + (8 * 60 * 60000));
+    phTime.setMonth(phTime.getMonth() - 1);
+    return phTime.toISOString().slice(0, 10);
+  };
+  const [dateFrom, setDateFrom] = useState(getPHDateMinusMonth());
+  const [dateTo, setDateTo] = useState(getPHDateISO(1));
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;
@@ -124,7 +141,6 @@ const AdminDashboard = () => {
       if (systemRes && systemRes.success && systemRes.data) {
         const d = systemRes.data;
 
-        // Map overview-like fields to the existing overviewStats shape used by UI
         setOverviewStats({
           total_population: d.total_users || 0,
           official_members: d.officials || 0,
@@ -134,10 +150,14 @@ const AdminDashboard = () => {
           average_age: d.average_age ?? null,
           male_count: d.male_count ?? null,
           female_count: d.female_count ?? null,
-          // user_type may come as an object with counts per role
           user_type_admin: (d.user_type && d.user_type.admin) ?? 0,
           user_type_staff: (d.user_type && d.user_type.staff) ?? 0,
           user_type_residence: (d.user_type && d.user_type.residence) ?? (d.user_type && d.user_type.residence_count) ?? 0,
+          new_accounts: d.new_accounts ?? 0,
+          new_accounts_male: d.new_accounts_male ?? 0,
+          new_accounts_female: d.new_accounts_female ?? 0,
+          active_users: d.active_users ?? d.active ?? 0,
+          inactive_users: d.inactive_users ?? d.inactive ?? 0,
         });
 
         // Document types
@@ -219,12 +239,6 @@ const AdminDashboard = () => {
           icon: <TrendingUp className="text-emerald-600" />, 
           label: "Completion Rate",
           value: performanceMetrics?.completion_rate ? (performanceMetrics.completion_rate + '%') : '0%',
-          color: "bg-white border-gray-200",
-        },
-        {
-          icon: <Users className="text-blue-600" />, 
-          label: "Total Users",
-          value: usersStats?.total || overviewStats.total_population || 0,
           color: "bg-white border-gray-200",
         },
         // Performance Metrics
@@ -421,18 +435,28 @@ const AdminDashboard = () => {
         </div>
 
         {/* Grouped Summary Stats (moved below the scrollable) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Column 1: Population */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {/* Column 1: Total Users */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-            <h4 className="text-sm font-semibold text-gray-900">Population</h4>
+            <h4 className="text-sm font-semibold text-gray-900">Total Users</h4>
             <div className="mt-3 grid">
-              <StatCard icon={<Users className="text-blue-600" />} label="Total Population" value={overviewStats?.total_population || 0} color="bg-white border-gray-100" />
-              <StatCard icon={<UserPlus className="text-teal-600" />} label="Male" value={overviewStats?.male_count ?? 0} color="bg-white border-gray-100" />
-              <StatCard icon={<UserPlus className="text-pink-600" />} label="Female" value={overviewStats?.female_count ?? 0} color="bg-white border-gray-100" />
+              <StatCard icon={<Users className="text-blue-600" />} label="Total" value={overviewStats?.total_population ?? 0} color="bg-white border-gray-100" />
+              <StatCard icon={<UserCheck className="text-green-600" />} label="Active" value={overviewStats?.active_users ?? 0} color="bg-white border-gray-100" />
+              <StatCard icon={<UserPlus className="text-gray-400" />} label="Inactive" value={overviewStats?.inactive_users ?? 0} color="bg-white border-gray-100" />
             </div>
           </div>
 
-          {/* Column 2: Age & Special Groups */}
+          {/* Column 2: New Users */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            <h4 className="text-sm font-semibold text-gray-900">New Users</h4>
+            <div className="mt-3 grid">
+              <StatCard icon={<Users className="text-blue-600" />} label="Users" value={overviewStats?.new_accounts || 0} color="bg-white border-gray-100" />
+              <StatCard icon={<UserPlus className="text-teal-600" />} label="Male" value={overviewStats?.new_accounts_male ?? 0} color="bg-white border-gray-100" />
+              <StatCard icon={<UserPlus className="text-pink-600" />} label="Female" value={overviewStats?.new_accounts_female ?? 0} color="bg-white border-gray-100" />
+            </div>
+          </div>
+
+          {/* Column 3: Age & Special Groups */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             <h4 className="text-sm font-semibold text-gray-900">Age & Groups</h4>
             <div className="mt-3 grid">
@@ -443,7 +467,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Column 3: User Types */}
+          {/* Column 4: User Types */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             <h4 className="text-sm font-semibold text-gray-900">User Types</h4>
             <div className="mt-3 grid">

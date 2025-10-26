@@ -4,7 +4,7 @@ import InputField from "../../../components/reusable/InputField";
 import Select from "../../../components/reusable/Select";
 import { fetchAllResidents } from "../../../api/adminApi";
 import { getUserById } from "../../../api/userApi";
-import { FaEye, FaEdit, FaArchive } from "react-icons/fa";
+import { FaEye, FaEdit, FaArchive, FaPowerOff, FaCheckCircle } from "react-icons/fa";
 import { showCustomToast } from "../../../components/Toast/CustomToast";
 import ViewResidentModal from "../../../components/modals/ViewResidentModal";
 import EditResidentModal from "../../../components/modals/EditResidentModal";
@@ -12,6 +12,7 @@ import ConfirmationModal from "../../../components/modals/ConfirmationModal";
 
 const AllResidents = () => {
   const [residents, setResidents] = useState([]);
+  const [reloadFlag, setReloadFlag] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
@@ -21,7 +22,8 @@ const AllResidents = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [residentToArchive, setResidentToArchive] = useState(null);
+  const [residentToChangeStatus, setResidentToChangeStatus] = useState(null);
+  const [statusAction, setStatusAction] = useState(null); // 'deactivate' or 'activate'
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [sortConfig, setSortConfig] = useState({
@@ -34,7 +36,13 @@ const AllResidents = () => {
     max_age: "",
     pwd: "", // '', '1' => has PWD, '0' => no PWD
     single_parent: "", // '', '1' => has single parent, '0' => no
+    status: "active", // default to active
   });
+  const statusOptions = [
+    { value: '', label: 'All Statuses' },
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+  ];
 
   const ageRangeOptions = [
     { value: "", label: "All Ages" },
@@ -68,12 +76,24 @@ const AllResidents = () => {
     return `${storageUrl}/${cleanPath}`;
   };
 
-  const confirmArchive = async () => {
+  const confirmChangeStatus = async () => {
+    if (!residentToChangeStatus || !statusAction) return;
+    const { id } = residentToChangeStatus;
+    const newStatus = statusAction === 'deactivate' ? 'inactive' : 'active';
     try {
-      showCustomToast("Resident archived successfully", "success");
-      fetchAllResidents(page, itemsPerPage);
+      await import("../../../api/accountApi").then(({ updateAccountStatus }) => updateAccountStatus(id, newStatus));
+      showCustomToast(
+        `Resident ${statusAction === 'deactivate' ? 'deactivated' : 'activated'} successfully`,
+        "success"
+      );
+      setResidentToChangeStatus(null);
+      setStatusAction(null);
+      setReloadFlag((prev) => !prev); // trigger reload
     } catch (error) {
-      showCustomToast("Failed to archive resident", "error");
+      showCustomToast(
+        `Failed to ${statusAction === 'deactivate' ? 'deactivate' : 'activate'} resident`,
+        "error"
+      );
     }
   };
 
@@ -89,6 +109,7 @@ const AllResidents = () => {
       max_age: filters.max_age || undefined,
       pwd: filters.pwd !== "" ? filters.pwd : undefined,
       single_parent: filters.single_parent !== "" ? filters.single_parent : undefined,
+      status: filters.status || undefined,
     })
       .then((response) => {
         const residentsWithName = response.data.map((r) => ({
@@ -105,7 +126,7 @@ const AllResidents = () => {
         setTotal(0);
       })
       .finally(() => setLoading(false));
-  }, [page, search, sortConfig, filters.min_age, filters.max_age, filters.pwd, filters.single_parent]);
+  }, [page, search, sortConfig, filters.min_age, filters.max_age, filters.pwd, filters.single_parent, filters.status, reloadFlag]);
 
   // Debounce search input to avoid too many requests while typing
   useEffect(() => {
@@ -144,8 +165,15 @@ const AllResidents = () => {
     setShowEditModal(true);
   };
 
-  const handleArchive = (resident) => {
-    setResidentToArchive(resident);
+  const handleDeactivate = (resident) => {
+    setResidentToChangeStatus(resident);
+    setStatusAction('deactivate');
+    setShowConfirmModal(true);
+  };
+
+  const handleActivate = (resident) => {
+    setResidentToChangeStatus(resident);
+    setStatusAction('activate');
     setShowConfirmModal(true);
   };
 
@@ -303,6 +331,7 @@ const AllResidents = () => {
                   />
                 </div>
 
+
                 <div className="w-44">
                   <Select
                     label={null}
@@ -310,6 +339,19 @@ const AllResidents = () => {
                     value={pwdOptions.find((o) => o.value === filters.pwd) || null}
                     onChange={(opt) => handlePwdChange(opt ? opt.value : "")}
                     placeholder="PWD"
+                  />
+                </div>
+
+                <div className="w-44">
+                  <Select
+                    label={null}
+                    options={statusOptions}
+                    value={statusOptions.find((o) => o.value === filters.status) || statusOptions[0]}
+                    onChange={(opt) => {
+                      setFilters((prev) => ({ ...prev, status: opt ? opt.value : '' }));
+                      setPage(1);
+                    }}
+                    placeholder="Status"
                   />
                 </div>
 
@@ -332,7 +374,7 @@ const AllResidents = () => {
                       // reset filters
                       setSearchInput("");
                       setSearch("");
-                      setFilters({ min_age: "", max_age: "", pwd: "", single_parent: "" });
+                      setFilters({ min_age: "", max_age: "", pwd: "", single_parent: "", status: '' });
                       setPage(1);
                     }}
                     className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200"
@@ -380,9 +422,16 @@ const AllResidents = () => {
                   onClick: handleEdit,
                 },
                 {
-                  icon: <FaArchive className="h-3.5 w-3.5 text-gray-400" />,
-                  label: "Archive",
-                  onClick: handleArchive,
+                  icon: <FaPowerOff className="h-3.5 w-3.5 text-gray-400" />,
+                  label: "Deactivate",
+                  onClick: handleDeactivate,
+                  show: (row) => row.status === 'active',
+                },
+                {
+                  icon: <FaCheckCircle className="h-3.5 w-3.5 text-green-500" />,
+                  label: "Activate",
+                  onClick: handleActivate,
+                  show: (row) => row.status === 'inactive',
                 },
               ]}
             />
@@ -422,12 +471,20 @@ const AllResidents = () => {
       {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-        onConfirm={confirmArchive}
-        title="Archive Resident"
-        message={`Are you sure you want to archive ${residentToArchive?.name}? This action cannot be undone.`}
-        type="danger"
-        confirmText="Archive"
+        onClose={() => {
+          setShowConfirmModal(false);
+          setResidentToChangeStatus(null);
+          setStatusAction(null);
+        }}
+        onConfirm={confirmChangeStatus}
+        title={statusAction === 'deactivate' ? 'Deactivate Resident' : 'Activate Resident'}
+        message={
+          statusAction === 'deactivate'
+            ? `Are you sure you want to deactivate ${residentToChangeStatus?.name}? This action can be undone by activating again.`
+            : `Are you sure you want to activate ${residentToChangeStatus?.name}?`
+        }
+        type={statusAction === 'deactivate' ? 'danger' : 'success'}
+        confirmText={statusAction === 'deactivate' ? 'Deactivate' : 'Activate'}
       />
     </div>
   );
