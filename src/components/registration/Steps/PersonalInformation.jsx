@@ -74,12 +74,11 @@ const PersonalInformation = ({ form, handleChange, stepErrors }) => {
         />
         <InputField 
           name="nationality" 
-          value={form.nationality || 'Filipino'} 
-          onChange={handleChange} 
-          required 
-          placeholder="e.g., Filipino" 
-          label="Nationality" 
-          error={stepErrors.nationality}
+          value="Filipino"
+          disabled={true}
+          readOnly={true}
+          label="Nationality"
+          className="bg-gray-50 cursor-not-allowed"
         />
         <InputField 
           name="contact_no" 
