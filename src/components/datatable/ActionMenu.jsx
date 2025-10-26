@@ -18,23 +18,31 @@ const ActionMenu = ({ row, index, actions }) => {
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
   const handleToggle = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     if (!isOpen) {
       closeCurrentMenu();
-      // Calculate position when opening
       const rect = buttonRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const menuHeight = actions.length * 40; // Approximate height per item
+
+      // Add offset to push menu down slightly from the icon
+      const verticalOffset = 8; // 8px offset
+
       setMenuPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.right - 192 // Menu width is 192px (w-48)
+        top: rect.bottom + verticalOffset, // Add offset to push menu down
+        left: rect.right - 192,
       });
     }
     setIsOpen(!isOpen);
     currentOpenMenu = () => setIsOpen(false);
   };
 
+  // Remove scroll event listener - we don't want to close on scroll
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (buttonRef.current && !buttonRef.current.contains(e.target)) {
+      if (menuRef.current && !menuRef.current.contains(e.target) &&
+          buttonRef.current && !buttonRef.current.contains(e.target)) {
         setIsOpen(false);
       }
     };
@@ -48,7 +56,7 @@ const ActionMenu = ({ row, index, actions }) => {
   const filteredActions = actions.filter(action => !action.show || action.show(row));
 
   return (
-    <>
+    <div className="relative">
       <button
         ref={buttonRef}
         onClick={handleToggle}
@@ -57,21 +65,23 @@ const ActionMenu = ({ row, index, actions }) => {
         <MoreVertical className="w-4 h-4" />
       </button>
 
-      {isOpen && createPortal(
+      {isOpen && (
         <div
           ref={menuRef}
+          className={`
+            fixed w-48 py-1 bg-white rounded-lg shadow-lg border border-gray-200 z-[999]
+            max-h-[300px] overflow-y-auto
+          `}
           style={{
-            position: 'absolute',
             top: `${menuPosition.top}px`,
             left: `${menuPosition.left}px`,
-            zIndex: 50
           }}
-          className="w-48 py-1 bg-white rounded-lg shadow-lg border border-gray-200"
         >
           {filteredActions.map((action, i) => (
             <button
               key={i}
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 action.onClick(row, index);
                 setIsOpen(false);
@@ -79,7 +89,7 @@ const ActionMenu = ({ row, index, actions }) => {
               disabled={action.disabled?.(row)}
               className={`
                 w-full flex items-center px-4 py-2 text-sm
-                transition-colors duration-150
+                transition-colors duration-150 cursor-pointer
                 ${action.disabled?.(row) 
                   ? 'text-gray-400 cursor-not-allowed' 
                   : 'text-gray-700 hover:bg-gray-50'
@@ -91,10 +101,9 @@ const ActionMenu = ({ row, index, actions }) => {
               {action.label}
             </button>
           ))}
-        </div>,
-        document.body
+        </div>
       )}
-    </>
+    </div>
   );
 };
 
