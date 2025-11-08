@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, Download, FileText, BarChart3, Users, MessageSquare, Bell, ClipboardList, Activity, FolderOpen } from 'lucide-react';
-import { FaFilePdf, FaFileExcel, FaEye, FaCalendarAlt, FaFilter } from 'react-icons/fa';
+import { FaFilePdf, FaFileExcel, FaEye, FaCalendarAlt, FaFilter, FaUsers, FaBalanceScale, FaFileAlt, FaBullhorn, FaComments, FaStar, FaCheckCircle, FaTimesCircle, FaClock } from 'react-icons/fa';
 import { generateReport, exportReportToExcel, exportListToExcel } from '../../api/reportApi';
 import { showCustomToast } from '../../components/Toast/CustomToast';
 import Select from '../../components/reusable/Select';
@@ -145,11 +145,11 @@ const Reports = () => {
 
   // List export options
   const listTypeOptions = [
-    { label: 'Residents List', value: 'residents', icon: '👥' },
-    { label: 'Blotter Cases', value: 'blotters', icon: '⚖️' },
-    { label: 'Document Requests', value: 'requests', icon: '📋' },
-    { label: 'Announcements', value: 'announcements', icon: '📢' },
-    { label: 'Feedbacks', value: 'feedbacks', icon: '💬' }
+    { label: 'Residents List', value: 'residents', icon: <FaUsers className="w-4 h-4" /> },
+    { label: 'Blotter Cases', value: 'blotters', icon: <FaBalanceScale className="w-4 h-4" /> },
+    { label: 'Document Requests', value: 'requests', icon: <FaFileAlt className="w-4 h-4" /> },
+    { label: 'Announcements', value: 'announcements', icon: <FaBullhorn className="w-4 h-4" /> },
+    { label: 'Feedbacks', value: 'feedbacks', icon: <FaComments className="w-4 h-4" /> }
   ];
 
   const perPageOptions = [
@@ -162,6 +162,89 @@ const Reports = () => {
     { label: '1000 Records', value: 1000 },
     { label: 'More (Custom)', value: 'more' }
   ];
+
+  // Dynamic filter options based on list type
+  const getFilterOptions = (listType) => {
+    switch (listType) {
+      case 'residents':
+        return {
+          type: [
+            { label: 'All Types', value: '' },
+            { label: 'Residence', value: 'residence' },
+            { label: 'Admin', value: 'admin' },
+            { label: 'Staff', value: 'staff' }
+          ],
+          status: [
+            { label: 'All Status', value: '' },
+            { label: 'Active', value: 'active' },
+            { label: 'Inactive', value: 'inactive' },
+            { label: 'Pending', value: 'pending' }
+          ]
+        };
+      case 'blotters':
+        return {
+          status: [
+            { label: 'All Status', value: '' },
+            { label: 'Filed', value: 'filed' },
+            { label: 'Ongoing', value: 'ongoing' },
+            { label: 'Settled', value: 'settled' },
+            { label: 'Reopen', value: 'reopen' },
+            { label: 'Unsettled', value: 'unsettled' }
+          ]
+        };
+      case 'requests':
+        return {
+          status: [
+            { label: 'All Status', value: '' },
+            { label: 'Pending', value: 'pending' },
+            { label: 'Approved', value: 'approved' },
+            { label: 'Processing', value: 'processing' },
+            { label: 'Ready to Pickup', value: 'ready to pickup' },
+            { label: 'Released', value: 'released' },
+            { label: 'Rejected', value: 'rejected' }
+          ]
+        };
+      case 'announcements':
+        return {
+          type: [
+            { label: 'All Types', value: '' },
+            { label: 'Information', value: 'information' },
+            { label: 'Problem', value: 'problem' },
+            { label: 'Warning', value: 'warning' }
+          ]
+        };
+      case 'feedbacks':
+        return {
+          category: [
+            { label: 'All Categories', value: '' },
+            { label: 'Service', value: 'service' },
+            { label: 'System', value: 'system' },
+            { label: 'Staff', value: 'staff' },
+            { label: 'Other', value: 'other' }
+          ],
+          rating: [
+            { label: 'All Ratings', value: '' },
+            { label: '5 Stars', value: '5' },
+            { label: '4 Stars', value: '4' },
+            { label: '3 Stars', value: '3' },
+            { label: '2 Stars', value: '2' },
+            { label: '1 Star', value: '1' }
+          ]
+        };
+      default:
+        return {};
+    }
+  };
+
+  const handleFilterChange = (filterKey, value) => {
+    setListExportConfig(prev => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        [filterKey]: value
+      }
+    }));
+  };
 
   const handleExportList = async () => {
     try {
@@ -178,7 +261,7 @@ const Reports = () => {
         'success'
       );
     } catch (error) {
-      showCustomToast(error.message || 'Failed to export list', 'error');
+      showCustomToast(error.message || 'Failed to export list. The list is empty', 'error');
     } finally {
       setExportingList(false);
     }
@@ -417,17 +500,14 @@ const Reports = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* List Type Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select List Type
               </label>
               <Select
-                options={listTypeOptions.map(opt => ({
-                  ...opt,
-                  label: `${opt.icon} ${opt.label}`
-                }))}
+                options={listTypeOptions}
                 value={listTypeOptions.find(opt => opt.value === listExportConfig.listType)}
                 onChange={(option) => setListExportConfig(prev => ({ 
                   ...prev, 
@@ -435,6 +515,12 @@ const Reports = () => {
                   filters: {} // Reset filters when changing list type
                 }))}
                 isClearable={false}
+                formatOptionLabel={(option) => (
+                  <div className="flex items-center gap-2">
+                    {option.icon}
+                    <span>{option.label}</span>
+                  </div>
+                )}
               />
             </div>
 
@@ -459,10 +545,22 @@ const Reports = () => {
                 }}
                 isClearable={false}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Note: Default is 10. Higher numbers may take longer to export.
-              </p>
             </div>
+
+            {/* Dynamic Filters */}
+            {Object.entries(getFilterOptions(listExportConfig.listType)).map(([filterKey, options]) => (
+              <div key={filterKey}>
+                <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
+                  Filter by {filterKey}
+                </label>
+                <Select
+                  options={options}
+                  value={options.find(opt => opt.value === (listExportConfig.filters[filterKey] || ''))}
+                  onChange={(option) => handleFilterChange(filterKey, option.value)}
+                  isClearable={false}
+                />
+              </div>
+            ))}
 
             {/* Export Button */}
             <div className="flex items-end">
@@ -489,12 +587,19 @@ const Reports = () => {
           {/* List Type Description */}
           <div className="mt-4 p-4 bg-white rounded-lg border border-blue-100">
             <div className="flex items-start gap-3">
-              <div className="text-2xl">
+              <div className="text-blue-600 text-2xl flex items-center">
                 {listTypeOptions.find(opt => opt.value === listExportConfig.listType)?.icon}
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 mb-1">
+                <h3 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
                   {listTypeOptions.find(opt => opt.value === listExportConfig.listType)?.label}
+                  {Object.keys(listExportConfig.filters).length > 0 && 
+                    Object.values(listExportConfig.filters).some(v => v !== '') && (
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center gap-1">
+                      <FaFilter className="w-3 h-3" />
+                      Filtered
+                    </span>
+                  )}
                 </h3>
                 <p className="text-sm text-gray-600">
                   {listExportConfig.listType === 'residents' && 
@@ -508,18 +613,17 @@ const Reports = () => {
                   {listExportConfig.listType === 'feedbacks' && 
                     'Export user feedbacks including categories, ratings, and remarks.'}
                 </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Additional Info */}
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start gap-2">
-              <FileText className="w-4 h-4 text-blue-600 mt-0.5" />
-              <div className="text-xs text-gray-700">
-                <strong>Note:</strong> The export function uses the <code className="bg-blue-100 px-1 py-0.5 rounded">per_page</code> parameter 
-                (default: 10) to fetch records. You can adjust the number of records to export using the dropdown above. 
-                This feature is purely for exporting data and does not affect other table implementations.
+                {Object.keys(listExportConfig.filters).length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {Object.entries(listExportConfig.filters).map(([key, value]) => 
+                      value && value !== '' ? (
+                        <span key={key} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                          <strong className="capitalize">{key}:</strong> {value}
+                        </span>
+                      ) : null
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

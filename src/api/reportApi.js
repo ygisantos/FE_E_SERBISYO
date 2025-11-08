@@ -400,35 +400,40 @@ export const exportListToExcel = async (listType, filters = {}) => {
         // Import accountApi dynamically to avoid circular dependencies
         const { fetchAllAccounts } = await import('./accountApi');
         const residentsResponse = await fetchAllAccounts(exportFilters);
-        data = residentsResponse.data;
+        // Accounts API returns paginated data in data property
+        data = residentsResponse.data?.data || residentsResponse.data || [];
         filename = `residents_list_${new Date().toISOString().split('T')[0]}.xlsx`;
         break;
         
       case 'blotters':
         const { getAllBlotters } = await import('./blotterApi');
         const blottersResponse = await getAllBlotters(exportFilters);
-        data = blottersResponse.data.data;
+        // The blotters API returns data in data.data format
+        data = blottersResponse.data?.data || blottersResponse.data || [];
         filename = `blotters_list_${new Date().toISOString().split('T')[0]}.xlsx`;
         break;
         
       case 'requests':
         const { fetchAllRequests } = await import('./requestApi');
         const requestsResponse = await fetchAllRequests(exportFilters);
-        data = requestsResponse.data;
+        // Requests API returns paginated data
+        data = requestsResponse.data?.data || requestsResponse.data || [];
         filename = `requests_list_${new Date().toISOString().split('T')[0]}.xlsx`;
         break;
         
       case 'announcements':
         const { getAnnouncements } = await import('./announcementApi');
         const announcementsResponse = await getAnnouncements(exportFilters);
-        data = announcementsResponse.data;
+        // Announcements API returns data in data property
+        data = announcementsResponse.data?.data || announcementsResponse.data || [];
         filename = `announcements_list_${new Date().toISOString().split('T')[0]}.xlsx`;
         break;
         
       case 'feedbacks':
         const { getFeedbacks } = await import('./feedbackApi');
         const feedbacksResponse = await getFeedbacks(exportFilters);
-        data = feedbacksResponse.data;
+        // Feedbacks API returns data in data property
+        data = feedbacksResponse.data?.data || feedbacksResponse.data || [];
         filename = `feedbacks_list_${new Date().toISOString().split('T')[0]}.xlsx`;
         break;
         
@@ -467,7 +472,7 @@ export const exportListToExcel = async (listType, filters = {}) => {
     
     return { success: true, filename, count: data.length };
   } catch (error) {
-    throw error.message || 'Failed to export list';
+    throw error.message || 'Failed to export list. The list is empty.';
   }
 };
 
@@ -480,13 +485,20 @@ const createListExcelWorkbook = (listType, data, filters) => {
   
   switch (listType) {
     case 'residents':
-      sheetName = '👥 Residents';
+      sheetName = 'Residents';
+      
+      // Build filters string
+      const residentFilters = [];
+      if (filters.type) residentFilters.push(`Type: ${filters.type}`);
+      if (filters.status) residentFilters.push(`Status: ${filters.status}`);
+      if (filters.search) residentFilters.push(`Search: ${filters.search}`);
+      
       sheetData = [
-        ['🏘️ RESIDENTS LIST'],
+        ['RESIDENTS LIST'],
         [''],
         ['Exported on:', new Date().toLocaleString()],
         ['Total Records:', data.length],
-        ['Filters Applied:', filters.search ? `Search: ${filters.search}` : 'None'],
+        ['Filters Applied:', residentFilters.length > 0 ? residentFilters.join(', ') : 'None'],
         [''],
         ['#', 'Full Name', 'Email', 'Type', 'Municipality', 'Barangay', 'Contact', 'Status', 'Created Date']
       ];
@@ -514,18 +526,29 @@ const createListExcelWorkbook = (listType, data, filters) => {
       break;
       
     case 'blotters':
-      sheetName = '⚖️ Blotters';
+      sheetName = 'Blotters';
+      
+      // Build filters string
+      const blotterFilters = [];
+      if (filters.status) blotterFilters.push(`Status: ${filters.status}`);
+      if (filters.search) blotterFilters.push(`Search: ${filters.search}`);
+      
       sheetData = [
-        ['⚖️ BLOTTER CASES LIST'],
+        ['BLOTTER CASES LIST'],
         [''],
         ['Exported on:', new Date().toLocaleString()],
         ['Total Records:', data.length],
-        ['Filters Applied:', filters.status ? `Status: ${filters.status}` : filters.search ? `Search: ${filters.search}` : 'None'],
+        ['Filters Applied:', blotterFilters.length > 0 ? blotterFilters.join(', ') : 'None'],
         [''],
         ['#', 'Case Number', 'Complainant', 'Respondent', 'Case Type', 'Status', 'Date Filed', 'Created By']
       ];
       
       data.forEach((blotter, index) => {
+        const createdByName = blotter.created_by_name 
+          || (blotter.created_by 
+              ? `${blotter.created_by.first_name || ''} ${blotter.created_by.last_name || ''}`.trim() 
+              : 'N/A');
+        
         sheetData.push([
           index + 1,
           blotter.case_number || 'N/A',
@@ -534,31 +557,48 @@ const createListExcelWorkbook = (listType, data, filters) => {
           blotter.case_type || 'N/A',
           blotter.status || 'N/A',
           blotter.date_filed ? new Date(blotter.date_filed).toLocaleDateString() : 'N/A',
-          blotter.created_by_name || 'N/A'
+          createdByName
         ]);
       });
       break;
       
     case 'requests':
-      sheetName = '📋 Requests';
+      sheetName = 'Requests';
+      
+      // Build filters string
+      const requestFilters = [];
+      if (filters.status) requestFilters.push(`Status: ${filters.status}`);
+      if (filters.search) requestFilters.push(`Search: ${filters.search}`);
+      
       sheetData = [
-        ['📋 DOCUMENT REQUESTS LIST'],
+        ['DOCUMENT REQUESTS LIST'],
         [''],
         ['Exported on:', new Date().toLocaleString()],
         ['Total Records:', data.length],
-        ['Filters Applied:', filters.status ? `Status: ${filters.status}` : filters.search ? `Search: ${filters.search}` : 'None'],
+        ['Filters Applied:', requestFilters.length > 0 ? requestFilters.join(', ') : 'None'],
         [''],
-        ['#', 'Request ID', 'Document Type', 'Requestor', 'Status', 'Purpose', 'Request Date', 'Processed Date']
+        ['#', 'Transaction ID', 'Document Type', 'Requestor', 'Status', 'Request Date', 'Last Updated']
       ];
       
       data.forEach((request, index) => {
+        // Try multiple possible field names for document
+        const documentName = request.document_name 
+          || request.document_details?.document_name 
+          || (request.document_details && request.document_details.document_name) 
+          || 'N/A';
+        
+        // Try multiple possible field names for requestor
+        const requestorName = request.requestor_name 
+          || (request.account 
+              ? `${request.account.first_name || ''} ${request.account.last_name || ''}`.trim() 
+              : 'N/A');
+        
         sheetData.push([
           index + 1,
-          request.id || 'N/A',
-          request.document_name || 'N/A',
-          request.requestor_name || 'N/A',
+          request.transaction_id || request.id || 'N/A',
+          documentName,
+          requestorName,
           request.status || 'N/A',
-          request.purpose || 'N/A',
           request.created_at ? new Date(request.created_at).toLocaleDateString() : 'N/A',
           request.updated_at ? new Date(request.updated_at).toLocaleDateString() : 'N/A'
         ]);
@@ -566,13 +606,19 @@ const createListExcelWorkbook = (listType, data, filters) => {
       break;
       
     case 'announcements':
-      sheetName = '📢 Announcements';
+      sheetName = 'Announcements';
+      
+      // Build filters string
+      const announcementFilters = [];
+      if (filters.type) announcementFilters.push(`Type: ${filters.type}`);
+      if (filters.search) announcementFilters.push(`Search: ${filters.search}`);
+      
       sheetData = [
-        ['📢 ANNOUNCEMENTS LIST'],
+        ['ANNOUNCEMENTS LIST'],
         [''],
         ['Exported on:', new Date().toLocaleString()],
         ['Total Records:', data.length],
-        ['Filters Applied:', filters.type ? `Type: ${filters.type}` : filters.search ? `Search: ${filters.search}` : 'None'],
+        ['Filters Applied:', announcementFilters.length > 0 ? announcementFilters.join(', ') : 'None'],
         [''],
         ['#', 'ID', 'Type', 'Description', 'Posted Date', 'Status']
       ];
@@ -590,22 +636,34 @@ const createListExcelWorkbook = (listType, data, filters) => {
       break;
       
     case 'feedbacks':
-      sheetName = '💬 Feedbacks';
+      sheetName = 'Feedbacks';
+      
+      // Build filters string
+      const feedbackFilters = [];
+      if (filters.category) feedbackFilters.push(`Category: ${filters.category}`);
+      if (filters.rating) feedbackFilters.push(`Rating: ${filters.rating} stars`);
+      if (filters.search) feedbackFilters.push(`Search: ${filters.search}`);
+      
       sheetData = [
-        ['💬 FEEDBACKS LIST'],
+        ['FEEDBACKS LIST'],
         [''],
         ['Exported on:', new Date().toLocaleString()],
         ['Total Records:', data.length],
-        ['Filters Applied:', filters.category ? `Category: ${filters.category}` : filters.rating ? `Rating: ${filters.rating}` : 'None'],
+        ['Filters Applied:', feedbackFilters.length > 0 ? feedbackFilters.join(', ') : 'None'],
         [''],
         ['#', 'ID', 'User', 'Category', 'Rating', 'Remarks', 'Submitted Date']
       ];
       
       data.forEach((feedback, index) => {
+        const userName = feedback.user_name 
+          || (feedback.account 
+              ? `${feedback.account.first_name || ''} ${feedback.account.last_name || ''}`.trim() 
+              : 'N/A');
+        
         sheetData.push([
           index + 1,
           feedback.id || 'N/A',
-          feedback.user_name || 'N/A',
+          userName,
           feedback.category || 'N/A',
           feedback.rating || 'N/A',
           feedback.remarks || 'N/A',
