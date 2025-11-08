@@ -6,6 +6,7 @@ import { Upload, X, ImageIcon, AlertCircle } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import Select from '../reusable/Select';
 import { caseTypes } from '../../constants/caseTypes';
+import { useUser } from '../../contexts/UserContext';  
 
 const initialFormState = {
   complainant_name: "",
@@ -23,10 +24,23 @@ const initialFormState = {
 };
 
 const CreateBlotterModal = ({ isOpen, onClose, onSuccess, createdBy }) => {
+  const { currentUser } = useUser();  
+
+  // Get full name from currentUser
+  const getFullName = () => {
+    if (!currentUser) return '';
+    
+    return `${currentUser.first_name}${currentUser.middle_name ? ' ' + currentUser.middle_name : ''}${currentUser.last_name ? ' ' + currentUser.last_name : ''}${currentUser.suffix ? ' ' + currentUser.suffix : ''}`
+      .trim();
+  };
+
+  // Initialize formData with currentUser's name
   const [formData, setFormData] = useState({
     ...initialFormState,
-    created_by: createdBy
+    complainant_name: getFullName(),
+    created_by: currentUser?.id
   });
+
   const [additionalRespondent, setAdditionalRespondent] = useState("");
   const [files, setFiles] = useState([]);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -245,27 +259,18 @@ const CreateBlotterModal = ({ isOpen, onClose, onSuccess, createdBy }) => {
             {/* Complainant Information */}
             <div className="bg-white p-4 rounded-lg border border-gray-200">
               <h3 className="text-sm font-medium text-gray-900 mb-4">Complainant Information</h3>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Complainant Name
-                  </label>
-                  <input
-                    type="text"
-                    name="complainant_name"
-                    value={formData.complainant_name}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 text-xs border rounded-md focus:outline-none focus:ring-1 ${
-                      errors.complainant_name 
-                        ? 'border-red-500 focus:ring-red-500' 
-                        : 'border-gray-300 focus:ring-red-500'
-                    }`}
-                    required
-                  />
-                  {errors.complainant_name && (
-                    <span className="text-xs text-red-500">{errors.complainant_name}</span>
-                  )}
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Complainant Name
+                </label>
+                <input
+                  type="text"
+                  name="complainant_name"
+                  value={formData.complainant_name}
+                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-md bg-gray-50 cursor-not-allowed"
+                  disabled
+                  readOnly
+                />
               </div>
             </div>
 
