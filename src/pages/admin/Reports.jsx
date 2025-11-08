@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Download, FileText, BarChart3, Users, MessageSquare, Bell, ClipboardList, Activity, FolderOpen } from 'lucide-react';
 import { FaFilePdf, FaFileExcel, FaEye, FaCalendarAlt, FaFilter } from 'react-icons/fa';
-import { generateReport, exportReportToExcel } from '../../api/reportApi';
+import { generateReport, exportReportToExcel, exportListToExcel } from '../../api/reportApi';
 import { showCustomToast } from '../../components/Toast/CustomToast';
 import Select from '../../components/reusable/Select';
 import ReportSummary from '../../components/reports/ReportSummary';
@@ -19,6 +19,14 @@ const Reports = () => {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [viewMode, setViewMode] = useState('summary'); // 'summary' or 'detailed'
+
+  // State for list export section
+  const [listExportConfig, setListExportConfig] = useState({
+    listType: 'residents',
+    perPage: 10,
+    filters: {}
+  });
+  const [exportingList, setExportingList] = useState(false);
 
   const reportTypeOptions = [
     { label: 'Monthly Report', value: 'monthly' },
@@ -133,6 +141,47 @@ const Reports = () => {
       format: 'json'
     });
     setReportData(null);
+  };
+
+  // List export options
+  const listTypeOptions = [
+    { label: 'Residents List', value: 'residents', icon: '👥' },
+    { label: 'Blotter Cases', value: 'blotters', icon: '⚖️' },
+    { label: 'Document Requests', value: 'requests', icon: '📋' },
+    { label: 'Announcements', value: 'announcements', icon: '📢' },
+    { label: 'Feedbacks', value: 'feedbacks', icon: '💬' }
+  ];
+
+  const perPageOptions = [
+    { label: '10 Records', value: 10 },
+    { label: '25 Records', value: 25 },
+    { label: '50 Records', value: 50 },
+    { label: '100 Records', value: 100 },
+    { label: '250 Records', value: 250 },
+    { label: '500 Records', value: 500 },
+    { label: '1000 Records', value: 1000 },
+    { label: 'More (Custom)', value: 'more' }
+  ];
+
+  const handleExportList = async () => {
+    try {
+      setExportingList(true);
+      
+      const filters = {
+        per_page: listExportConfig.perPage,
+        ...listExportConfig.filters
+      };
+      
+      const result = await exportListToExcel(listExportConfig.listType, filters);
+      showCustomToast(
+        `Successfully exported ${result.count} records to ${result.filename}`,
+        'success'
+      );
+    } catch (error) {
+      showCustomToast(error.message || 'Failed to export list', 'error');
+    } finally {
+      setExportingList(false);
+    }
   };
 
   return (
@@ -352,6 +401,128 @@ const Reports = () => {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* List Export Section */}
+      <div className="mt-8">
+        <div className="bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm border-2 border-blue-200 p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+              <Download className="w-6 h-6 text-blue-600" />
+              Export Lists to Excel
+            </h2>
+            <p className="text-gray-600 text-sm mt-2">
+              Export filtered lists of residents, blotters, requests, and more directly to Excel format
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* List Type Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select List Type
+              </label>
+              <Select
+                options={listTypeOptions.map(opt => ({
+                  ...opt,
+                  label: `${opt.icon} ${opt.label}`
+                }))}
+                value={listTypeOptions.find(opt => opt.value === listExportConfig.listType)}
+                onChange={(option) => setListExportConfig(prev => ({ 
+                  ...prev, 
+                  listType: option.value,
+                  filters: {} // Reset filters when changing list type
+                }))}
+                isClearable={false}
+              />
+            </div>
+
+            {/* Per Page Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Records to Export
+              </label>
+              <Select
+                options={perPageOptions}
+                value={perPageOptions.find(opt => opt.value === listExportConfig.perPage)}
+                onChange={(option) => {
+                  if (option.value === 'more') {
+                    const customValue = prompt('Enter number of records (max 5000):', '1000');
+                    if (customValue && !isNaN(customValue)) {
+                      const numValue = Math.min(parseInt(customValue), 5000);
+                      setListExportConfig(prev => ({ ...prev, perPage: numValue }));
+                    }
+                  } else {
+                    setListExportConfig(prev => ({ ...prev, perPage: option.value }));
+                  }
+                }}
+                isClearable={false}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Note: Default is 10. Higher numbers may take longer to export.
+              </p>
+            </div>
+
+            {/* Export Button */}
+            <div className="flex items-end">
+              <button
+                onClick={handleExportList}
+                disabled={exportingList}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                {exportingList ? (
+                  <>
+                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <FaFileExcel />
+                    Export to Excel
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* List Type Description */}
+          <div className="mt-4 p-4 bg-white rounded-lg border border-blue-100">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">
+                {listTypeOptions.find(opt => opt.value === listExportConfig.listType)?.icon}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1">
+                  {listTypeOptions.find(opt => opt.value === listExportConfig.listType)?.label}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {listExportConfig.listType === 'residents' && 
+                    'Export complete list of registered residents with their personal information and contact details.'}
+                  {listExportConfig.listType === 'blotters' && 
+                    'Export blotter cases including case numbers, parties involved, case types, and status information.'}
+                  {listExportConfig.listType === 'requests' && 
+                    'Export document requests with requestor details, document types, status, and processing dates.'}
+                  {listExportConfig.listType === 'announcements' && 
+                    'Export announcements with types, descriptions, and posting dates.'}
+                  {listExportConfig.listType === 'feedbacks' && 
+                    'Export user feedbacks including categories, ratings, and remarks.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Info */}
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <FileText className="w-4 h-4 text-blue-600 mt-0.5" />
+              <div className="text-xs text-gray-700">
+                <strong>Note:</strong> The export function uses the <code className="bg-blue-100 px-1 py-0.5 rounded">per_page</code> parameter 
+                (default: 10) to fetch records. You can adjust the number of records to export using the dropdown above. 
+                This feature is purely for exporting data and does not affect other table implementations.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
