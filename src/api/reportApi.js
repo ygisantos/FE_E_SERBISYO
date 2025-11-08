@@ -379,3 +379,357 @@ const generateExcelWorkbook = (reportData) => {
 
   return workbook;
 };
+
+/**
+ * Export list data to Excel (Residents, Blotters, Requests, etc.)
+ */
+export const exportListToExcel = async (listType, filters = {}) => {
+  try {
+    let data = [];
+    let filename = '';
+    
+    // Set per_page to get all data for export (default 10 for workaround, but can be increased)
+    const exportFilters = {
+      ...filters,
+      per_page: filters.per_page || 10, // Default to 10, but can be overridden
+      page: 1
+    };
+    
+    switch (listType) {
+      case 'residents':
+        // Import accountApi dynamically to avoid circular dependencies
+        const { fetchAllAccounts } = await import('./accountApi');
+        const residentsResponse = await fetchAllAccounts(exportFilters);
+        // Accounts API returns paginated data in data property
+        data = residentsResponse.data?.data || residentsResponse.data || [];
+        filename = `residents_list_${new Date().toISOString().split('T')[0]}.xlsx`;
+        break;
+        
+      case 'blotters':
+        const { getAllBlotters } = await import('./blotterApi');
+        const blottersResponse = await getAllBlotters(exportFilters);
+        // The blotters API returns data in data.data format
+        data = blottersResponse.data?.data || blottersResponse.data || [];
+        filename = `blotters_list_${new Date().toISOString().split('T')[0]}.xlsx`;
+        break;
+        
+      case 'requests':
+        const { fetchAllRequests } = await import('./requestApi');
+        const requestsResponse = await fetchAllRequests(exportFilters);
+        // Requests API returns paginated data
+        data = requestsResponse.data?.data || requestsResponse.data || [];
+        filename = `requests_list_${new Date().toISOString().split('T')[0]}.xlsx`;
+        break;
+        
+      case 'announcements':
+        const { getAnnouncements } = await import('./announcementApi');
+        const announcementsResponse = await getAnnouncements(exportFilters);
+        // Announcements API returns data in data property
+        data = announcementsResponse.data?.data || announcementsResponse.data || [];
+        filename = `announcements_list_${new Date().toISOString().split('T')[0]}.xlsx`;
+        break;
+        
+      case 'feedbacks':
+        const { getFeedbacks } = await import('./feedbackApi');
+        const feedbacksResponse = await getFeedbacks(exportFilters);
+        // Feedbacks API returns data in data property
+        data = feedbacksResponse.data?.data || feedbacksResponse.data || [];
+        filename = `feedbacks_list_${new Date().toISOString().split('T')[0]}.xlsx`;
+        break;
+        
+      default:
+        throw new Error('Invalid list type');
+    }
+    
+    if (!data || data.length === 0) {
+      throw new Error('No data available to export');
+    }
+    
+    // Create workbook for the list
+    const workbook = createListExcelWorkbook(listType, data, filters);
+    
+    // Generate Excel file buffer
+    const excelBuffer = XLSX.write(workbook, { 
+      bookType: 'xlsx', 
+      type: 'array',
+      cellStyles: true 
+    });
+    
+    // Create blob and download
+    const blob = new Blob([excelBuffer], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true, filename, count: data.length };
+  } catch (error) {
+    throw error.message || 'Failed to export list. The list is empty.';
+  }
+};
+
+// Helper function to create Excel workbook for list exports
+const createListExcelWorkbook = (listType, data, filters) => {
+  const workbook = XLSX.utils.book_new();
+  
+  let sheetData = [];
+  let sheetName = '';
+  
+  switch (listType) {
+    case 'residents':
+      sheetName = 'Residents';
+      
+      // Build filters string
+      const residentFilters = [];
+      if (filters.type) residentFilters.push(`Type: ${filters.type}`);
+      if (filters.status) residentFilters.push(`Status: ${filters.status}`);
+      if (filters.search) residentFilters.push(`Search: ${filters.search}`);
+      
+      sheetData = [
+        ['RESIDENTS LIST'],
+        [''],
+        ['Exported on:', new Date().toLocaleString()],
+        ['Total Records:', data.length],
+        ['Filters Applied:', residentFilters.length > 0 ? residentFilters.join(', ') : 'None'],
+        [''],
+        ['#', 'Full Name', 'Email', 'Type', 'Municipality', 'Barangay', 'Contact', 'Status', 'Created Date']
+      ];
+      
+      data.forEach((resident, index) => {
+        const fullName = [
+          resident.first_name,
+          resident.middle_name,
+          resident.last_name,
+          resident.suffix
+        ].filter(Boolean).join(' ');
+        
+        sheetData.push([
+          index + 1,
+          fullName,
+          resident.email || 'N/A',
+          resident.type || 'N/A',
+          resident.municipality || 'N/A',
+          resident.barangay || 'N/A',
+          resident.contact_no || 'N/A',
+          resident.status || 'N/A',
+          resident.created_at ? new Date(resident.created_at).toLocaleDateString() : 'N/A'
+        ]);
+      });
+      break;
+      
+    case 'blotters':
+      sheetName = 'Blotters';
+      
+      // Build filters string
+      const blotterFilters = [];
+      if (filters.status) blotterFilters.push(`Status: ${filters.status}`);
+      if (filters.search) blotterFilters.push(`Search: ${filters.search}`);
+      
+      sheetData = [
+        ['BLOTTER CASES LIST'],
+        [''],
+        ['Exported on:', new Date().toLocaleString()],
+        ['Total Records:', data.length],
+        ['Filters Applied:', blotterFilters.length > 0 ? blotterFilters.join(', ') : 'None'],
+        [''],
+        ['#', 'Case Number', 'Complainant', 'Respondent', 'Case Type', 'Status', 'Date Filed', 'Created By']
+      ];
+      
+      data.forEach((blotter, index) => {
+        const createdByName = blotter.created_by_name 
+          || (blotter.created_by 
+              ? `${blotter.created_by.first_name || ''} ${blotter.created_by.last_name || ''}`.trim() 
+              : 'N/A');
+        
+        sheetData.push([
+          index + 1,
+          blotter.case_number || 'N/A',
+          blotter.complainant_name || 'N/A',
+          blotter.respondent_name || 'N/A',
+          blotter.case_type || 'N/A',
+          blotter.status || 'N/A',
+          blotter.date_filed ? new Date(blotter.date_filed).toLocaleDateString() : 'N/A',
+          createdByName
+        ]);
+      });
+      break;
+      
+    case 'requests':
+      sheetName = 'Requests';
+      
+      // Build filters string
+      const requestFilters = [];
+      if (filters.status) requestFilters.push(`Status: ${filters.status}`);
+      if (filters.search) requestFilters.push(`Search: ${filters.search}`);
+      
+      sheetData = [
+        ['DOCUMENT REQUESTS LIST'],
+        [''],
+        ['Exported on:', new Date().toLocaleString()],
+        ['Total Records:', data.length],
+        ['Filters Applied:', requestFilters.length > 0 ? requestFilters.join(', ') : 'None'],
+        [''],
+        ['#', 'Transaction ID', 'Document Type', 'Requestor', 'Status', 'Request Date', 'Last Updated']
+      ];
+      
+      data.forEach((request, index) => {
+        // Try multiple possible field names for document
+        const documentName = request.document_name 
+          || request.document_details?.document_name 
+          || (request.document_details && request.document_details.document_name) 
+          || 'N/A';
+        
+        // Try multiple possible field names for requestor
+        const requestorName = request.requestor_name 
+          || (request.account 
+              ? `${request.account.first_name || ''} ${request.account.last_name || ''}`.trim() 
+              : 'N/A');
+        
+        sheetData.push([
+          index + 1,
+          request.transaction_id || request.id || 'N/A',
+          documentName,
+          requestorName,
+          request.status || 'N/A',
+          request.created_at ? new Date(request.created_at).toLocaleDateString() : 'N/A',
+          request.updated_at ? new Date(request.updated_at).toLocaleDateString() : 'N/A'
+        ]);
+      });
+      break;
+      
+    case 'announcements':
+      sheetName = 'Announcements';
+      
+      // Build filters string
+      const announcementFilters = [];
+      if (filters.type) announcementFilters.push(`Type: ${filters.type}`);
+      if (filters.search) announcementFilters.push(`Search: ${filters.search}`);
+      
+      sheetData = [
+        ['ANNOUNCEMENTS LIST'],
+        [''],
+        ['Exported on:', new Date().toLocaleString()],
+        ['Total Records:', data.length],
+        ['Filters Applied:', announcementFilters.length > 0 ? announcementFilters.join(', ') : 'None'],
+        [''],
+        ['#', 'ID', 'Type', 'Description', 'Posted Date', 'Status']
+      ];
+      
+      data.forEach((announcement, index) => {
+        sheetData.push([
+          index + 1,
+          announcement.id || 'N/A',
+          announcement.type || 'N/A',
+          announcement.description || 'N/A',
+          announcement.created_at ? new Date(announcement.created_at).toLocaleDateString() : 'N/A',
+          announcement.status || 'Active'
+        ]);
+      });
+      break;
+      
+    case 'feedbacks':
+      sheetName = 'Feedbacks';
+      
+      // Build filters string
+      const feedbackFilters = [];
+      if (filters.category) feedbackFilters.push(`Category: ${filters.category}`);
+      if (filters.rating) feedbackFilters.push(`Rating: ${filters.rating} stars`);
+      if (filters.search) feedbackFilters.push(`Search: ${filters.search}`);
+      
+      sheetData = [
+        ['FEEDBACKS LIST'],
+        [''],
+        ['Exported on:', new Date().toLocaleString()],
+        ['Total Records:', data.length],
+        ['Filters Applied:', feedbackFilters.length > 0 ? feedbackFilters.join(', ') : 'None'],
+        [''],
+        ['#', 'ID', 'User', 'Category', 'Rating', 'Remarks', 'Submitted Date']
+      ];
+      
+      data.forEach((feedback, index) => {
+        const userName = feedback.user_name 
+          || (feedback.account 
+              ? `${feedback.account.first_name || ''} ${feedback.account.last_name || ''}`.trim() 
+              : 'N/A');
+        
+        sheetData.push([
+          index + 1,
+          feedback.id || 'N/A',
+          userName,
+          feedback.category || 'N/A',
+          feedback.rating || 'N/A',
+          feedback.remarks || 'N/A',
+          feedback.created_at ? new Date(feedback.created_at).toLocaleDateString() : 'N/A'
+        ]);
+      });
+      break;
+  }
+  
+  // Create styled sheet
+  const sheet = XLSX.utils.aoa_to_sheet(sheetData);
+  
+  // Set column widths
+  const colWidths = [];
+  sheetData.forEach(row => {
+    row.forEach((cell, colIndex) => {
+      const cellLength = cell ? cell.toString().length : 0;
+      if (!colWidths[colIndex] || colWidths[colIndex] < cellLength) {
+        colWidths[colIndex] = Math.min(Math.max(cellLength + 2, 10), 50);
+      }
+    });
+  });
+  
+  sheet['!cols'] = colWidths.map(width => ({ width }));
+  
+  // Apply styles
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+  for (let row = range.s.r; row <= range.e.r; row++) {
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      if (!sheet[cellAddress]) continue;
+      
+      const cellValue = sheet[cellAddress].v;
+      
+      // Style title row
+      if (row === 0) {
+        sheet[cellAddress].s = {
+          font: { bold: true, size: 14, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "2563EB" } },
+          alignment: { horizontal: "center", vertical: "center" }
+        };
+      }
+      // Style header row (row 6)
+      else if (row === 6) {
+        sheet[cellAddress].s = {
+          font: { bold: true, size: 11, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "059669" } },
+          alignment: { horizontal: "center", vertical: "center" }
+        };
+      }
+      // Style data rows
+      else if (row > 6) {
+        const isEvenRow = row % 2 === 0;
+        sheet[cellAddress].s = {
+          font: { size: 10 },
+          fill: { fgColor: { rgb: isEvenRow ? "F8FAFC" : "FFFFFF" } },
+          alignment: { 
+            horizontal: typeof cellValue === 'number' ? "right" : "left", 
+            vertical: "center" 
+          }
+        };
+      }
+    }
+  }
+  
+  XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
+  
+  return workbook;
+};
